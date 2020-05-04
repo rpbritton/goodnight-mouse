@@ -3,48 +3,49 @@ import random
 
 tag_states = [pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING]
 
-class NotVisible(Exception):
+class _NotVisible(Exception):
     pass
-class NoAction(Exception):
+class _NoAction(Exception):
     pass
-class InvalidPosition(Exception):
+class _InvalidPosition(Exception):
     pass
 
-class Tags:
-    def __init__(self, window):
-        self.tags = []
-        self._create_tags(window)
-        self._sort_tags()
-        self._code_tags()
-
-    def get_tags(self):
-        return self.tags
+def create_tags(window):
+    tags = _create_tag(window)
+    _sort_tags(tags)
+    _code_tags(tags)
+    return tags
     
-    def _create_tags(self, accessible):
-        try:
-            self.tags.append(Tag(accessible))
-        except NotVisible:
-            return
-        except:
-            None
+def _create_tag(accessible):
+    tags = []
 
-        for childAccessible in accessible:
-            self._create_tags(childAccessible)
-        
-    def _sort_tags(self):
-        # TODO: sort by closest to center (of window?)
+    try:
+        tags.append(Tag(accessible))
+    except _NotVisible:
+        return []
+    except:
         None
 
-    def _code_tags(self):
-        # TODO: make better lol
-        for index in range(10):
-            if index >= len(self.tags):
-                break
-            self.tags[index].code = chr(index+97) + chr(random.randint(97, 97+25))
-            if index % 2 == 0:
-                self.tags[index].code += chr(random.randint(97, 97+25))
-            if index % 3 == 0:
-                self.tags[index].code += "i"
+    for childAccessible in accessible:
+        tags += _create_tag(childAccessible)
+
+    return tags
+        
+def _sort_tags(tags):
+    # TODO: sort by closest to center (of window?)
+    # actually probably don't bother with that, sort left to right, top to bottom
+    None
+
+def _code_tags(tags):
+    # TODO: make better lol
+    for index in range(10):
+        if index >= len(tags):
+            break
+        tags[index].code = chr(index+97) + chr(random.randint(97, 97+25))
+        if index % 2 == 0:
+            tags[index].code += chr(random.randint(97, 97+25))
+        if index % 3 == 0:
+            tags[index].code += "i"
 
 class Tag:
     def __init__(self, accessible):
@@ -55,16 +56,16 @@ class Tag:
         states = accessible.getState()
         for state in tag_states:
             if not states.contains(state):
-                raise NotVisible
+                raise _NotVisible
 
         # make sure it is actionable
         try:
             action = accessible.queryAction()
         except:
-            raise NoAction
+            raise _NoAction
         # just checking, although pretty sure the above will error
         if action.get_nActions() < 1:
-            raise NoAction
+            raise _NoAction
         self.action = action
 
         # TODO: this could be a cool feature to run again if a menu item
