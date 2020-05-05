@@ -1,5 +1,7 @@
 # goodnight-mouse
 
+Upon hotkey press, labels all available actions in a program with a short sequence of keys to perform it.
+
 ## Requirements
 * AT-SPI2
 

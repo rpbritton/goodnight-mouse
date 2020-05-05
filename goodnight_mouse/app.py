@@ -2,6 +2,7 @@ import pyatspi
 
 from .tags import create_tags
 from .gui import Gui
+from .input import InputHandler
 
 window_states = [pyatspi.STATE_ACTIVE, pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING]
 
@@ -23,8 +24,13 @@ def run():
     if len(active_window) != 1:
         return
 
+    gui = Gui()
+
     tags = create_tags(window)
-    gui = Gui(tags)
+    gui.create_tags(tags)
+
+    input_handler = InputHandler(tags)
+    gui.create_input(input_handler)
 
     gui.main()
 
