@@ -1,12 +1,12 @@
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+gi.require_version("Atspi", "2.0")
+from gi.repository import Gtk, Gdk, Atspi
 
-import pyatspi
 import random
 
-tag_states = [pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING]
+valid_tag_states = [Atspi.StateType.VISIBLE, Atspi.StateType.SHOWING]
 
 class NotVisible(Exception):
     pass
@@ -34,8 +34,8 @@ def _create_tags(accessible):
     except:
         None
 
-    for childAccessible in accessible:
-        tags += _create_tags(childAccessible)
+    for child_accessible_index in range(accessible.get_child_count()):
+        tags += _create_tags(accessible.get_child_at_index(child_accessible_index))
 
     return tags
         
@@ -47,7 +47,7 @@ def _sort_tags(tags):
 def _add_keys(tags):
     # TODO: make better lol
     for index in range(len(tags)):
-        tags[index].keys = chr(index+97) + chr(random.randint(97, 97+25))
+        tags[index].keys = chr(index+97+index%2) + chr(random.randint(97, 97+25))
         if index % 2 == 0:
             tags[index].keys += chr(random.randint(97, 97+25))
         if index % 3 == 0:
@@ -59,27 +59,29 @@ class Tag:
         self.keys = None
 
         # only bother with the visible
-        states = accessible.getState()
-        for state in tag_states:
+        states = accessible.get_state_set()
+        for state in valid_tag_states:
             if not states.contains(state):
                 raise NotVisible
 
         # make sure it is actionable
         try:
-            self._action = accessible.queryAction()
+            self._action = accessible.get_action_iface()
         except:
             raise NoAction
         # just checking, although pretty sure the above will error
-        if self._action.get_nActions() < 1:
+        if self._action.get_n_actions() < 1:
             raise NoAction
+        # TODO: how to handle more than 1 action? (never seen)
+
 
         # TODO: this could be a cool feature to run again if a menu item
         # Actually probably need to use roles; imagine button in a button
         # if accessible.getChildCount() > 0:
         #     print("children:", accessible.getChildCount())
 
-        position = accessible.queryComponent().getPosition(0)
-        self._x, self._y = position[0], position[1]
+        position = accessible.get_component_iface().get_position(Atspi.CoordType.SCREEN)
+        self._x, self._y = position.x, position.y
 
         # TODO: figure out those pesky weird positions (e.g. constrain to the window)
         #raise InvalidPosition
@@ -92,7 +94,7 @@ class Tag:
         self._window = Gtk.Window(type = Gtk.WindowType.POPUP)
         self._window.move(self._x, self._y)
         # self.window.set_decorated(False) # TODO: not needed?
-        # TODO: make window part transparent?
+        # TODO: make window semi-transparent?
 
         button = Gtk.Button()
         button.get_style_context().add_class("tag")
