@@ -1,7 +1,12 @@
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk
+
 import pyatspi
 
+from .css import css
 from .tags import create_tags
-from .gui import Gui
 from .input import InputHandler
 
 window_states = [pyatspi.STATE_ACTIVE, pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING]
@@ -24,17 +29,12 @@ def run():
     if len(active_window) != 1:
         return
 
-    gui = Gui()
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_data(css)
+    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     tags = create_tags(window)
-    gui.create_tags(tags)
 
     input_handler = InputHandler(tags)
-    gui.create_input(input_handler)
 
-    gui.main()
-
-    # event_window = Gtk.Window()
-    # event_window.connect("key_press_event", lambda x: print(x))
-    # event_window.connect("destroy", Gtk.main_quit)
-    # Gdk.keyboard_grab(event_window, True, 0)
+    Gtk.main()
