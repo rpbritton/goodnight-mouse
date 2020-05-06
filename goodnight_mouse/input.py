@@ -6,8 +6,8 @@ from gi.repository import Gtk, Gdk
 class InputHandler:
     def __init__(self, tags):
         self.keys = ""
-
         self.tags = tags
+        self._pressed = False
 
         self._create_window()
 
@@ -19,14 +19,28 @@ class InputHandler:
         #     return
 
         self._window = Gtk.Invisible()
-        self._window.connect("key-press-event", self.key_press)
+        self._window.connect("key-press-event", self._key_press)
+        self._window.connect("button-press-event", self._mouse_down)
+        self._window.connect("button-release-event", self._mouse_up)
         self._window.show_all()
 
-        # TODO: check return value
-        self._seat = Gdk.Display.get_default().get_default_seat()
-        self._seat.grab(self._window.get_window(), Gdk.SeatCapabilities.ALL, True, None, None, None, None)
+        seat = Gdk.Display.get_default().get_default_seat()
+        status = seat.grab(self._window.get_window(), Gdk.SeatCapabilities.ALL, True, None, None, None, None)
+        if status != Gdk.GrabStatus.SUCCESS:
+            # TODO: tell the user
+            exit()
+    
+    def _mouse_down(self, window, event):
+        if event.button == 1:
+            self._pressed = True
+    
+    def _mouse_up(self, window, event):
+        if event.button == 1 and self._pressed:
+            exit()
+        else:
+            self._pressed = False
 
-    def key_press(self, window, event):
+    def _key_press(self, window, event):
         prev_keys = self.keys
 
         if event.keyval == Gdk.KEY_Escape:

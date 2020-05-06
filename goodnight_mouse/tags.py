@@ -31,7 +31,7 @@ def _create_tags(accessible):
         tags.append(Tag(accessible))
     except NotVisible:
         return []
-    except:
+    except NoAction:
         None
 
     for child_accessible_index in range(accessible.get_child_count()):
@@ -65,15 +65,13 @@ class Tag:
                 raise NotVisible
 
         # make sure it is actionable
-        try:
-            self._action = accessible.get_action_iface()
-        except:
+        self._action = accessible.get_action_iface()
+        if self._action == None:
             raise NoAction
         # just checking, although pretty sure the above will error
         if self._action.get_n_actions() < 1:
             raise NoAction
         # TODO: how to handle more than 1 action? (never seen)
-
 
         # TODO: this could be a cool feature to run again if a menu item
         # Actually probably need to use roles; imagine button in a button
@@ -97,6 +95,7 @@ class Tag:
         # TODO: make window semi-transparent?
 
         button = Gtk.Button()
+        button.connect("clicked", self._clicked)
         button.get_style_context().add_class("tag")
 
         labels = Gtk.Box()
@@ -114,6 +113,9 @@ class Tag:
 
         self._window.add(button)
         self._window.show_all()
+
+    def _clicked(self, event):
+        self.run()
     
     def update(self, keys):
         if keys == self.keys:
@@ -131,5 +133,7 @@ class Tag:
             self._window.hide()
 
     def run(self):
-        print("done")
+        Gdk.Display.get_default().get_default_seat().ungrab()
+        Gtk.main_quit()
+        self._action.do_action(0)
         exit()

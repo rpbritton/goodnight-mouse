@@ -28,6 +28,7 @@ def run():
                 active_windows.append(window)
 
     if len(active_windows) != 1:
+        # TODO: better message
         exit()
     
     window = active_windows[0]
