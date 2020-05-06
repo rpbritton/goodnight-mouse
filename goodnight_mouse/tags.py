@@ -94,12 +94,13 @@ class Tag:
         # self.window.set_decorated(False) # TODO: not needed?
         # TODO: make window semi-transparent?
 
-        button = Gtk.Button()
-        button.connect("clicked", self._clicked)
-        button.get_style_context().add_class("tag")
+        # button = Gtk.Button()
+        # button.connect("clicked", self._clicked)
+        # button.get_style_context().add_class("tag")
 
         labels = Gtk.Box()
         labels.set_halign(Gtk.Align.CENTER)
+        labels.get_style_context().add_class("tag")
 
         self._key_labels = []
         for key in iter(self.keys):
@@ -109,9 +110,9 @@ class Tag:
 
             labels.add(key_label)
 
-        button.add(labels)
+        # button.add(labels)
 
-        self._window.add(button)
+        self._window.add(labels)
         self._window.show_all()
 
     def _clicked(self, event):

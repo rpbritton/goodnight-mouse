@@ -21,24 +21,16 @@ class InputHandler:
         self._window = Gtk.Invisible()
         self._window.connect("key-press-event", self._key_press)
         self._window.connect("button-press-event", self._mouse_down)
-        self._window.connect("button-release-event", self._mouse_up)
         self._window.show_all()
 
         seat = Gdk.Display.get_default().get_default_seat()
-        status = seat.grab(self._window.get_window(), Gdk.SeatCapabilities.ALL, True, None, None, None, None)
+        status = seat.grab(self._window.get_window(), Gdk.SeatCapabilities.ALL, False, None, None, None, None)
         if status != Gdk.GrabStatus.SUCCESS:
             # TODO: tell the user
             exit()
     
     def _mouse_down(self, window, event):
-        if event.button == 1:
-            self._pressed = True
-    
-    def _mouse_up(self, window, event):
-        if event.button == 1 and self._pressed:
-            exit()
-        else:
-            self._pressed = False
+        exit()
 
     def _key_press(self, window, event):
         prev_keys = self.keys
