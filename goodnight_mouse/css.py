@@ -1,15 +1,13 @@
 css = b"""
-.tag {
+.popup {
     background-color: red;
-    margin: 0;
-    padding: 0;
 }
 
-.key {
+.popup_key {
     color: blue;
 }
 
-.key_complete {
+.popup_key_satisfied {
     color: green;
 }
 """

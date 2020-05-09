@@ -20,7 +20,10 @@ export ACCESSIBILITY_ENABLED=1
 * Set DBus properties to true:
     * `org.a11y.Status.IsEnabled`
     * `org.a11y.Status.ScreenReaderEnabled`
+        * This should really be done by the script.
 * Run electron and chrome apps with `--force-renderer-accessibility`
+* `dbus-monitor` the at-spi to see if things are working, like mouse input.
+    * May need `dbus-update-activation-environment --systemd DBUS_SESSION_BUS_ADDRESS DISPLAY XAUTHORITY` in xinit.
 
 ## Run
 
