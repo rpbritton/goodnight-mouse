@@ -1,4 +1,5 @@
 import random
+from Xlib import display
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -112,18 +113,27 @@ class Action:
         # if accessible.getChildCount() > 0:
         #     print("children:", accessible.getChildCount())
 
-        # size = component.get_size()
-        # self._w, self._h = size.x, size.y
-        # self._center_x, self._center_y = self._x + self._w / 2, self._y + self._h / 2
+        component = accessible.get_component_iface()
+
+        position = component.get_position(Atspi.CoordType.SCREEN)
+        self._x, self._y = position.x, position.y
+
+        size = component.get_size()
+        self._w, self._h = size.x, size.y
+        self._center_x, self._center_y = self._x + self._w / 2, self._y + self._h / 2
 
         # TODO: figure out those pesky weird positions (e.g. constrain to the window)
         #raise InvalidPosition
+
+        # TODO: determine action type
+        self._type = "click"
+        # self._type = "focus"
     
     def init(self):
         if self.code == None:
             return
 
-        self._popup = Popup(self.accessible, self.code)
+        self._popup = Popup(self._x, self._y, self.code)
     
     def valid(self, code):
         return self.code.startswith(code)
@@ -135,10 +145,12 @@ class Action:
             self._popup.hide()
 
     def run(self):
-        # Atspi.event_quit()
-        # Atspi.generate_mouse_event(self._center_x, self._center_y, "b1c")
-        print("running")
-        self.accessible.grab_focus()
-        # TODO: send out enter key
-        Atspi.generate_keyboard_event(Gdk.KEY_Return, None, Atspi.KeySynthType.SYM)
-        # exit()
+        if self._type == "click":
+            pointer = display.Display().screen().root.query_pointer()
+            Atspi.generate_mouse_event(self._center_x, self._center_y, "b1c")
+            Atspi.generate_mouse_event(pointer.root_x, pointer.root_y, "abs")
+        elif self._type == "focus":
+            self.accessible.grab_focus()
+
+        # TODO: make control key held at certain times
+        # Atspi.generate_keyboard_event(Gdk.KEY_Return, None, Atspi.KeySynthType.SYM)

@@ -7,12 +7,10 @@ gi.require_version("Atspi", "2.0")
 from gi.repository import Gtk, Gdk, Atspi
 
 class Popup:
-    def __init__(self, accessible, code):
+    def __init__(self, x, y, code):
         self._window = Gtk.Window(type = Gtk.WindowType.POPUP)
 
-        component = accessible.get_component_iface()
-        position = component.get_position(Atspi.CoordType.SCREEN)
-        self._window.move(position.x, position.y)
+        self._window.move(x, y)
 
         # self.window.set_decorated(False) # TODO: not needed for popup windows?
         # TODO: make window semi-transparent?
