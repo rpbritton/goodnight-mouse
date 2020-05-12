@@ -1,46 +1,48 @@
 import random
-from Xlib import display
+import time
+import pyatspi
+
+from Xlib import X, display, ext
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("Atspi", "2.0")
-from gi.repository import Gtk, Gdk, Atspi
+from gi.repository import Gtk, Gdk
 
-from .focus import get_focused_window
 from .popup import Popup
+from .codes import Codes
+
+_code_chars = "fjdkghsla"
 
 class Actions:
-    def __init__(self):
-        self.code = ""
+    def __init__(self, window):
+        self.current_code = ""
+        
+        # TODO: check if None?
+        self.window = window
 
-        # TODO: raise exception if no focused
-        self.window = get_focused_window()
-
-        self._actions = []
         # TODO: raise exception if none (NoActions)
-        self._get_all(self.window)
-        self._sort()
-        self._generate_codes()
+        actions = self._get()
+        codes = Codes(_code_chars).generate(len(actions))
+        self.actions = dict(zip(codes, actions))
         self._init()
-
-    def _get_all(self, accessible):
-        try:
-            self._actions.append(Action(accessible))
-        except Action.NotVisible:
-            return
-        except Action.NoAction:
-            None
-
-        for child_accessible_index in range(accessible.get_child_count()):
-            self._get_all(accessible.get_child_at_index(child_accessible_index))
     
-    def _sort(self):
-        # TODO: sort by closest to center (of window?)
-        # actually probably don't bother with that, sort left to right, top to bottom (default sort order)
+    def _find_all_actions(self):
         None
+
+    # def _get_all(self, accessible):
+    #     try:
+    #         self._actions.append(Action(accessible))
+    #     except Action.NotVisible:
+    #         return
+    #     except Action.NoAction:
+    #         None
+
+    #     for child_accessible_index in range(accessible.get_child_count()):
+    #         self._get_all(accessible.get_child_at_index(child_accessible_index))
     
-    def _generate_codes(self):
+    def _generate_keys(self, amount):
         # TODO: make better lol
         for index in range(len(self._actions)):
             code = chr(index+97+index%2) + chr(random.randint(97, 97+25))
@@ -120,7 +122,7 @@ class Action:
 
         size = component.get_size()
         self._w, self._h = size.x, size.y
-        self._center_x, self._center_y = self._x + self._w / 2, self._y + self._h / 2
+        self._center_x, self._center_y = int(self._x + self._w / 2), int(self._y + self._h / 2)
 
         # TODO: figure out those pesky weird positions (e.g. constrain to the window)
         #raise InvalidPosition
@@ -146,11 +148,27 @@ class Action:
 
     def run(self):
         if self._type == "click":
-            pointer = display.Display().screen().root.query_pointer()
-            Atspi.generate_mouse_event(self._center_x, self._center_y, "b1c")
-            Atspi.generate_mouse_event(pointer.root_x, pointer.root_y, "abs")
+            dis = display.Display()
+            root = dis.screen().root
+            pointer = root.query_pointer()
+
+            root.warp_pointer(self._center_x, self._center_y)
+            dis.sync()
+            time.sleep(0.001)
+
+            ext.xtest.fake_input(dis, X.ButtonPress, 1)
+            dis.sync()
+            time.sleep(0.001)
+
+            ext.xtest.fake_input(dis, X.ButtonRelease, 1)
+            dis.sync()
+            time.sleep(0.001)
+
+            root.warp_pointer(pointer.root_x, pointer.root_y)
+            dis.sync()
+
         elif self._type == "focus":
             self.accessible.grab_focus()
 
         # TODO: make control key held at certain times
-        # Atspi.generate_keyboard_event(Gdk.KEY_Return, None, Atspi.KeySynthType.SYM)
+        # it should work through x lib

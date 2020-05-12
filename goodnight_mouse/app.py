@@ -1,30 +1,30 @@
-import atexit
+import pyatspi
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-gi.require_version("Atspi", "2.0")
-from gi.repository import Gtk, Gdk, Atspi
+from gi.repository import Gtk, Gdk
 
 from .css import css
 
+from .focus import FocusHandler
 from .actions import Actions
-from .events import EventsHandler
+# from .events import EventsHandler
 
-def run():
-    Atspi.init()
-    atexit.register(exit_callback)
 
+def start():
     css_provider = Gtk.CssProvider()
     css_provider.load_from_data(css)
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-    actions = Actions()
+    # TODO: catch no focus exception?
+    focus_handler = FocusHandler()
 
-    events_handler = EventsHandler(actions)
-    events_handler.main()
+    actions = Actions(focus_handler.get_window())
 
-    actions.finish()
+    # keys_handler = KeysHandler(actions)
+    # mouse_handler = MouseHandler()
 
-def exit_callback():
-    Atspi.exit()
+    # pyatspi.Registry.start()   
+
+    # actions.finish()

@@ -1,4 +1,4 @@
-from goodnight_mouse import app
+from goodnight_mouse import init
 
 if __name__ == '__main__':
-    app.run()
+    init.start()

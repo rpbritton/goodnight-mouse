@@ -1,39 +1,48 @@
-import gi
-gi.require_version("Atspi", "2.0")
-from gi.repository import Atspi
+import pyatspi
 
-_valid_window_states = [Atspi.StateType.ACTIVE, Atspi.StateType.VISIBLE, Atspi.StateType.SHOWING]
+import gi
+gi.require_version("Wnck", "3.0")
+from gi.repository import Wnck
+
+_valid_window_states = [pyatspi.STATE_ACTIVE, pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING]
+
+class NoFocusedWindow(Exception):
+    pass
 
 class FocusHandler:
     def __init__(self):
-        self._listener = Atspi.EventListener.new(self._handle)
-        # TODO: return value?
-        self._listener.register("window:deactivate")
+        self.window = self._get_focused_window()
+        if not self.window:
+            raise NoFocusedWindow
 
+        # TODO: does this return a value
+        pyatspi.Registry.registerEventListener(self._focus_lost, "window:deactivate")
 
-    def _handle(self, event):
+    def _focus_lost(self, event):
         # TODO: This may need to get more advanced
         exit()
 
-def get_focused_window():
-    # TODO: figure out better way to find focused window
-    desktop = Atspi.get_desktop(0)
+    def get_window(self):
+        return self.window
 
-    active_windows = []
-    for application_index in range(desktop.get_child_count()):
-        application = desktop.get_child_at_index(application_index)
-        for window_index in range(application.get_child_count()):
-            window = application.get_child_at_index(window_index)
-            states = window.get_state_set()
-            for state in _valid_window_states:
-                if not states.contains(state):
-                    print(application.name)
-                    break
-            else:
-                print(application.name, "---------- focused")
-                active_windows.append(window)
-    if len(active_windows) != 1:
-        # TODO: raise exception
-        exit()
+    def _get_focused_window(self):
+        # TODO: check if any of these fail (return values)
+        screen = Wnck.Screen.get_default()
+        screen.force_update()
+        active_window = screen.get_active_window()
+        active_application = active_window.get_application()
+        active_application_pid = active_application.get_pid()
 
-    return active_windows[0]
+        desktop = pyatspi.Registry.getDesktop(0)
+        for application in desktop:
+            if application.get_process_id() == active_application_pid:
+                for window in application:
+                    # TODO: check return
+                    state_set = window.getState()
+                    for state in _valid_window_states:
+                        if not state_set.contains(state):
+                            break
+                    else:
+                        return window
+        
+        return None
