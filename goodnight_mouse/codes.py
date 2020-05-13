@@ -3,30 +3,56 @@ class Codes:
         # TODO: check if characters is empty
         self.characters = characters
 
-    def _generate_codes(self, amount):
-        codes = [""]
-        while len(codes) < amount:
-            base = codes.pop(0)
-            for character in self.characters:
-                codes.append(base + character)
-                if len(codes) >= amount:
-                    return codes
-        return codes
+    def _generate_tree(self, amount):
+        # create base, empty head node
+        codes = ("", [])
+        if amount < 1:
+            return codes
 
-    def _optimize_codes(self, codes):
-        # sort codes by character strength
-        codes.sort(key=lambda word: [self.characters.index(character) for character in word])
-        # find number of codes the strongest (and implicitly most often) character starts
-        num_buckets = sum(1 for code in codes if code[0] == self.characters[0])
-        # create base buckets of the strongest character codes
-        buckets = [[code] for code in codes[:num_buckets]]
-        # add remaining codes to the ends of the buckets
-        for index in range(num_buckets, len(codes)):
-            buckets[index % num_buckets].append(codes[index])
-        # return a flattened version of the now sorted buckets
+        # keep track of all leaves, as those become full codes
+        leaves = [codes]
+        while True:
+            # always use first leaf for building
+            base = leaves.pop(0)
+            for character in self.characters:
+                # skip duplicate characters (TODO: config?)
+                if base[0] == character:
+                    continue
+                # create leaf
+                code = (character, [])
+                # record leaf
+                base[1].append(code)
+                leaves.append(code)
+                # exit it satisified
+                if len(leaves) >= amount:
+                    return codes
+
+    def _flatten_tree(self, codes):
+        # leaves (codes with no children) are just themselves
+        if len(codes[1]) == 0:
+            return [codes[0]]
+
+        # create a "sorted" array of each child's code segment
+        children = []
+        for child in codes[1]:
+            children.append(self._flatten_tree(child))
+        
+        # create buckets for each segment of the first, and
+        # therefore greatest, child code segment
+        buckets = [[codes[0] + code] for code in children[0]]
+        # add remaining code segments iteratively to buckets
+        index = 0
+        for child in children[1:]:
+            for code in child:
+                buckets[index].append(codes[0] + code)
+                index = (index + 1) % len(buckets)
+
+        # return flattened buckets
         return [code for bucket in buckets for code in bucket]
 
     def generate(self, amount):
-        codes = self._generate_codes(amount)
-        codes = self._optimize_codes(codes)
+        if amount == 0:
+            return []
+        codes = self._generate_tree(amount)
+        codes = self._flatten_tree(codes)
         return codes
