@@ -43,14 +43,17 @@ class Action:
 
         self._popup = Popup(self.x, self.y, self.code)
     
-    def test_code(self, code):
+    def valid(self, code):
         return self.code.startswith(code)
 
-    def apply_code(self, code):
-        if self.test_code(code):
+    def apply(self, code):
+        if self.valid(code):
             self._popup.show(len(code))
         else:
             self._popup.hide()
+
+    def match(self, code):
+        return self.code == code
 
     def do(self):
         if self.role in Action.ROLES_CLICK:
@@ -68,3 +71,4 @@ class Action:
 
         # TODO: make control key held at certain times
         # it should work through x lib
+        # Check if already sent methinks, make sure to not release it if already pressed

@@ -1,18 +1,11 @@
-# import random
 import pyatspi
-
-# from Xlib import X, display, ext
-
-# import gi
-# gi.require_version("Gtk", "3.0")
-# gi.require_version("Gdk", "3.0")
-# from gi.repository import Gtk, Gdk
 
 from .codes import Codes
 from .action import Action
 
 # TODO: put in config
 _code_chars = "fjdkghsla"
+# _code_chars = "abc"
 
 _match_states = pyatspi.StateSet.new([pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING])
 _match_roles = list(Action.ROLES)
@@ -35,30 +28,21 @@ class ActionList:
 
         codes = Codes(_code_chars).generate(len(accessibles))
 
-        self.actions = [Action(code, accessible) for code, accessible in zip(codes, accessibles)]
+        self._actions = [Action(code, accessible) for code, accessible in zip(codes, accessibles)]
+
+    def valid(self, code):
+        return any(action.valid(code) for action in self._actions)
     
-#     def _init(self):
-#         for action in self._actions:
-#             action.init()
-    
-#     def match(self, code):
-#         return any(action.code == code for action in self._actions)
+    def apply(self, code):
+        self.code = code
 
-#     def valid(self, code):
-#         return sum(1 for action in self._actions if action.valid(code))
-    
-#     def process(self, code):
-#         self.code = code
+        for action in self._actions:
+            action.apply(self.code)
 
-#         for action in self._actions:
-#             action.process(self.code)
+    def match(self, code):
+        return any(action.match(code) for action in self._actions)
 
-#     def finish(self):
-#         if not self.match(self.code):
-#             # TODO: error or something?
-#             return
-
-#         for action in self._actions:
-#             if action.code == self.code:
-#                 action.run()
-#                 return
+    def do(self):
+        for action in self._actions:
+            if action.match(self.code):
+                action.do()

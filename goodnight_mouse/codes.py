@@ -40,12 +40,17 @@ class Codes:
         # create buckets for each segment of the first, and
         # therefore greatest, child code segment
         buckets = [[codes[0] + code] for code in children[0]]
-        # add remaining code segments iteratively to buckets
+        # add remaining child codes to bucket iteratively, first code
         index = 0
-        for child in children[1:]:
-            for code in child:
-                buckets[index].append(codes[0] + code)
-                index = (index + 1) % len(buckets)
+        code_exists = True
+        while code_exists:
+            code_exists = False
+            for child in children[1:]:
+                if len(child) > 0:
+                    buckets[index].append(codes[0] + child.pop(0))
+                    index = (index + 1) % len(buckets)
+                    if len(child) > 0:
+                        code_exists = True
 
         # return flattened buckets
         return [code for bucket in buckets for code in bucket]
