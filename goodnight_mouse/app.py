@@ -10,6 +10,7 @@ from .css import css
 from .focus import FocusHandler
 from .action_list import ActionList
 from .keys import KeysHandler
+from .mouse import MouseHandler
 
 def start():
     css_provider = Gtk.CssProvider()
@@ -22,7 +23,7 @@ def start():
     action_list = ActionList(focus_handler.get_window())
 
     keys_handler = KeysHandler(action_list)
-    # mouse_handler = MouseHandler()
+    mouse_handler = MouseHandler()
 
     pyatspi.Registry().start()   
 
