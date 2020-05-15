@@ -10,7 +10,7 @@ class MouseHandler:
         exit()
 
 def click(x, y):
-    # TODO: investigate viability of generate_mouse_event
+    # TODO: investigate viability of atspi generate_mouse_event
     # (didn't work well from initial testing)
 
     dis = display.Display()

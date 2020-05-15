@@ -1,6 +1,5 @@
 class Codes:
     def __init__(self, characters):
-        # TODO: check if characters is empty
         self.characters = characters
 
     def _generate_tree(self, amount):
@@ -39,15 +38,15 @@ class Codes:
         
         # create buckets for each segment of the first, and
         # therefore greatest, child code segment
-        buckets = [[codes[0] + code] for code in children[0]]
+        buckets = [[codes[0] + children[0].pop()] for _ in range(len(children[0]))]
         # add remaining child codes to bucket iteratively, first code
         index = 0
         code_exists = True
         while code_exists:
             code_exists = False
-            for child in children[1:]:
+            for child in children:
                 if len(child) > 0:
-                    buckets[index].append(codes[0] + child.pop(0))
+                    buckets[index].append(codes[0] + child.pop())
                     index = (index + 1) % len(buckets)
                     if len(child) > 0:
                         code_exists = True
