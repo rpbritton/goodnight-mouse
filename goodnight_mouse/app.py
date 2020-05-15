@@ -8,7 +8,7 @@ from gi.repository import Gtk, Gdk
 from .css import css
 
 from .focus import FocusHandler
-from .actions import Actions
+from .action_list import ActionList
 # from .events import EventsHandler
 
 
@@ -20,11 +20,11 @@ def start():
     # TODO: catch no focus exception?
     focus_handler = FocusHandler()
 
-    actions = Actions(focus_handler.get_window())
+    actions = ActionList(focus_handler.get_window())
 
     # keys_handler = KeysHandler(actions)
     # mouse_handler = MouseHandler()
 
-    # pyatspi.Registry.start()   
+    pyatspi.Registry.start()   
 
-    # actions.finish()
+    actions.finish()

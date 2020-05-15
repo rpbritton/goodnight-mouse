@@ -6,14 +6,10 @@ from gi.repository import Wnck
 
 _valid_window_states = [pyatspi.STATE_ACTIVE, pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING]
 
-class NoFocusedWindow(Exception):
-    pass
-
 class FocusHandler:
     def __init__(self):
         self.window = self._get_focused_window()
-        if not self.window:
-            raise NoFocusedWindow
+        # TODO: do something bad if no focused window
 
         # TODO: does this return a value
         pyatspi.Registry.registerEventListener(self._focus_lost, "window:deactivate")

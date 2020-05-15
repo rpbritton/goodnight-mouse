@@ -3,13 +3,13 @@ import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-gi.require_version("Atspi", "2.0")
-from gi.repository import Gtk, Gdk, Atspi
+from gi.repository import Gtk, Gdk
 
 class Popup:
     def __init__(self, x, y, code):
         self._window = Gtk.Window(type = Gtk.WindowType.POPUP)
 
+        # TODO: adjustable alignment (center could be nice)
         self._window.move(x, y)
 
         # self.window.set_decorated(False) # TODO: not needed for popup windows?
@@ -32,10 +32,10 @@ class Popup:
         # turns off pointer events
         self._window.input_shape_combine_region(cairo.Region(cairo.RectangleInt()))
 
-    def show(self, satisified):
+    def show(self, num_satisified):
         for index in range(len(self._key_labels)):
             style_context = self._key_labels[index].get_style_context()
-            if index < satisified:
+            if index < num_satisified:
                 style_context.add_class("popup_key_satisfied")
             else:
                 style_context.remove_class("popup_key_satisfied")

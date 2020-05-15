@@ -14,6 +14,7 @@ class KeysHandler:
             Atspi.register_keystroke_listener(self._listener, None, mod_mask, 0, Atspi.KeyListenerSyncType.CANCONSUME)
 
     def _handle(self, event):
+        # TODO: don't return true necessairly
         if event.type != Atspi.EventType.KEY_PRESSED_EVENT:
             return True
 
@@ -23,6 +24,9 @@ class KeysHandler:
             self._keys = self._keys[:-1]
         elif event.id >= 0 and event.id <= 255:
             self._keys += chr(event.id)
+        # TODO:
+        # else:
+        #     return False
 
         if not self._actions.valid(self._keys):
             self._keys = ""

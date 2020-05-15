@@ -51,7 +51,7 @@ class Codes:
         return [code for bucket in buckets for code in bucket]
 
     def generate(self, amount):
-        if amount == 0:
+        if amount < 1:
             return []
         codes = self._generate_tree(amount)
         codes = self._flatten_tree(codes)
