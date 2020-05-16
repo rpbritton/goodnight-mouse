@@ -6,7 +6,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("Atspi", "2.0")
 from gi.repository import Gtk, Gdk, Atspi
 
-def start():
+def main(config):
     Atspi.init()
     atexit.register(exit_callback)
 

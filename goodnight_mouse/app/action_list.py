@@ -6,7 +6,7 @@ from .action import Action
 # TODO: put in config
 _code_chars = "fjdkghsla"
 
-_match_states = pyatspi.StateSet.new([pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING])
+_match_states = pyatspi.StateSet.new([pyatspi.STATE_VISIBLE, pyatspi.STATE_SHOWING, pyatspi.STATE_ENABLED])
 _match_roles = list(Action.ROLES)
 
 class ActionList:

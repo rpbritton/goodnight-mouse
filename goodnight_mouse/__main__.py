@@ -1,4 +1,4 @@
-from goodnight_mouse import init
+from . import goodnight_mouse
 
-if __name__ == '__main__':
-    init.start()
+if __name__ == "__main__":
+    goodnight_mouse.main()

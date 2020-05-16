@@ -12,7 +12,7 @@ from .action_list import ActionList
 from .keys import KeysHandler
 from .mouse import MouseHandler
 
-def start():
+def main(config):
     css_provider = Gtk.CssProvider()
     css_provider.load_from_data(css)
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
@@ -25,6 +25,6 @@ def start():
     keys_handler = KeysHandler(action_list)
     mouse_handler = MouseHandler()
 
-    pyatspi.Registry().start()   
+    pyatspi.Registry().start()
 
     action_list.do()

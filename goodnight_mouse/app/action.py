@@ -16,7 +16,7 @@ class Action:
         pyatspi.ROLE_PUSH_BUTTON,
         pyatspi.ROLE_TOGGLE_BUTTON,
         pyatspi.ROLE_COMBO_BOX,
-        pyatspi.ROLE_LIST_ITEM,
+        # pyatspi.ROLE_LIST_ITEM,
         pyatspi.ROLE_MENU,
         pyatspi.ROLE_MENU_ITEM,
         pyatspi.ROLE_PAGE_TAB,
@@ -42,7 +42,7 @@ class Action:
         self.center_x, self.center_y = self.x + self.w // 2, self.y + self.h // 2
 
         self._popup = Popup(self.x, self.y, self.code)
-    
+
     def valid(self, code):
         return self.code.startswith(code)
 
@@ -56,18 +56,19 @@ class Action:
         return self.code == code
 
     def do(self):
-        if self.role in Action.ROLES_CLICK:
-            try:
-                actions = self.accessible.queryAction()
-            except NotImplementedError:
-                click(self.center_x, self.center_y)
-            else:
-                if actions.get_nActions() > 0:
-                    actions.doAction(0)
-                else:
-                    click(self.center_x, self.center_y)
-        elif self.role in Action.ROLES_FOCUS:
-            self.accessible.grab_focus()
+        None
+        # if self.role in Action.ROLES_CLICK:
+        #     try:
+        #         actions = self.accessible.queryAction()
+        #     except NotImplementedError:
+        #         click(self.center_x, self.center_y)
+        #     else:
+        #         if actions.get_nActions() > 0:
+        #             actions.doAction(0)
+        #         else:
+        #             click(self.center_x, self.center_y)
+        # elif self.role in Action.ROLES_FOCUS:
+        #     self.accessible.grab_focus()
 
         # TODO: make control key held at certain times
         # it should work through x lib
