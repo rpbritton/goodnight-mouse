@@ -3,6 +3,7 @@ import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
+gi.require_version("Atspi", "2.0")
 from gi.repository import Gtk, Gdk
 
 class Popup:
@@ -39,7 +40,7 @@ class Popup:
                 style_context.add_class("popup_key_satisfied")
             else:
                 style_context.remove_class("popup_key_satisfied")
-        self._window.show()
+        self._window.get_window().show_unraised()
 
     def hide(self):
-        self._window.hide()
+        self._window.get_window().hide()

@@ -4,7 +4,7 @@ import time
 
 class MouseHandler:
     def __init__(self):
-        pyatspi.Registry().registerEventListener(self.handle, "mouse:button")
+        pyatspi.Registry.registerEventListener(self.handle, "mouse:button")
 
     def handle(self, event):
         exit()

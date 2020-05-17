@@ -1,12 +1,17 @@
 import pyatspi
 from Xlib.keysymdef import miscellany as keysym
 
+import time
+
 class KeysHandler:
     def __init__(self, action_list):
         self._keys = ""
         self._action_list = action_list
-        
-        pyatspi.Registry().registerKeystrokeListener(self.handle, mask=range(0xFF))
+
+        pyatspi.Registry.registerKeystrokeListener(
+            self.handle,
+            mask=range(0xFF),
+            synchronous=False)
 
     def apply(self, keys):
         if keys == self._keys:
@@ -16,13 +21,15 @@ class KeysHandler:
             self._keys = keys
         else:
             self._keys = ""
-        
+
         self._action_list.apply(self._keys)
 
         if self._action_list.match(self._keys):
-            pyatspi.Registry().stop()
+            pyatspi.Registry.stop()
 
     def handle(self, event):
+        print("received", flush=True)
+        start = time.time()
         if event.id == keysym.XK_Escape:
             exit()
 
@@ -34,5 +41,9 @@ class KeysHandler:
                 self.apply(self._keys + chr(event.id))
         else:
             return False
+
+        end = time.time()
+        if end - start > 1e-3:
+            print("ended:", end - start)
 
         return True

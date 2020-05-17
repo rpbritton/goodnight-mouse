@@ -11,7 +11,7 @@ class FocusHandler:
         self.window = focused_window()
         # TODO: do something bad if no focused window
 
-        pyatspi.Registry().registerEventListener(self.handle, "window:deactivate")
+        pyatspi.Registry.registerEventListener(self.handle, "window:deactivate")
 
     def handle(self, event):
         # TODO: This may need to get more advanced
@@ -28,7 +28,7 @@ def focused_window():
     active_application = active_window.get_application()
     active_application_pid = active_application.get_pid()
 
-    desktop = pyatspi.Registry().getDesktop(0)
+    desktop = pyatspi.Registry.getDesktop(0)
     for application in desktop:
         if application.get_process_id() == active_application_pid:
             for window in application:
@@ -39,5 +39,5 @@ def focused_window():
                         break
                 else:
                     return window
-    
+
     return None

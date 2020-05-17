@@ -7,24 +7,42 @@ from gi.repository import Gtk, Gdk
 
 from .css import css
 
+from .config import Config
 from .focus import FocusHandler
 from .action_list import ActionList
 from .keys import KeysHandler
 from .mouse import MouseHandler
 
-def main(config):
+import time
+
+def main(raw_config):
+    times = []
+    times.append(time.time())
     css_provider = Gtk.CssProvider()
     css_provider.load_from_data(css)
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-    # TODO: catch no focus exception?
     focus_handler = FocusHandler()
+    # TODO: is this the right place
+    window = focus_handler.get_window()
+    if window == None:
+        exit()
+    times.append(time.time())
 
-    action_list = ActionList(focus_handler.get_window())
+    config = Config(raw_config, window)
+    times.append(time.time())
+
+    action_list = ActionList(config, focus_handler.get_window())
+    times.append(time.time())
 
     keys_handler = KeysHandler(action_list)
+    times.append(time.time())
     mouse_handler = MouseHandler()
+    times.append(time.time())
 
-    pyatspi.Registry().start()
+    # for index in range(len(times) - 1):
+    #     print("index", index, "time", times[index+1] - times[index])
+
+    pyatspi.Registry.start()
 
     action_list.do()
