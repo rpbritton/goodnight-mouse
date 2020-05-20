@@ -53,7 +53,7 @@ class ActionList:
         times.append(time.time())
 
         for index in range(len(times) - 1):
-            print("index", index, "time", times[index+1] - times[index])
+            print("action_list: index", index, "time", times[index+1] - times[index])
 
     def valid(self, code):
         return any(action.valid(code) for action in self.actions)
