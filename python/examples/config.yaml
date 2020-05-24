@@ -1,10 +1,15 @@
+lockfile: "/tmp/goodnight_mouse.pid"
 rules:
   - name: default
-    conditions:
-      application: '.*'
-    popups:
-      # keys: "fjdkghsla"
-      keys: "abc"
+    match:
+      - application: '.*'
+    # keys: "fjdkghsla"
+    keys: "abc"
+    colors:
+      border: "#FF0000"
+      background: "rgba(0, 100%, 0, 0.2)"
+      text: "#0000FF"
+      active_text: "#FFFF00"
     states:
       - STATE_SHOWING
       - STATE_VISIBLE
@@ -28,29 +33,29 @@ rules:
       ROLE_SLIDER: focus
       ROLE_DIAL: actuate
       ROLE_DATE_EDITOR: focus
-    functions:
-      actuate:
-        match:
-          - action: '.*'
-        do: native
-        else:
-          match:
-            - states:
-              - STATE_FOCUSABLE
-          do: press
-          else:
-            do: click
-      actuate_non_selected:
-        match:
-          - states:
-              - STATE_SELECTED
-            invert: true
-        then: actuate
-      focus:
-        match:
-          - states:
-              - STATE_FOCUSABLE
-          - states:
-              - STATE_FOCUSED
-            invert: true
-        do: focus
+functions:
+  actuate:
+    match:
+      - action: '.*'
+    return: native
+    else:
+      match:
+        - states:
+          - STATE_FOCUSABLE
+      return: press
+      else:
+        return: click
+  actuate_non_selected:
+    match:
+      - states:
+          - STATE_SELECTED
+        invert: true
+    goto: actuate
+  focus:
+    match:
+      - states:
+          - STATE_FOCUSABLE
+      - states:
+          - STATE_FOCUSED
+        invert: true
+    return: focus

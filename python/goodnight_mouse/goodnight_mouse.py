@@ -1,9 +1,7 @@
 import argparse
 import yaml
 
-from .config import Config
-
-from .commands import Commands
+from .app import Commands
 from . import debugger
 
 def main():
@@ -20,8 +18,7 @@ def main():
 
     args = parser.parse_args()
 
-    raw_config = yaml.safe_load(open(args.config))
-    config = Config(raw_config)
+    config = yaml.safe_load(open(args.config))
 
     if args.command == "background":
         commands = Commands(config)
