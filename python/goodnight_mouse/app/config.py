@@ -6,8 +6,6 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk
 
-from .css import css_colors
-
 STATE_LOOKUP = dict(pyatspi.StateType._enum_lookup)
 STATE_LOOKUP = {**STATE_LOOKUP, **{v: k for k, v in STATE_LOOKUP.items()}}
 ROLE_LOOKUP = dict(pyatspi.Role._enum_lookup)

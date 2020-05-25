@@ -7,7 +7,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk
 
 from .config import WindowConfig
-from .focus import get_focused_window
+from .focus import get_focused_window, get_applications
 from .action import new_action
 
 class _CachedWindow:
@@ -37,13 +37,13 @@ class _CachedWindow:
         end = time.time()
         print(end - start)
 
-        time.sleep(1)
+        # time.sleep(1)
 
-        start = time.time()
-        for action in self.actions:
-            action.window.show_all()
-        end = time.time()
-        print(end - start)
+        # start = time.time()
+        # for action in self.actions:
+        #     action.window.show_all()
+        # end = time.time()
+        # print(end - start)
 
         # time.sleep(1)
 
@@ -69,7 +69,11 @@ class Registry:
 
     def refresh_all(self):
         """Refresh window list."""
-        None
+        self.cached_windows = []
+        for application in get_applications():
+            for window in application:
+                self.cached_windows.append(_CachedWindow(self.config, window))
+        print(self.cached_windows)
 
     def get_actions(self):
         """Get actions for the current window."""
@@ -84,7 +88,7 @@ class Registry:
             self.focused_window = len(self.cached_windows)
             self.cached_windows.append(_CachedWindow(self.config, window))
             return self.cached_windows[self.focused_window].actions
-        elif 0 <= self.focused_window < len(self.cached_windows):
+        elif self.focused_window < len(self.cached_windows):
             return self.cached_windows[self.focused_window].actions
         else:
             return []

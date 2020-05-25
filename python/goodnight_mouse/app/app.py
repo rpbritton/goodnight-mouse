@@ -37,16 +37,16 @@ class App(AppConnection):
     def _remotely_trigger(self, signum, frame):
         self.remotely_trigger()
     def remotely_trigger(self):
-        """Trigger this running app."""
+        """A remote trigger to this running app, which will continue."""
         self.start_controller()
 
     def trigger(self):
-        """To trigger a non-running app, exiting after."""
+        """A trigger a non-running app, exiting after."""
         self.start_controller()
         self.run_cycle()
 
     def start_background(self):
-        """This is a running app, which runs forever."""
+        """Start this app as the background, running forever."""
         self.registry.refresh_all()
         while True:
             self.run_cycle()
@@ -67,11 +67,9 @@ class App(AppConnection):
         return False
 
     def start_controller(self):
-        """Start a new controller, or abort current controller."""
-        if self.stop_controller():
-            return
+        """Start a new controller."""
+        self.stop_controller()
         actions = self.registry.get_actions()
         if len(actions) < 1:
             return
         self.controller = Controller(self.config, actions)
-
