@@ -22,7 +22,11 @@ export ACCESSIBILITY_ENABLED=1
     * `org.a11y.Status.ScreenReaderEnabled`
         * This should really be done by the script.
 * Run electron and chrome apps with `--force-renderer-accessibility`
+    * If the popups are off it may be caused by scaling, such as `Xft.dpi` in Xresources
 * `dbus-monitor` the at-spi to see if things are working, like mouse input.
     * May need `dbus-update-activation-environment --systemd DBUS_SESSION_BUS_ADDRESS DISPLAY XAUTHORITY` in xinit.
+
+## Other tips
+* For picom shadows to work with rounded edges add `full-shadow = true` to `popup_menu` in the `wintypes`
 
 ## Run

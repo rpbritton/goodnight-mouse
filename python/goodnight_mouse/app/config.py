@@ -49,18 +49,10 @@ class WindowConfig(Config):
         self.keys = self._rule["keys"]
         self.states = [STATE_LOOKUP[state] for state in self._rule["states"]]
         self.roles = {ROLE_LOOKUP[role]: function for role, function in self._rule["roles"].items()}
-
-        self._add_colors()
-
-    def _add_colors(self):
-        # TODO: support colors from files
-        css = ""
-        for color_name, color in self._rule["colors"].items():
-            if color_name in css_colors:
-                css += css_colors[color_name].format(color)
-
+        # TODO: support load from file and always refresh
+        # It may make sense just to include css import
         self.css = Gtk.CssProvider()
-        self.css.load_from_data(css.encode())
+        self.css.load_from_data(self._rule["css"].encode())
 
     def _get_rule(self):
         for rule in self._rules:

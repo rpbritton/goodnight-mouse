@@ -31,6 +31,9 @@ class Action:
         # TODO: adjustable alignment (center could be nice)
         self.window.move(self.x, self.y)
         self.window.resize(20, 20)
+        self.window.set_accept_focus(False)
+        self.window.set_sensitive(False)
+        self.window.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
 
         def remove_input(widget, cairo_context):
             self.window.input_shape_combine_region(cairo.Region(cairo.RectangleInt()))

@@ -10,9 +10,6 @@ from .config import WindowConfig
 from .focus import get_focused_window
 from .action import new_action
 
-UNKNOWN_WINDOW = -2
-NO_WINDOW = -1
-
 class _CachedWindow:
     def __init__(self, config, window):
         self.config = WindowConfig(config, window)
@@ -67,7 +64,7 @@ class _CachedWindow:
 class Registry:
     def __init__(self, config):
         self.config = config
-        self.focused_window = UNKNOWN_WINDOW
+        self.focused_window = -1
         self.cached_windows = []
 
     def refresh_all(self):
@@ -76,9 +73,7 @@ class Registry:
 
     def get_actions(self):
         """Get actions for the current window."""
-        if self.focused_window == NO_WINDOW:
-            return []
-        elif self.focused_window == UNKNOWN_WINDOW:
+        if self.focused_window < 0:
             window = get_focused_window()
             if not window:
                 return []
@@ -91,4 +86,5 @@ class Registry:
             return self.cached_windows[self.focused_window].actions
         elif 0 <= self.focused_window < len(self.cached_windows):
             return self.cached_windows[self.focused_window].actions
-
+        else:
+            return []

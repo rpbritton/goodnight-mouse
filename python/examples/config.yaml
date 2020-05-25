@@ -5,11 +5,20 @@ rules:
       - application: '.*'
     # keys: "fjdkghsla"
     keys: "abc"
-    colors:
-      border: "#FF0000"
-      background: "rgba(0, 100%, 0, 0.2)"
-      text: "#0000FF"
-      active_text: "#FFFF00"
+    css: |
+      .action_window {
+        border-color: #FF0000;
+        border-style: solid;
+        border-width: 2pt;
+        background-color: rgba(0, 100%, 0, 0.5);
+        border-radius: 2pt;
+      }
+      .action_character {
+        color: #0000FF;
+      }
+      .action_active_character {
+        color: #FFFF00;
+      }
     states:
       - STATE_SHOWING
       - STATE_VISIBLE
