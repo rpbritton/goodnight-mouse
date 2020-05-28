@@ -21,7 +21,8 @@ def get_focused_window():
     active_pid_property = active_window.get_property(active_pid_atom, Xatom.CARDINAL, 0, 1)
     active_pid = int(active_pid_property.value[0])
 
-    for application in get_applications():
+    desktop = pyatspi.Registry.getDesktop(0)
+    for application in desktop:
         if application.get_process_id() == active_pid:
             for window in application:
                 states = window.getState().getStates()
@@ -29,7 +30,3 @@ def get_focused_window():
                     return window
 
     return None
-
-def get_applications():
-    desktop = pyatspi.Registry.getDesktop(0)
-    return [application for application in desktop]
