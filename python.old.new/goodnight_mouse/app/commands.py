@@ -7,7 +7,7 @@ class Commands:
         self.app = new_app(config)
 
     def start(self):
-        self.app.loop()
+        self.app.start_background()
 
     def trigger(self):
         self.app.trigger()

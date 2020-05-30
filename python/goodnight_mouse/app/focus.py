@@ -1,23 +1,32 @@
-from Xlib.display import Display
-from Xlib import Xatom
-# from ewmh import EWMH
+from Xlib import Xatom, display
 import pyatspi
 
+FOCUS_EVENTS = ["window:activate", "window:deactivate"]
+
+class FocusHandler:
+    def __init__(self, callback):
+        self.callback = callback
+
+    def start(self):
+        pyatspi.Registry.registerEventListener(self.handle, *FOCUS_EVENTS)
+
+        self.window = get_focused_window()
+
+    def stop(self):
+        pyatspi.Registry.deregisterEventListener(self.handle, *FOCUS_EVENTS)
+
+    def handle(self, event):
+        self.callback()
+
 def get_focused_window():
-    # ewmh = EWMH()
-    # active_window = ewmh.getActiveWindow()
-    # if active_window is None:
-    #     return None
-    # active_pid = ewmh.getWmPid(active_window)
+    dis = display.Display()
+    root_window = dis.screen().root
 
-    display = Display()
-    root_window = display.screen().root
-
-    active_window_atom = display.get_atom("_NET_ACTIVE_WINDOW")
+    active_window_atom = dis.get_atom("_NET_ACTIVE_WINDOW")
     active_window_property = root_window.get_property(active_window_atom, Xatom.WINDOW, 0, 1)
-    active_window = display.create_resource_object("window", active_window_property.value[0])
+    active_window = dis.create_resource_object("window", active_window_property.value[0])
 
-    active_pid_atom = display.get_atom("_NET_WM_PID")
+    active_pid_atom = dis.get_atom("_NET_WM_PID")
     active_pid_property = active_window.get_property(active_pid_atom, Xatom.CARDINAL, 0, 1)
     active_pid = int(active_pid_property.value[0])
 

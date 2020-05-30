@@ -2,7 +2,7 @@ import argparse
 import yaml
 
 from .app import Commands
-# from . import debugger
+from . import debugger
 
 def main():
     parser = argparse.ArgumentParser(
@@ -27,5 +27,4 @@ def main():
         commands = Commands(config)
         commands.trigger()
     elif args.command in ("debugger"):
-        # debugger.main(config)
-        None
+        debugger.main(config)

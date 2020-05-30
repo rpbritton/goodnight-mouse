@@ -1,10 +1,9 @@
 import zc.lockfile
 import signal
 import os
-import pyatspi
 
 from .config import Config
-from .registry import Registry
+from .overlay import Overlay
 from .controller import Controller
 
 def new_app(raw_config):
@@ -17,59 +16,38 @@ def new_app(raw_config):
         return AppConnection(config, pid)
 
 class AppConnection:
-    def __init__(self, config, pid):
+    def __init__(self, config: Config, pid):
         self.config = config
         self.pid = pid
 
     def trigger(self):
         os.kill(self.pid, signal.SIGUSR1)
 
+    def loop(self):
+        print("already looping with pid", self.pid)
+        exit(1)
+
 class App(AppConnection):
-    def __init__(self, config, lock):
+    def __init__(self, config: Config, lock):
         self.config = config
         self.lock = lock
-        self.controller = None
+        self.overlay = Overlay()
 
-        self.registry = Registry(config)
+        signal.signal(signal.SIGUSR1, lambda *args: None)
 
-        signal.signal(signal.SIGUSR1, self._remotely_trigger)
+    def loop(self):
+        """Start this app as the background, running forever until signal."""
+        while True:
+            print("waiting")
+            self.wait()
+            print("triggered")
+            self.trigger()
 
-    def _remotely_trigger(self, signum, frame):
-        self.remotely_trigger()
-    def remotely_trigger(self):
-        """A remote trigger to this running app, which will continue."""
-        self.start_controller()
+    def wait(self):
+        """Wait for a signal to continue"""
+        signal.pause()
 
     def trigger(self):
-        """A trigger a non-running app, exiting after."""
-        self.start_controller()
-        self.run_cycle()
-
-    def start_background(self):
-        """Start this app as the background, running forever."""
-        self.registry.refresh_all()
-        while True:
-            self.run_cycle()
-
-    def run_cycle(self):
-        """Wait for atspi events, and the controller will
-        kill the loop to signal it's end.
-        """
-        pyatspi.Registry.start()
-        self.stop_controller()
-
-    def stop_controller(self):
-        """Stop the current controller."""
-        if self.controller:
-            self.controller.end()
-            self.controller = None
-            return True
-        return False
-
-    def start_controller(self):
         """Start a new controller."""
-        self.stop_controller()
-        actions = self.registry.get_actions()
-        if len(actions) < 1:
-            return
-        self.controller = Controller(self.config, actions)
+        controller = Controller(self.config, self.overlay)
+        controller.start()
