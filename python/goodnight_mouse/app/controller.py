@@ -7,6 +7,7 @@ from .overlay import Overlay
 from .focus import FocusHandler
 from .mouse import MouseHandler
 from .keys import KeysHandler
+from .action import new_action
 
 class Controller:
     def __init__(self, config: Config, overlay: Overlay):
@@ -22,20 +23,29 @@ class Controller:
 
         self.window = self.focus_handler.window
         if self.window is None:
-            self.focus_handler.stop()
+            self.stop()
             return
 
         self.config = WindowConfig(self.base_config, self.window)
 
         self.mouse_handler.start()
         self.keys_handler.start()
-
         self.overlay.start(self.config)
+
+        actions = []
+        for accessible, action_type in self.config.get_actions():
+            actions.append(new_action(self.config, accessible, action_type))
+        if len(actions) < 1:
+            self.stop()
+            return
+        print(actions)
 
         pyatspi.Registry.start()
 
-        self.overlay.stop()
+        self.stop()
 
+    def stop(self):
+        self.overlay.stop()
         self.focus_handler.stop()
         self.mouse_handler.stop()
         self.keys_handler.stop()

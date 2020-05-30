@@ -7,11 +7,20 @@ MOUSE_EVENTS = ["mouse:button"]
 class MouseHandler:
     def __init__(self, callback):
         self.callback = callback
+        self.started = False
 
     def start(self):
+        if self.started:
+            return
+        self.started = True
+
         pyatspi.Registry.registerEventListener(self.handle, *MOUSE_EVENTS)
 
     def stop(self):
+        if not self.started:
+            return
+        self.started = False
+
         pyatspi.Registry.deregisterEventListener(self.handle, *MOUSE_EVENTS)
 
     def handle(self, event):

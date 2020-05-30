@@ -1,5 +1,4 @@
 from .app import new_app
-import time
 
 class Commands:
     def __init__(self, config):

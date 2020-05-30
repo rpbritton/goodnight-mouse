@@ -45,8 +45,17 @@ class WindowConfig(Config):
 
         # TODO: check if exists/inheritance
         self.keys = self._rule["keys"]
+
         self.states = [STATE_LOOKUP[state] for state in self._rule["states"]]
+        empty_collection = pyatspi.Collection(None)
+        self.match_rule = empty_collection.createMatchRule(
+            pyatspi.StateSet.new(self.states), empty_collection.MATCH_ALL,
+            "", empty_collection.MATCH_NONE,
+            [], empty_collection.MATCH_NONE,
+            "", empty_collection.MATCH_NONE,
+            False)
         self.roles = {ROLE_LOOKUP[role]: function for role, function in self._rule["roles"].items()}
+
         self.css = Gtk.CssProvider()
         self.css.load_from_data(self._rule["css"].encode())
 
@@ -58,9 +67,30 @@ class WindowConfig(Config):
             return rule
         return None
 
+    def _gather_actions(self, accessible):
+        actions = []
+
+        # check current accessible
+        action_type = self.get_action_type(accessible)
+        if action_type is not None:
+            actions.append((accessible, action_type))
+
+        # check childern
+        collection = accessible.queryCollection()
+        children = collection.getMatches(self.match_rule, collection.SORT_ORDER_CANONICAL, 0, False)
+        for child in children:
+            actions += self._gather_actions(child)
+
+        return actions
+
+    def get_actions(self):
+        return self._gather_actions(self.window)
+
     def get_action_type(self, accessible):
         role = accessible.getRole()
-        return self._eval_function(accessible, self._functions[self.roles[role]])
+        if role in self.roles:
+            return self._eval_function(accessible, self._functions[self.roles[role]])
+        return None
 
 def match_application(accessible, regex):
     application_name = accessible.getApplication().name

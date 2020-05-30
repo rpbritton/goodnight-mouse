@@ -4,8 +4,13 @@ from gi.repository import GLib
 class KeysHandler:
     def __init__(self, callback):
         self.callback = callback
+        self.started = False
 
     def start(self):
+        if self.started:
+            return
+        self.started = True
+
         # prevent key events from causing blocking time out issues
         # normally need to wait 3 seconds if there's a waiting key event,
         # but they seem to go through
@@ -31,6 +36,10 @@ class KeysHandler:
         pyatspi.Registry.getDesktop(0).name
 
     def stop(self):
+        if not self.started:
+            return
+        self.started = False
+
         pyatspi.Registry.deregisterKeystrokeListener(
             self.handle,
             mask=pyatspi.allModifiers())
