@@ -24,13 +24,7 @@ class MouseController(Controller):
     def stop(self):
         if not super().stop(): return
 
-        ImmediateTimeout.enable()
-        try:
-            pyatspi.Registry.deregisterEventListener(self.handle, *MOUSE_EVENTS)
-        except GLib.Error as err:
-            if err.domain != "atspi_error" or "Did not receive a reply" not in str(err.message):
-                raise
-        ImmediateTimeout.disable()
+        pyatspi.Registry.deregisterEventListener(self.handle, *MOUSE_EVENTS)
 
     def handle(self, event):
         self.callback()

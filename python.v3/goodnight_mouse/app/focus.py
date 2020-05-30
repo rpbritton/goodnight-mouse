@@ -3,8 +3,7 @@ from Xlib import Xatom, display
 from gi.repository import GLib
 import time
 
-from .controller import Controller
-from .utils import ImmediateTimeout
+from .utils import Controller, EventSubscriber, ImmediateTimeout
 
 FOCUS_EVENTS = ["window:activate", "window:deactivate"]
 
@@ -17,10 +16,8 @@ ACTIVE_WINDOW_MATCH_RULE = _empty_collection.createMatchRule(
     False)
 
 class FocusController(Controller):
-    def __init__(self, callback):
+    def __init__(self):
         super().__init__()
-
-        self.callback = callback
 
     def start(self):
         if not super().start(): return
@@ -29,18 +26,10 @@ class FocusController(Controller):
         pyatspi.Registry.registerEventListener(self.handle, *FOCUS_EVENTS)
         ImmediateTimeout.disable()
 
-        # self.window = get_focused_window()
-
     def stop(self):
         if not super().stop(): return
 
-        ImmediateTimeout.enable()
-        try:
-            pyatspi.Registry.deregisterEventListener(self.handle, *FOCUS_EVENTS)
-        except GLib.Error as err:
-            if err.domain != "atspi_error" or "Did not receive a reply" not in str(err.message):
-                raise
-        ImmediateTimeout.disable()
+        pyatspi.Registry.deregisterEventListener(self.handle, *FOCUS_EVENTS)
 
     def handle(self, event):
         self.callback()

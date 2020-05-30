@@ -4,6 +4,7 @@ import time
 
 from .controller import Controller
 from .config import Config, WindowConfig
+from .registry import BackgroundController
 from .overlay import OverlayController
 
 from .focus import FocusController
@@ -11,44 +12,29 @@ from .mouse import MouseController
 from .keys import KeysController
 from .action import ActionsController
 
-class RevealerController(Controller):
-    def __init__(self, config: Config, window: pyatspi.Accessible, overlay_controller: OverlayController):
+class ForegroundController(Controller):
+    def __init__(self, config: Config, background_controller: BackgroundController, overlay_controller: OverlayController):
         super().__init__()
 
-        self.config = WindowConfig(config, window)
-        self.window = window
+        self.base_config = config
 
+        self.background_controller = background_controller
         self.overlay_controller = overlay_controller
-        self.focus_controller = FocusController(self.end)
-        self.mouse_controller = MouseController(self.end)
+        self.focus_controller = FocusController(self.stop)
+        self.mouse_controller = MouseController(self.stop)
         self.keys_controller = KeysController(self.handle_key)
         self.actions_controller = ActionsController()
 
-    def start(self):
-        times = []
-        times.append(time.time())
-
+    def start(self, window: pyatspi.Accessible):
         if not super().start(): return
 
-        times.append(time.time())
+        config = WindowConfig(self.base_config, window)
+
         self.focus_controller.start()
-        times.append(time.time())
         self.mouse_controller.start()
-        times.append(time.time())
         self.keys_controller.start()
-        times.append(time.time())
-        self.overlay_controller.start(self.config)
-        times.append(time.time())
-        self.actions_controller.start(self.config, self.overlay_controller.container)
-        times.append(time.time())
-
-        for index in range(len(times) - 1):
-            print(index, times[index + 1] - times[index])
-        print("final", times[len(times) - 1] - times[0])
-
-        pyatspi.Registry.start()
-
-        self.stop()
+        self.overlay_controller.start(config)
+        self.actions_controller.start(config, self.overlay_controller.container)
 
     def stop(self):
         if not super().stop(): return
@@ -59,13 +45,10 @@ class RevealerController(Controller):
         self.mouse_controller.stop()
         self.focus_controller.stop()
 
-    def end(self):
-        pyatspi.Registry.stop()
-
     def handle_key(self, key):
         if key == keysym.XK_Escape:
             print("escape")
-            self.end()
+            self.stop()
         elif key == keysym.XK_BackSpace:
             print("backspace")
         elif 0x00 <= key <= 0xFF:
