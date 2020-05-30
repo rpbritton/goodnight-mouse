@@ -62,7 +62,7 @@ functions:
       - states:
           - STATE_SELECTED
         invert: true
-    goto: actuate
+    call: actuate
   focus:
     match:
       - states:

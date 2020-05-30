@@ -1,11 +1,16 @@
 import zc.lockfile
 import signal
 import os
-from gi.repository import GLib
+import pyatspi
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Atspi
 
 from .config import Config
-from .overlay import Overlay
-from .controller import Controller
+from .revealer import RevealerController
+from .overlay import OverlayController
+from .registry import RegistryController
 
 def new_app(raw_config):
     config = Config(raw_config)
@@ -17,7 +22,7 @@ def new_app(raw_config):
         return AppConnection(config, pid)
 
 class AppConnection:
-    def __init__(self, config: Config, pid):
+    def __init__(self, config: Config, pid: int):
         self.config = config
         self.pid = pid
 
@@ -29,15 +34,18 @@ class AppConnection:
         exit(1)
 
 class App(AppConnection):
-    def __init__(self, config: Config, lock):
+    def __init__(self, config: Config, lock: zc.lockfile.LockFile):
         self.config = config
         self.lock = lock
-        self.overlay = Overlay()
+        self.registry_controller = RegistryController()
+        self.overlay_controller = OverlayController()
 
         signal.signal(signal.SIGUSR1, lambda *args: None)
 
     def loop(self):
         """Start this app as the background, running forever until signal."""
+        self.registry_controller.start()
+
         while True:
             print("waiting")
             self.wait()
@@ -46,9 +54,16 @@ class App(AppConnection):
 
     def wait(self):
         """Wait for a signal to continue"""
+        # make sure no gtk events are waiting before "hibernatng"
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+
         signal.pause()
 
     def trigger(self):
         """Start a new controller."""
-        controller = Controller(self.config, self.overlay)
-        controller.start()
+        revealer_controller = RevealerController(self.config, self.registry_controller.get_focused_window(), self.overlay_controller)
+        revealer_controller.start()
+
+    def stop(self):
+        self.registry_controller.stop()

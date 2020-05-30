@@ -1,19 +1,21 @@
 import pyatspi
 import cairo
-from typing import List
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk
 
+from .controller import Controller
 from .config import WindowConfig
 from .action import Action
 
-class Overlay:
+class OverlayController(Controller):
     def __init__(self):
+        super().__init__()
+
         self.config = None
-        self.started = False
+        self.actions = None
 
         self.window = Gtk.Window(type=Gtk.WindowType.POPUP)
         self.style_context = self.window.get_style_context()
@@ -33,34 +35,22 @@ class Overlay:
         self.window.connect("draw", remove_input)
 
     def start(self, config: WindowConfig):
-        if self.started:
-            self.stop()
-        self.started = True
+        if not super().start(): return
 
         self.config = config
 
         self.style_context.add_provider(self.config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
 
         component = self.config.window.queryComponent()
-        self.window.move(*component.getPosition(pyatspi.component.XY_SCREEN))
-        self.window.resize(*component.getSize())
+        bounding_box = component.getExtents(pyatspi.component.XY_SCREEN)
+        self.window.move(bounding_box.x, bounding_box.y)
+        self.window.resize(bounding_box.width, bounding_box.height)
 
         self.window.show_all()
 
-    def set_actions(self, actions: List[Action]):
-        pass
-
     def stop(self):
-        if not self.started:
-            return
-        self.started = False
-
-        self.style_context.remove_provider(self.config.css)
+        if not super().stop(): return
 
         self.window.hide()
-
+        self.style_context.remove_provider(self.config.css)
         self.config = None
-
-        # TODO: should this be everywhere?
-        while Gtk.events_pending():
-            Gtk.main_iteration()

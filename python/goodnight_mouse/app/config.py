@@ -1,5 +1,6 @@
 import re
 import pyatspi
+from typing import List
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -32,11 +33,11 @@ class Config:
 
         if "return" in function:
             return function["return"]
-        if "goto" in function:
-            return self._eval_function(accessible, self._functions[function["goto"]])
+        if "call" in function:
+            return self._eval_function(accessible, self._functions[function["call"]])
 
 class WindowConfig(Config):
-    def __init__(self, config, window):
+    def __init__(self, config: Config, window: pyatspi.Accessible):
         super().__init__(config.config)
         self.window = window
         self._rule = self._get_rule()
@@ -67,7 +68,7 @@ class WindowConfig(Config):
             return rule
         return None
 
-    def _gather_actions(self, accessible):
+    def _gather_actions(self, accessible: pyatspi.Accessible):
         actions = []
 
         # check current accessible
@@ -86,17 +87,17 @@ class WindowConfig(Config):
     def get_actions(self):
         return self._gather_actions(self.window)
 
-    def get_action_type(self, accessible):
+    def get_action_type(self, accessible: pyatspi.Accessible):
         role = accessible.getRole()
         if role in self.roles:
             return self._eval_function(accessible, self._functions[self.roles[role]])
         return None
 
-def match_application(accessible, regex):
+def match_application(accessible: pyatspi.Accessible, regex: str):
     application_name = accessible.getApplication().name
     return re.search(regex, application_name) is not None
 
-def match_action(accessible, regex):
+def match_action(accessible: pyatspi.Accessible, regex: str):
     try:
         action = accessible.queryAction()
         if action.get_nActions() > 0:
@@ -105,7 +106,7 @@ def match_action(accessible, regex):
         return False
     return False
 
-def match_states(accessible, states):
+def match_states(accessible: pyatspi.Accessible, states: List[str]):
     states = [STATE_LOOKUP[state] for state in states]
     all_states = accessible.getState().getStates()
     return all(state in all_states for state in states)
@@ -116,7 +117,7 @@ MATCH_CONDITIONS = {
     "states": match_states,
 }
 
-def eval_match(accessible, match):
+def eval_match(accessible: pyatspi.Accessible, match):
     for submatch in match:
         ok = True
         for condition in submatch:

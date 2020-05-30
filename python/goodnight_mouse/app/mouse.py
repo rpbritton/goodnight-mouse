@@ -1,27 +1,36 @@
 import pyatspi
 from Xlib import X, display, ext
+from gi.repository import GLib
 import time
+
+from .controller import Controller
+from .utils import ImmediateTimeout
 
 MOUSE_EVENTS = ["mouse:button"]
 
-class MouseHandler:
+class MouseController(Controller):
     def __init__(self, callback):
+        super().__init__()
+
         self.callback = callback
-        self.started = False
 
     def start(self):
-        if self.started:
-            return
-        self.started = True
+        if not super().start(): return
 
+        ImmediateTimeout.enable()
         pyatspi.Registry.registerEventListener(self.handle, *MOUSE_EVENTS)
+        ImmediateTimeout.disable()
 
     def stop(self):
-        if not self.started:
-            return
-        self.started = False
+        if not super().stop(): return
 
-        pyatspi.Registry.deregisterEventListener(self.handle, *MOUSE_EVENTS)
+        ImmediateTimeout.enable()
+        try:
+            pyatspi.Registry.deregisterEventListener(self.handle, *MOUSE_EVENTS)
+        except GLib.Error as err:
+            if err.domain != "atspi_error" or "Did not receive a reply" not in str(err.message):
+                raise
+        ImmediateTimeout.disable()
 
     def handle(self, event):
         self.callback()
