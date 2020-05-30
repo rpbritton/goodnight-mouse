@@ -1,6 +1,8 @@
 import zc.lockfile
 import signal
 import os
+import time
+from gi.repository import GLib
 
 from .config import Config
 from .overlay import Overlay

@@ -47,8 +47,6 @@ class WindowConfig(Config):
         self.keys = self._rule["keys"]
         self.states = [STATE_LOOKUP[state] for state in self._rule["states"]]
         self.roles = {ROLE_LOOKUP[role]: function for role, function in self._rule["roles"].items()}
-        # TODO: support load from file and always refresh
-        # It may make sense just to include css import
         self.css = Gtk.CssProvider()
         self.css.load_from_data(self._rule["css"].encode())
 

@@ -1,5 +1,4 @@
 import pyatspi
-import gi
 from gi.repository import GLib
 
 class KeysHandler:

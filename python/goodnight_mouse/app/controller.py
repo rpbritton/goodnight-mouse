@@ -10,17 +10,31 @@ from .keys import KeysHandler
 
 class Controller:
     def __init__(self, config: Config, overlay: Overlay):
+        self.base_config = config
+        self.overlay = overlay
+
         self.focus_handler = FocusHandler(self.end)
         self.mouse_handler = MouseHandler(self.end)
         self.keys_handler = KeysHandler(self.handle_key)
 
     def start(self):
         self.focus_handler.start()
+
+        self.window = self.focus_handler.window
+        if self.window is None:
+            self.focus_handler.stop()
+            return
+
+        self.config = WindowConfig(self.base_config, self.window)
+
         self.mouse_handler.start()
         self.keys_handler.start()
 
-        # TODO: keep gil? I mean it is single threaded
+        self.overlay.start(self.config)
+
         pyatspi.Registry.start()
+
+        self.overlay.stop()
 
         self.focus_handler.stop()
         self.mouse_handler.stop()
