@@ -21,7 +21,11 @@ class Foreground:
 
         self._actions = None
 
+        self._running = False
+
     def __enter__(self):
+        self._running = True
+
         self._focus.subscribe(self._handle_focus)
         self._mouse.subscribe(self._handle_mouse)
         self._keys.subscribe(self._handle_keys)
@@ -41,6 +45,8 @@ class Foreground:
         return self
 
     def __exit__(self, *args):
+        self._running = False
+
         self._actions.__exit__()
         self._overlay.__exit__(*args)
         self._keys.unsubscribe(self._handle_keys)
@@ -50,7 +56,6 @@ class Foreground:
     def _handle_keys(self, key):
         if key == keysym.XK_Escape:
             print("escape")
-            print("quitting via keys")
             self.quit_loop()
         elif key == keysym.XK_BackSpace:
             print("backspace")
@@ -58,16 +63,14 @@ class Foreground:
             print(chr(key))
 
     def _handle_mouse(self):
-        print("quitting via mouse")
         self.quit_loop()
 
     def _handle_focus(self, new_active_window: pyatspi.Accessible):
-        print("quitting via focus")
         self.quit_loop()
 
     def _handle_actions(self):
-        "quitting via actions"
         self.quit_loop()
 
     def quit_loop(self):
-        pyatspi.Registry.stop()
+        if self._running:
+            pyatspi.Registry.stop()

@@ -11,6 +11,7 @@ class Subscription:
     def unsubscribe(self, subscriber):
         if subscriber in self._subscribers:
             self._subscribers.remove(subscriber)
+            # TODO: does this not immediately remove?
             if len(self._subscribers) == 0:
                 self.__exit__()
 
