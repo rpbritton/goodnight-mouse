@@ -2,15 +2,20 @@ import zc.lockfile
 import signal
 import os
 import pyatspi
-import time
 
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
 
 from .config import Config
-from .background import BackgroundController
-from .foreground import ForegroundController
+
+from .focus import Focus
+from .mouse import Mouse
+from .keys import Keys
+from .overlay import Overlay
+
+from .background import Background
+from .foreground import Foreground
 
 def new_app(raw_config):
     config = Config(raw_config)
@@ -23,40 +28,48 @@ def new_app(raw_config):
 
 class AppConnection:
     def __init__(self, config: Config, pid: int):
-        self.config = config
+        self._config = config
         self.pid = pid
 
-    def trigger(self):
+    def foreground(self):
         os.kill(self.pid, signal.SIGUSR1)
 
-    def loop(self):
+    def background(self):
         print("already looping with pid", self.pid)
         exit(1)
 
 class App(AppConnection):
     def __init__(self, config: Config, lock: zc.lockfile.LockFile):
-        self.config = config
-        self.lock = lock
-        self.background_controller = BackgroundController()
-        self.foreground_controller = ForegroundController(self.config, self.background_controller)
+        self._config = config
+        self._lock = lock
 
-        signal.signal(signal.SIGUSR1, self._remotely_trigger)
+        self.has_background = False
+        self.has_foreground = False
 
-    def loop(self):
-        self.background_controller.start()
-        pyatspi.Registry.start()
+        self._focus = Focus()
+        self._mouse = Mouse()
+        self._keys = Keys()
+        self._overlay = Overlay()
 
-    def _remotely_trigger(self, signum, frame):
-        self.remotely_trigger()
-    def remotely_trigger(self):
-        if self.foreground_controller.is_running():
+        signal.signal(signal.SIGUSR1, self.remotely_trigger)
+
+    def remotely_trigger(self, signum, frame):
+        if self.has_foreground:
             return
-        GLib.idle_add(self.trigger)
+        GLib.idle_add(self.foreground)
 
-    def trigger(self):
-        self.foreground_controller.start()
-        pyatspi.Registry.start()
+    def foreground(self):
+        self.has_foreground = True
+        with Foreground(self._config, self._focus, self._mouse, self._keys, self._overlay) as foreground:
+            if foreground is not None:
+                if self.has_background:
+                    pyatspi.Registry.stop()
+                pyatspi.Registry.start()
+        self.has_foreground = False
 
-    def stop(self):
-        self.background_controller.stop()
-        self.foreground_controller.stop()
+    def background(self):
+        self.has_background = True
+        with Background(self._focus):
+            while True:
+                pyatspi.Registry.start()
+        self.has_background = False

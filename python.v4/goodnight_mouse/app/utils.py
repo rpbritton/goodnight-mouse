@@ -1,38 +1,6 @@
 import pyatspi
 from gi.repository import GLib
 
-class EventSubscriber:
-    def __init__(self):
-        self.event_subscribers = set()
-
-    def subscribe(self, subscriber):
-        self.event_subscribers.add(subscriber)
-
-    def unsubscribe(self, subscriber):
-        if subscriber in self.event_subscribers:
-            self.event_subscribers.remove(subscriber)
-
-class Controller:
-    def __init__(self):
-        self.running = False
-
-    def start(self):
-        if self.running:
-            return False
-        else:
-            self.running = True
-            return True
-
-    def stop(self):
-        if not self.running:
-            return False
-        else:
-            self.running = False
-            return True
-
-    def is_running(self):
-        return self.running
-
 class ImmediateTimeout:
     enabled = False
     _log_handler_id = None

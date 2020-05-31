@@ -6,51 +6,55 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk
 
-from .controller import Controller
 from .config import WindowConfig
-from .action import Action
 
-class OverlayController(Controller):
+class Overlay:
     def __init__(self):
         super().__init__()
 
-        self.config = None
-        self.actions = None
+        self._config = None
 
-        self.window = Gtk.Window(type=Gtk.WindowType.POPUP)
-        self.style_context = self.window.get_style_context()
-        self.style_context.add_class("overlay_window")
+        self._window = Gtk.Window(type=Gtk.WindowType.POPUP)
+        self._style_context = self._window.get_style_context()
+        self._style_context.add_class("overlay_window")
 
-        self.window.set_title("goodnight_mouse")
-        self.window.set_visual(self.window.get_screen().get_rgba_visual())
-        self.window.set_accept_focus(False)
-        self.window.set_sensitive(False)
-        # self.window.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
+        self._window.set_title("goodnight_mouse")
+        self._window.set_visual(self._window.get_screen().get_rgba_visual())
+        self._window.set_accept_focus(False)
+        self._window.set_sensitive(False)
+        # self._window.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
 
-        self.container = Gtk.Fixed()
-        self.window.add(self.container)
+        self._container = Gtk.Fixed()
+        self._window.add(self._container)
 
         def remove_input(widget, cairo_context):
-            self.window.input_shape_combine_region(cairo.Region(cairo.RectangleInt()))
-        self.window.connect("draw", remove_input)
+            self._window.input_shape_combine_region(cairo.Region(cairo.RectangleInt()))
+        self._window.connect("draw", remove_input)
 
-    def start(self, config: WindowConfig):
-        if not super().start(): return
+    def begin(self, config: WindowConfig):
+        self._config = config
 
-        self.config = config
+        self._style_context.add_provider(self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
 
-        self.style_context.add_provider(self.config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
-
-        component = self.config.window.queryComponent()
+        component = self._config.window.queryComponent()
         bounding_box = component.getExtents(pyatspi.component.XY_SCREEN)
-        self.window.move(bounding_box.x, bounding_box.y)
-        self.window.resize(bounding_box.width, bounding_box.height)
+        self._window.move(bounding_box.x, bounding_box.y)
+        self._window.resize(bounding_box.width, bounding_box.height)
 
-        self.window.show_all()
+        self.clear()
+        self._window.show_all()
 
-    def stop(self):
-        if not super().stop(): return
+    def finish(self):
+        self._window.hide()
+        self.clear()
 
-        self.window.hide()
-        self.style_context.remove_provider(self.config.css)
-        self.config = None
+        if self._config is not None:
+            self._style_context.remove_provider(self._config.css)
+            self._config = None
+
+    def get_container(self):
+        return self._container
+
+    def clear(self):
+        for child in self._container.get_children():
+            self._container.remove(child)

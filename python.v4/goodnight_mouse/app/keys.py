@@ -1,36 +1,28 @@
 import pyatspi
 
-from .controller import Controller
+from .subscription import Subscription
 from .utils import ImmediateTimeout
 
-class KeysController(Controller):
-    def __init__(self, callback):
+class Keys(Subscription):
+    def __init__(self):
         super().__init__()
 
-        self.callback = callback
-
-    def start(self):
-        if not super().start(): return
-
-        # register keystrokes with every possible comination of modifiers
+    def _register(self):
         ImmediateTimeout.enable()
         pyatspi.Registry.registerKeystrokeListener(
-            self.handle,
+            self._handle,
             mask=pyatspi.allModifiers(),
             synchronous=False)
         ImmediateTimeout.disable()
 
-    def stop(self):
-        if not super().stop(): return
-
-        # deregister all keystroke listeners
+    def _deregister(self):
         ImmediateTimeout.enable()
         pyatspi.Registry.deregisterKeystrokeListener(
-            self.handle,
+            self._handle,
             mask=pyatspi.allModifiers())
         ImmediateTimeout.disable()
 
-    def handle(self, event):
+    def _handle(self, event):
         if event.type == pyatspi.deviceevent.KEY_PRESSED_EVENT:
-            self.callback(event.id)
+            self.notify(event.id)
         return True

@@ -1,2 +1,0 @@
-usage: goodnight_mouse [-h] [-v] [-c CONFIG] [{debugger,background,trigger}]
-goodnight_mouse: error: unrecognized arguments: 2 test.log

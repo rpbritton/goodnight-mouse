@@ -3,51 +3,46 @@ from Xlib import X, display, ext
 from gi.repository import GLib
 import time
 
-from .controller import Controller
+from .subscription import Subscription
 from .utils import ImmediateTimeout
 
-MOUSE_EVENTS = ["mouse:button"]
+class Mouse(Subscription):
+    _MOUSE_EVENTS = ["mouse:button"]
 
-class MouseController(Controller):
-    def __init__(self, callback):
+    def __init__(self):
         super().__init__()
 
-        self.callback = callback
-
-    def start(self):
-        if not super().start(): return
-
+    def _register(self):
         ImmediateTimeout.enable()
-        pyatspi.Registry.registerEventListener(self.handle, *MOUSE_EVENTS)
+        pyatspi.Registry.registerEventListener(self._handle, *self._MOUSE_EVENTS)
         ImmediateTimeout.disable()
 
-    def stop(self):
-        if not super().stop(): return
+    def _deregister(self):
+        pyatspi.Registry.deregisterEventListener(self._handle, *self._MOUSE_EVENTS)
 
-        pyatspi.Registry.deregisterEventListener(self.handle, *MOUSE_EVENTS)
+    def _handle(self, event):
+        self.notify()
 
-    def handle(self, event):
-        self.callback()
+    @classmethod
+    def click(cls, x, y):
+        # TODO: investigate viability of atspi generate_mouse_event
+        # (didn't work well from initial testing)
 
-def click(x, y):
-    # TODO: investigate viability of atspi generate_mouse_event
-    # (didn't work well from initial testing)
+        dis = display.Display()
+        root = dis.screen().root
+        pointer = root.query_pointer()
 
-    dis = display.Display()
-    root = dis.screen().root
-    pointer = root.query_pointer()
+        root.warp_pointer(x, y)
+        dis.sync()
+        time.sleep(0.001)
 
-    root.warp_pointer(x, y)
-    dis.sync()
-    time.sleep(0.001)
+        ext.xtest.fake_input(dis, X.ButtonPress, 1)
+        dis.sync()
+        time.sleep(0.001)
 
-    ext.xtest.fake_input(dis, X.ButtonPress, 1)
-    dis.sync()
-    time.sleep(0.001)
+        ext.xtest.fake_input(dis, X.ButtonRelease, 1)
+        dis.sync()
+        time.sleep(0.001)
 
-    ext.xtest.fake_input(dis, X.ButtonRelease, 1)
-    dis.sync()
-    time.sleep(0.001)
-
-    root.warp_pointer(pointer.root_x, pointer.root_y)
-    dis.sync()
+        root.warp_pointer(pointer.root_x, pointer.root_y)
+        dis.sync()

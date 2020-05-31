@@ -74,7 +74,7 @@ class WindowConfig(Config):
         # check current accessible
         action_type = self.get_action_type(accessible)
         if action_type is not None:
-            actions.append((accessible, action_type))
+            actions.append((action_type, accessible))
 
         # check childern
         collection = accessible.queryCollection()
