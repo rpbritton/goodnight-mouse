@@ -38,7 +38,8 @@ class Codes:
 
         # create buckets for each segment of the first, and
         # therefore greatest, child code segment
-        buckets = [[codes[0] + children[0].pop()] for _ in range(len(children[0]))]
+        buckets = [[codes[0] + children[0].pop()]
+                   for _ in range(len(children[0]))]
         # add remaining child codes to bucket iteratively, first code
         index = 0
         code_exists = True

@@ -1,12 +1,13 @@
-import pyatspi
 import cairo
+import pyatspi
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
 
 from .config import WindowConfig
+
 
 class Overlay:
     def __init__(self):
@@ -28,13 +29,17 @@ class Overlay:
         self._window.add(self._container)
 
         def remove_input(widget, cairo_context):
-            self._window.input_shape_combine_region(cairo.Region(cairo.RectangleInt()))
+            self._window.input_shape_combine_region(
+                cairo.Region(cairo.RectangleInt()))
         self._window.connect("draw", remove_input)
 
-    def begin(self, config: WindowConfig):
+    def __call__(self, config: WindowConfig):
         self._config = config
+        return self
 
-        self._style_context.add_provider(self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
+    def __enter__(self):
+        self._style_context.add_provider(
+            self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
 
         component = self._config.window.queryComponent()
         bounding_box = component.getExtents(pyatspi.component.XY_SCREEN)
@@ -44,7 +49,9 @@ class Overlay:
         self.clear()
         self._window.show_all()
 
-    def finish(self):
+        return self
+
+    def __exit__(self, *args):
         self._window.hide()
         self.clear()
 

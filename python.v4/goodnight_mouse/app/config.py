@@ -1,16 +1,19 @@
 import re
-import pyatspi
 from typing import List
+
+import pyatspi
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
+
 
 STATE_LOOKUP = dict(pyatspi.StateType._enum_lookup)
 STATE_LOOKUP = {**STATE_LOOKUP, **{v: k for k, v in STATE_LOOKUP.items()}}
 ROLE_LOOKUP = dict(pyatspi.Role._enum_lookup)
 ROLE_LOOKUP = {**ROLE_LOOKUP, **{v: k for k, v in ROLE_LOOKUP.items()}}
+
 
 class Config:
     def __init__(self, raw_config):
@@ -36,6 +39,7 @@ class Config:
         if "call" in function:
             return self._eval_function(accessible, self._functions[function["call"]])
 
+
 class WindowConfig(Config):
     def __init__(self, config: Config, window: pyatspi.Accessible):
         super().__init__(config.config)
@@ -55,7 +59,8 @@ class WindowConfig(Config):
             [], empty_collection.MATCH_NONE,
             "", empty_collection.MATCH_NONE,
             False)
-        self.roles = {ROLE_LOOKUP[role]: function for role, function in self._rule["roles"].items()}
+        self.roles = {ROLE_LOOKUP[role]: function for role,
+                      function in self._rule["roles"].items()}
 
         self.css = Gtk.CssProvider()
         self.css.load_from_data(self._rule["css"].encode())
@@ -78,7 +83,8 @@ class WindowConfig(Config):
 
         # check childern
         collection = accessible.queryCollection()
-        children = collection.getMatches(self.match_rule, collection.SORT_ORDER_CANONICAL, 0, False)
+        children = collection.getMatches(
+            self.match_rule, collection.SORT_ORDER_CANONICAL, 0, False)
         for child in children:
             actions += self._gather_actions(child)
 
@@ -93,9 +99,11 @@ class WindowConfig(Config):
             return self._eval_function(accessible, self._functions[self.roles[role]])
         return None
 
+
 def match_application(accessible: pyatspi.Accessible, regex: str):
     application_name = accessible.getApplication().name
     return re.search(regex, application_name) is not None
+
 
 def match_action(accessible: pyatspi.Accessible, regex: str):
     try:
@@ -106,10 +114,12 @@ def match_action(accessible: pyatspi.Accessible, regex: str):
         return False
     return False
 
+
 def match_states(accessible: pyatspi.Accessible, states: List[str]):
     states = [STATE_LOOKUP[state] for state in states]
     all_states = accessible.getState().getStates()
     return all(state in all_states for state in states)
+
 
 MATCH_CONDITIONS = {
     "application": match_application,
@@ -117,12 +127,14 @@ MATCH_CONDITIONS = {
     "states": match_states,
 }
 
+
 def eval_match(accessible: pyatspi.Accessible, match):
     for submatch in match:
         ok = True
         for condition in submatch:
             if condition in MATCH_CONDITIONS:
-                ok &= MATCH_CONDITIONS[condition](accessible, submatch[condition])
+                ok &= MATCH_CONDITIONS[condition](
+                    accessible, submatch[condition])
         if "invert" in submatch:
             ok ^= submatch["invert"]
         if not ok:

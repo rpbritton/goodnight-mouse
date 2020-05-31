@@ -2,6 +2,7 @@ import pyatspi
 
 from .focus import Focus
 
+
 class Background:
     def __init__(self, focus: Focus):
         self._focus = focus
@@ -9,7 +10,9 @@ class Background:
     def __enter__(self):
         self._focus.subscribe(self._focus_handle)
 
-    def __exit__(self, type, value, traceback):
+        return self
+
+    def __exit__(self, *args):
         self._focus.unsubscribe(self._focus_handle)
 
     def _focus_handle(self, window: pyatspi.Accessible):

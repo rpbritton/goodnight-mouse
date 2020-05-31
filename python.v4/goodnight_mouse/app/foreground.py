@@ -1,14 +1,15 @@
-import pyatspi
-from Xlib.keysymdef import miscellany as keysym
 import time
 
-from .config import Config, WindowConfig
+import pyatspi
+from Xlib.keysymdef import miscellany as keysym
 
-from .focus import Focus
-from .mouse import Mouse
-from .keys import Keys
-from .overlay import Overlay
 from .actions import Actions
+from .config import Config, WindowConfig
+from .focus import Focus
+from .keys import Keys
+from .mouse import Mouse
+from .overlay import Overlay
+
 
 class Foreground:
     def __init__(self, config: Config, focus: Focus, mouse: Mouse, keys: Keys, overlay: Overlay):
@@ -17,6 +18,7 @@ class Foreground:
         self._mouse = mouse
         self._keys = keys
         self._overlay = overlay
+
         self._actions = None
 
     def __enter__(self):
@@ -25,19 +27,22 @@ class Foreground:
         self._keys.subscribe(self._handle_keys)
 
         active_window = self._focus.get_active_window()
-        if active_window == None:
+        if active_window is None:
             return None
-        config = WindowConfig(self._base_config, self._focus.get_active_window())
+        config = WindowConfig(
+            self._base_config, self._focus.get_active_window())
 
-        self._overlay.begin(config)
+        self._overlay(config).__enter__()
 
-        self._actions = Actions(config, self._overlay.get_container())
+        self._actions = Actions(
+            config, self._overlay.get_container()).__enter__()
         print(self._actions.n_valid_actions())
 
         return self
 
-    def __exit__(self, type, value, traceback):
-        self._overlay.finish()
+    def __exit__(self, *args):
+        self._actions.__exit__()
+        self._overlay.__exit__(*args)
         self._keys.unsubscribe(self._handle_keys)
         self._mouse.unsubscribe(self._handle_mouse)
         self._focus.unsubscribe(self._handle_focus)

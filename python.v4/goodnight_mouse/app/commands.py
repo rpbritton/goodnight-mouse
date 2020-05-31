@@ -1,13 +1,15 @@
-from .app import new_app
+from .app import App
 from .config import Config
+
 
 class Commands:
     def __init__(self, config: Config):
-        self.config = config
-        self.app = new_app(config)
+        self._config = config
 
     def start(self):
-        self.app.background()
+        with App.new(self._config) as app:
+            app.background()
 
     def trigger(self):
-        self.app.foreground()
+        with App.new(self._config) as app:
+            app.foreground()

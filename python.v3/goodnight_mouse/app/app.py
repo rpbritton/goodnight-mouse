@@ -12,14 +12,6 @@ from .config import Config
 from .background import BackgroundController
 from .foreground import ForegroundController
 
-def new_app(raw_config):
-    config = Config(raw_config)
-    try:
-        lock = zc.lockfile.LockFile(config.lockfile)
-        return App(config, lock)
-    except zc.lockfile.LockError:
-        pid = int(open(config.lockfile, "r").read())
-        return AppConnection(config, pid)
 
 class AppConnection:
     def __init__(self, config: Config, pid: int):
@@ -33,12 +25,24 @@ class AppConnection:
         print("already looping with pid", self.pid)
         exit(1)
 
+
 class App(AppConnection):
+    @staticmethod
+    def new(raw_config):
+        config = Config(raw_config)
+        try:
+            lock = zc.lockfile.LockFile(config.lockfile)
+            return App(config, lock)
+        except zc.lockfile.LockError:
+            pid = int(open(config.lockfile, "r").read())
+            return AppConnection(config, pid)
+
     def __init__(self, config: Config, lock: zc.lockfile.LockFile):
         self.config = config
         self.lock = lock
         self.background_controller = BackgroundController()
-        self.foreground_controller = ForegroundController(self.config, self.background_controller)
+        self.foreground_controller = ForegroundController(
+            self.config, self.background_controller)
 
         signal.signal(signal.SIGUSR1, self._remotely_trigger)
 
@@ -48,6 +52,7 @@ class App(AppConnection):
 
     def _remotely_trigger(self, signum, frame):
         self.remotely_trigger()
+
     def remotely_trigger(self):
         if self.foreground_controller.is_running():
             return

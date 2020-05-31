@@ -3,11 +3,14 @@ import pyatspi
 from .subscription import Subscription
 from .utils import ImmediateTimeout
 
+
 class Keys(Subscription):
     def __init__(self):
         super().__init__()
 
-    def _register(self):
+    def __enter__(self):
+        super().__enter__()
+
         ImmediateTimeout.enable()
         pyatspi.Registry.registerKeystrokeListener(
             self._handle,
@@ -15,7 +18,11 @@ class Keys(Subscription):
             synchronous=False)
         ImmediateTimeout.disable()
 
-    def _deregister(self):
+        return self
+
+    def __exit__(self, *args):
+        super().__exit__(*args)
+
         ImmediateTimeout.enable()
         pyatspi.Registry.deregisterKeystrokeListener(
             self._handle,

@@ -1,17 +1,20 @@
 import pyatspi
 from gi.repository import GLib
 
+
 class ImmediateTimeout:
     enabled = False
     _log_handler_id = None
 
     @classmethod
     def enable(cls):
-        if cls.enabled: return
+        if cls.enabled:
+            return
         cls.enabled = True
 
         # hide the warnings that result from immediately timing out
-        cls._log_handler_id = GLib.log_set_handler("dbind", GLib.LogLevelFlags.LEVEL_WARNING, lambda *args: None, None)
+        cls._log_handler_id = GLib.log_set_handler(
+            "dbind", GLib.LogLevelFlags.LEVEL_WARNING, lambda *args: None, None)
 
         desktop = pyatspi.Registry.getDesktop(0)
         # prevent key events from causing blocking time out issues
@@ -27,7 +30,8 @@ class ImmediateTimeout:
 
     @classmethod
     def disable(cls):
-        if not cls.enabled: return
+        if not cls.enabled:
+            return
         cls.enabled = False
 
         # reset timeout to default settings

@@ -6,20 +6,20 @@ class Subscription:
         if subscriber not in self._subscribers:
             self._subscribers.add(subscriber)
             if len(self._subscribers) == 1:
-                self._register()
+                self.__enter__()
 
     def unsubscribe(self, subscriber):
         if subscriber in self._subscribers:
             self._subscribers.remove(subscriber)
             if len(self._subscribers) == 0:
-                self._deregister()
+                self.__exit__()
 
     def notify(self, *args):
         for subscriber in self._subscribers:
             subscriber(*args)
 
-    def _register(self):
-        pass
+    def __enter__(self):
+        return self
 
-    def _deregister(self):
+    def __exit__(self, *args):
         pass
