@@ -1,0 +1,72 @@
+lockfile: "/tmp/goodnight_mouse.pid"
+rules:
+  - name: default
+    match:
+      - application: '.*'
+    keys: "fjdkghsla"
+    # keys: "abc"
+    css: |
+      .overlay_window {
+        background-color: rgba(100%, 0%, 0%, 0.05);
+      }
+      .action_box {
+        background-color: #000;
+        border: 3px solid #FFF;
+        padding: 1px 3px;
+        border-radius: 3px;
+      }
+      .action_character {
+        color: #0F0;
+      }
+      .action_character_active {
+        color: #00F;
+      }
+    states:
+      - STATE_SHOWING
+      - STATE_VISIBLE
+      - STATE_ENABLED
+      - STATE_SENSITIVE
+    roles:
+      ROLE_PUSH_BUTTON: actuate
+      ROLE_TOGGLE_BUTTON: actuate
+      ROLE_COMBO_BOX: actuate
+      ROLE_MENU: actuate
+      ROLE_MENU_ITEM: actuate
+      ROLE_PAGE_TAB: actuate_non_selected
+      ROLE_RADIO_BUTTON: actuate
+      ROLE_SPIN_BUTTON: actuate
+      ROLE_CHECK_BOX: actuate
+      ROLE_CHECK_MENU_ITEM: actuate
+      ROLE_LINK: actuate
+      ROLE_TEXT: focus
+      ROLE_ENTRY: focus
+      ROLE_PASSWORD_TEXT: focus
+      ROLE_SLIDER: focus
+      ROLE_DIAL: actuate
+      ROLE_DATE_EDITOR: focus
+functions:
+  actuate:
+    match:
+      - action: '.*'
+    return: native
+    else:
+      match:
+        - states:
+          - STATE_FOCUSABLE
+      return: press
+      else:
+        return: click
+  actuate_non_selected:
+    match:
+      - states:
+          - STATE_SELECTED
+        invert: true
+    call: actuate
+  focus:
+    match:
+      - states:
+          - STATE_FOCUSABLE
+      - states:
+          - STATE_FOCUSED
+        invert: true
+    return: focus
