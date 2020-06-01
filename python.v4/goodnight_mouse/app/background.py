@@ -16,8 +16,8 @@ class Background:
         self._focus.unsubscribe(self._focus_handle)
 
     def _focus_handle(self, window: pyatspi.Accessible):
-        print("focused:", window)
         if window is not None:
             # make sure caching/connection occurs
             window.name
+            print(window.getApplication())
             window.getApplication().name

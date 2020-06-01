@@ -6,21 +6,20 @@ rules:
     # keys: "fjdkghsla"
     keys: "abc"
     css: |
-      /*.action_window {
-        border-color: #FF0000;
-        border-style: solid;
-        border-width: 2pt;
-        background-color: rgba(0, 100%, 0, 0.5);
-        border-radius: 2pt;
+      .overlay_window {
+        background-color: rgba(100%, 0%, 0%, 0.05);
+      }
+      .action_box {
+        background-color: #000;
+        border: 3px solid #FFF;
+        padding: 1px 3px;
+        border-radius: 3px;
       }
       .action_character {
-        color: #0000FF;
+        color: #0F0;
       }
-      .action_active_character {
-        color: #FFFF00;
-      }*/
-      .overlay_window {
-        background-color: rgba(0, 100%, 0, 0.5);
+      .action_character_active {
+        color: #00F;
       }
     states:
       - STATE_SHOWING

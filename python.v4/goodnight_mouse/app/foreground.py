@@ -3,6 +3,10 @@ import time
 import pyatspi
 from Xlib.keysymdef import miscellany as keysym
 
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
 from .actions import Actions
 from .config import Config, WindowConfig
 from .focus import Focus
@@ -20,6 +24,7 @@ class Foreground:
         self._overlay = overlay
 
         self._actions = None
+        self._code = ""
 
         self._running = False
 
@@ -40,27 +45,45 @@ class Foreground:
 
         self._actions = Actions(
             config, self._overlay.get_container()).__enter__()
-        print(self._actions.n_valid_actions())
 
         return self
 
     def __exit__(self, *args):
         self._running = False
 
-        self._actions.__exit__()
+        if self._actions is not None:
+            self._actions.__exit__()
+            self._actions = None
         self._overlay.__exit__(*args)
         self._keys.unsubscribe(self._handle_keys)
         self._mouse.unsubscribe(self._handle_mouse)
         self._focus.unsubscribe(self._handle_focus)
 
     def _handle_keys(self, key):
+        changed = False
+
         if key == keysym.XK_Escape:
-            print("escape")
             self.quit_loop()
         elif key == keysym.XK_BackSpace:
-            print("backspace")
+            if len(self._code) > 0:
+                self._code = self._code[:-1]
+                changed = True
         elif 0x00 <= key <= 0xFF:
-            print(chr(key))
+            self._code += chr(key)
+            changed = True
+
+        if not changed:
+            return
+
+        n_valid_actions = self._actions.valid_code(self._code)
+        if n_valid_actions == 0:
+            self._code = ""
+
+        self._actions.apply_code(self._code)
+
+        if n_valid_actions == 1:
+            self._actions.do()
+            self.quit_loop()
 
     def _handle_mouse(self):
         self.quit_loop()
