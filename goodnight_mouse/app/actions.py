@@ -46,9 +46,12 @@ class Actions:
         for action in self._actions:
             action.apply_code(self._code)
 
-    def do(self):
+    def do(self, code=None):
+        if code is None:
+            code = self._code
+
         for action in self._actions:
-            if action.matches_code(self._code):
+            if action.matches_code(code):
                 action.do()
 
 
@@ -64,7 +67,11 @@ class Action:
         self._accessible = accessible
         self._code = code
         self._container = container
-        self._x = self._y = self._w = self._h = self._center_x = self._center_y = None
+        self._w = self._h = None
+        self._window_x = self._window_y = None
+        self._window_center_x = self._window_center_y = None
+        self._screen_x = self._screen_y = None
+        self._screen_center_x = self._screen_center_y = None
         self._code_box = None
         self._code_labels = []
 
@@ -76,7 +83,7 @@ class Action:
             self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
         self._code_box.get_style_context().add_class("action_box")
         self._code_box.set_halign(Gtk.Align.CENTER)
-        self._container.put(self._code_box, self._x, self._y)
+        self._container.put(self._code_box, self._window_x, self._window_y)
 
         self.set_code(self._code)
 
@@ -89,9 +96,18 @@ class Action:
 
     def _refresh_extents(self):
         component = self._accessible.queryComponent()
-        self._x, self._y = component.getPosition(pyatspi.component.XY_WINDOW)
+
         self._w, self._h = component.getSize()
-        self._center_x, self._center_y = self._x + self._w // 2, self._y + self._h // 2
+
+        self._window_x, self._window_y = component.getPosition(
+            pyatspi.component.XY_WINDOW)
+        self._window_center_x = self._window_x + self._w // 2
+        self._window_center_y = self._window_y + self._h // 2
+
+        self._screen_x, self._screen_y = component.getPosition(
+            pyatspi.component.XY_SCREEN)
+        self._screen_center_x = self._screen_x + self._w // 2
+        self._screen_center_y = self._screen_y + self._h // 2
 
     def set_code(self, code):
         for code_label in self._code_labels:
@@ -132,29 +148,30 @@ class Action:
 
 class _NativeAction(Action):
     def do(self):
-        print("doing native")
+        print("native action")
         action = self._accessible.queryAction()
         action.doAction(0)
 
 
 class _PressAction(Action):
     def do(self):
-        print("doing press")
+        print("press action")
         component = self._accessible.queryComponent()
         if not component.grabFocus():
+            print("here?")
             return
-        # Emulation.key_tap(keysym.XK_Return)
+        Emulation.key_tap(keysym.XK_Return)
 
 
 class _ClickAction(Action):
     def do(self):
-        print("doing click")
-        Emulation.mouse_tap(1, self._center_x, self._center_y)
+        print("click action")
+        Emulation.mouse_tap(1, self._screen_center_x, self._screen_center_y)
 
 
 class _FocusAction(Action):
     def do(self):
-        print("doing focus")
+        print("focus action")
         component = self._accessible.queryComponent()
         component.grabFocus()
 

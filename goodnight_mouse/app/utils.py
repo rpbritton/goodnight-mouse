@@ -1,7 +1,7 @@
 import time
 
 import pyatspi
-from Xlib import X, display, ext
+from Xlib import X, display, ext, protocol
 from gi.repository import GLib
 
 
@@ -9,7 +9,7 @@ class Emulation:
     dis = display.Display()
     root = dis.screen().root
 
-    @classmethod
+    @classmethod  # TODO: look back into Atspi method
     def mouse_tap(cls, button: int, x: int, y: int):
         pointer = cls.root.query_pointer()
         cls.mouse_move(x, y)
@@ -32,22 +32,47 @@ class Emulation:
         ext.xtest.fake_input(cls.dis, X.ButtonRelease, button)
         cls.wait()
 
+    # @classmethod
+    # def key_tap(cls, key: int):
+    #     time.sleep(0.05)
+    #     # ImmediateTimeout.enable()
+    #     pyatspi.Registry.generateKeyboardEvent(
+    #         cls.dis.keysym_to_keycode(key), None, pyatspi.KEY_PRESSRELEASE)
+    #     # cls.key_press(key)
+    #     # time.sleep(0.01)
+    #     # cls.key_release(key)
+    #     # ImmediateTimeout.disable()
+
+    # @classmethod
+    # def key_press(cls, key: int):
+    #     pyatspi.Registry.generateKeyboardEvent(
+    #         cls.dis.keysym_to_keycode(key), None, pyatspi.KEY_PRESS)
+    #     cls.wait()
+
+    # @classmethod
+    # def key_release(cls, key: int):
+    #     pyatspi.Registry.generateKeyboardEvent(
+    #         cls.dis.keysym_to_keycode(key), None, pyatspi.KEY_RELEASE)
+    #     cls.wait()
+
     @classmethod
     def key_tap(cls, key: int):
         cls.key_press(key)
         cls.key_release(key)
 
-    @classmethod
+    @ classmethod
     def key_press(cls, key: int):
-        ext.xtest.fake_input(cls.dis, X.KeyPress, key)
+        ext.xtest.fake_input(cls.dis, X.KeyPress,
+                             cls.dis.keysym_to_keycode(key))
         cls.wait()
 
-    @classmethod
+    @ classmethod
     def key_release(cls, key: int):
-        ext.xtest.fake_input(cls.dis, X.KeyRelease, key)
+        ext.xtest.fake_input(cls.dis, X.KeyRelease,
+                             cls.dis.keysym_to_keycode(key))
         cls.wait()
 
-    @classmethod
+    @ classmethod
     def wait(cls):
         cls.dis.sync()
         time.sleep(0.001)
@@ -57,7 +82,7 @@ class ImmediateTimeout:
     enabled = False
     _log_handler_id = None
 
-    @classmethod
+    @ classmethod
     def enable(cls):
         if cls.enabled:
             return
@@ -79,7 +104,7 @@ class ImmediateTimeout:
         except:
             pass
 
-    @classmethod
+    @ classmethod
     def disable(cls):
         if not cls.enabled:
             return

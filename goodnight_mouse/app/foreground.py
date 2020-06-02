@@ -76,14 +76,15 @@ class Foreground:
             return
 
         n_valid_actions = self._actions.valid_code(self._code)
-        if n_valid_actions == 0:
-            self._code = ""
-
-        self._actions.apply_code(self._code)
 
         if n_valid_actions == 1:
-            self._actions.do()
+            self._actions.do(self._code)
             self.quit_loop()
+            return
+
+        if n_valid_actions == 0:
+            self._code = ""
+        self._actions.apply_code(self._code)
 
     def _handle_mouse(self):
         self.quit_loop()

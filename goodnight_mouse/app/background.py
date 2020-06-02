@@ -18,6 +18,8 @@ class Background:
     def _focus_handle(self, window: pyatspi.Accessible):
         if window is not None:
             # make sure caching/connection occurs
-            window.name
-            print(window.getApplication())
-            window.getApplication().name
+            try:
+                window.name
+                window.getApplication().name
+            except:
+                pass

@@ -49,6 +49,7 @@ class Focus(Subscription):
     def _activate_handle(self, event):
         if event.source is not self.active_window:
             self.active_window = event.source
+            print(self.active_window, event)
             self.notify(self.active_window)
 
     def _deactivate_handle(self, event):
