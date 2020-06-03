@@ -44,6 +44,7 @@ rules:
       ROLE_SLIDER: focus
       ROLE_DIAL: actuate
       ROLE_DATE_EDITOR: focus
+      ROLE_LIST_ITEM: only_native
 functions:
   actuate:
     match:
@@ -70,3 +71,7 @@ functions:
           - STATE_FOCUSED
         invert: true
     return: focus
+  only_native:
+    match:
+      - action: 'select'
+    return: native
