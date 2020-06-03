@@ -30,6 +30,7 @@ class AppConnection:
         pass
 
     def foreground(self):
+        logging.debug("sending signal to background process...")
         os.kill(self.pid, signal.SIGUSR1)
 
     def background(self):
@@ -82,29 +83,33 @@ class App(AppConnection):
             signal.signal(signal_num, signal_handler)
 
     def remotely_trigger(self, *args):
-        if self.has_foreground:
-            return
+        logging.debug("remotely triggered")
         GLib.idle_add(self.foreground)
 
     def foreground(self):
         if self.has_foreground:
+            logging.error("already running foreground")
             return
         self.has_foreground = True
+        logging.debug("starting foreground...")
         with Foreground(self._config, self._focus, self._mouse, self._keys, self._overlay) as foreground:
             if foreground is not None:
                 if self.has_background:
                     pyatspi.Registry.stop()
-                logging.debug("starting foreground loop")
+                logging.debug("started foreground loop")
                 pyatspi.Registry.start()
+                logging.debug("finished foreground loop")
         self.has_foreground = False
 
     def background(self):
         if self.has_background:
             return
         self.has_background = True
+        logging.debug("starting background...")
         with Background(self._focus) as background:
             if background is not None:
                 while True:
-                    logging.debug("starting background loop")
+                    logging.debug("started background loop")
                     pyatspi.Registry.start()
+                    logging.debug("restarting background loop...")
         self.has_background = False

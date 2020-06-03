@@ -22,8 +22,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+    setup_logging(args.verbose)
 
     config = yaml.safe_load(open(args.config))
 
@@ -36,3 +35,15 @@ def main():
     elif args.command in ("debugger"):
         # debugger.main(config)
         pass
+
+
+def setup_logging(verbose=False):
+    root_logger = logging.getLogger()
+
+    console = logging.StreamHandler()
+    console.setFormatter(logging.Formatter(
+        "[%(levelname)s] %(message)s"))
+    root_logger.addHandler(console)
+
+    if verbose:
+        root_logger.setLevel(logging.DEBUG)

@@ -1,3 +1,5 @@
+import logging
+
 import cairo
 import pyatspi
 
@@ -36,6 +38,8 @@ class Overlay:
         return self
 
     def __enter__(self):
+        logging.debug("showing overlay window...")
+
         self._window.get_style_context().add_provider(
             self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
 
@@ -46,6 +50,8 @@ class Overlay:
         return self
 
     def __exit__(self, *args):
+        logging.debug("hiding overlay window...")
+
         self._window.hide()
         self.clear()
 

@@ -46,22 +46,16 @@ rules:
       ROLE_DATE_EDITOR: focus
 functions:
   actuate:
-    # match:
-    #   - action: '.*'
-    # return: native
-    # else:
-    #   match:
-    #     - states:
-    #       - STATE_FOCUSABLE
-    #   return: press
-    #   else:
-    #     return: click
     match:
-      - states:
-        - STATE_FOCUSABLE
-    return: press
+      - action: '.*'
+    return: native
     else:
-      return: click
+      match:
+        - states:
+          - STATE_FOCUSABLE
+      return: press
+      else:
+        return: click
   actuate_non_selected:
     match:
       - states:
