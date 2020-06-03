@@ -101,7 +101,6 @@ class WindowConfig(Config):
 
 
 def match_application(accessible: pyatspi.Accessible, regex: str):
-    print(accessible)
     application_name = accessible.getApplication().name
     return re.search(regex, application_name) is not None
 

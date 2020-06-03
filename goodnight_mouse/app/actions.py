@@ -1,3 +1,5 @@
+import logging
+
 import pyatspi
 from Xlib.keysymdef import miscellany as keysym
 
@@ -148,30 +150,33 @@ class Action:
 
 class _NativeAction(Action):
     def do(self):
-        print("native action")
+        logging.debug("doing native action")
+
         action = self._accessible.queryAction()
         action.doAction(0)
 
 
 class _PressAction(Action):
     def do(self):
-        print("press action")
+        logging.debug("doing press action")
+
         component = self._accessible.queryComponent()
         if not component.grabFocus():
-            print("here?")
             return
         Emulation.key_tap(keysym.XK_Return)
 
 
 class _ClickAction(Action):
     def do(self):
-        print("click action")
+        logging.debug("doing click action")
+
         Emulation.mouse_tap(1, self._screen_center_x, self._screen_center_y)
 
 
 class _FocusAction(Action):
     def do(self):
-        print("focus action")
+        logging.debug("doing focus action")
+
         component = self._accessible.queryComponent()
         component.grabFocus()
 

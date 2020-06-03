@@ -1,3 +1,4 @@
+import logging
 import os
 import signal
 
@@ -32,7 +33,7 @@ class AppConnection:
         os.kill(self.pid, signal.SIGUSR1)
 
     def background(self):
-        print("already looping with pid", self.pid)
+        logging.error("already running in background with pid %d")
         exit(1)
 
 
@@ -45,6 +46,7 @@ class App(AppConnection):
             return App(config, lock)
         except zc.lockfile.LockError:
             pid = int(open(config.lockfile, "r").read())
+            logging.debug("app already exists with pid %d, connecting...", pid)
             return AppConnection(config, pid)
 
     def __init__(self, config: Config, lock: zc.lockfile.LockFile):
@@ -62,12 +64,20 @@ class App(AppConnection):
         self._overlay = Overlay()
 
     def __enter__(self):
+        self._focus.__enter__()
+        self._mouse.__enter__()
+        self._keys.__enter__()
+
         self._prev_signal_handlers[signal.SIGUSR1] = signal.signal(
             signal.SIGUSR1, self.remotely_trigger)
 
         return self
 
     def __exit__(self, *args):
+        self._focus.__exit__(*args)
+        self._mouse.__exit__(*args)
+        self._keys.__exit__(*args)
+
         for signal_num, signal_handler in self._prev_signal_handlers.items():
             signal.signal(signal_num, signal_handler)
 
@@ -77,17 +87,24 @@ class App(AppConnection):
         GLib.idle_add(self.foreground)
 
     def foreground(self):
+        if self.has_foreground:
+            return
         self.has_foreground = True
         with Foreground(self._config, self._focus, self._mouse, self._keys, self._overlay) as foreground:
             if foreground is not None:
                 if self.has_background:
                     pyatspi.Registry.stop()
+                logging.debug("starting foreground loop")
                 pyatspi.Registry.start()
         self.has_foreground = False
 
     def background(self):
+        if self.has_background:
+            return
         self.has_background = True
-        with Background(self._focus):
-            while True:
-                pyatspi.Registry.start()
+        with Background(self._focus) as background:
+            if background is not None:
+                while True:
+                    logging.debug("starting background loop")
+                    pyatspi.Registry.start()
         self.has_background = False

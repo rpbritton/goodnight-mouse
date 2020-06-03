@@ -1,3 +1,5 @@
+import logging
+
 import pyatspi
 from gi.repository import GLib
 from Xlib import Xatom, display
@@ -25,7 +27,7 @@ class Focus(Subscription):
         self.active_window = None
 
     def __enter__(self):
-        super().__enter__()
+        logging.debug("registering focus listener")
 
         ImmediateTimeout.enable()
         pyatspi.Registry.registerEventListener(
@@ -39,7 +41,7 @@ class Focus(Subscription):
         return self
 
     def __exit__(self, *args):
-        super().__exit__(*args)
+        logging.debug("deregistering focus listener")
 
         pyatspi.Registry.deregisterEventListener(
             self._activate_handle, *self._ACTIVATE_EVENTS)
@@ -49,7 +51,6 @@ class Focus(Subscription):
     def _activate_handle(self, event):
         if event.source is not self.active_window:
             self.active_window = event.source
-            print(self.active_window, event)
             self.notify(self.active_window)
 
     def _deactivate_handle(self, event):

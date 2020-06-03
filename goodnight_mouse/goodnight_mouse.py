@@ -1,4 +1,5 @@
 import argparse
+import logging
 import yaml
 
 from .app import Commands
@@ -20,6 +21,9 @@ def main():
                         default="~/.config/goodnight_mouse/config.yaml")
 
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     config = yaml.safe_load(open(args.config))
 

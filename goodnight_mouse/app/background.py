@@ -1,3 +1,5 @@
+import logging
+
 import pyatspi
 
 from .focus import Focus
@@ -18,8 +20,9 @@ class Background:
     def _focus_handle(self, window: pyatspi.Accessible):
         if window is not None:
             # make sure caching/connection occurs
-            try:
-                window.name
-                window.getApplication().name
-            except:
-                pass
+            window_name = window.name
+            application_name = window.getApplication().name
+            logging.debug("focused on window '%s' from application '%s'",
+                          window_name, application_name)
+        else:
+            logging.debug("focused on no window")

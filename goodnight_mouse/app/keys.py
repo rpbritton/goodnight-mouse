@@ -1,3 +1,5 @@
+import logging
+
 import pyatspi
 
 from .subscription import Subscription
@@ -9,7 +11,7 @@ class Keys(Subscription):
         super().__init__()
 
     def __enter__(self):
-        super().__enter__()
+        logging.debug("registering keys listener")
 
         ImmediateTimeout.enable()
         pyatspi.Registry.registerKeystrokeListener(
@@ -21,7 +23,7 @@ class Keys(Subscription):
         return self
 
     def __exit__(self, *args):
-        super().__exit__(*args)
+        logging.debug("deregistering keys listener")
 
         ImmediateTimeout.enable()
         pyatspi.Registry.deregisterKeystrokeListener(
@@ -32,4 +34,8 @@ class Keys(Subscription):
     def _handle(self, event):
         if event.type == pyatspi.deviceevent.KEY_PRESSED_EVENT:
             self.notify(event.id)
-        return True
+
+        if len(self._subscribers) == 0:
+            return False
+        else:
+            return True

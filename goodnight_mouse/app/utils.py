@@ -1,81 +1,29 @@
 import time
 
 import pyatspi
-from Xlib import X, display, ext, protocol
+from Xlib.display import Display
 from gi.repository import GLib
 
 
 class Emulation:
-    dis = display.Display()
-    root = dis.screen().root
+    display = Display()
+    root = display.screen().root
 
     @classmethod  # TODO: look back into Atspi method
     def mouse_tap(cls, button: int, x: int, y: int):
         pointer = cls.root.query_pointer()
-        cls.mouse_move(x, y)
-        cls.mouse_press(button)
-        cls.mouse_release(button)
-        cls.mouse_move(pointer.root_x, pointer.root_y)
-
-    @classmethod
-    def mouse_move(cls, x: int, y: int):
-        cls.root.warp_pointer(x, y)
-        cls.wait()
-
-    @classmethod
-    def mouse_press(cls, button: int):
-        ext.xtest.fake_input(cls.dis, X.ButtonPress, button)
-        cls.wait()
-
-    @classmethod
-    def mouse_release(cls, button: int):
-        ext.xtest.fake_input(cls.dis, X.ButtonRelease, button)
-        cls.wait()
-
-    # @classmethod
-    # def key_tap(cls, key: int):
-    #     time.sleep(0.05)
-    #     # ImmediateTimeout.enable()
-    #     pyatspi.Registry.generateKeyboardEvent(
-    #         cls.dis.keysym_to_keycode(key), None, pyatspi.KEY_PRESSRELEASE)
-    #     # cls.key_press(key)
-    #     # time.sleep(0.01)
-    #     # cls.key_release(key)
-    #     # ImmediateTimeout.disable()
-
-    # @classmethod
-    # def key_press(cls, key: int):
-    #     pyatspi.Registry.generateKeyboardEvent(
-    #         cls.dis.keysym_to_keycode(key), None, pyatspi.KEY_PRESS)
-    #     cls.wait()
-
-    # @classmethod
-    # def key_release(cls, key: int):
-    #     pyatspi.Registry.generateKeyboardEvent(
-    #         cls.dis.keysym_to_keycode(key), None, pyatspi.KEY_RELEASE)
-    #     cls.wait()
+        ImmediateTimeout.enable()
+        pyatspi.Registry.generateMouseEvent(x, y, "b{}c".format(button))
+        pyatspi.Registry.generateMouseEvent(
+            pointer.root_x, pointer.root_y, "abs")
+        ImmediateTimeout.disable()
 
     @classmethod
     def key_tap(cls, key: int):
-        cls.key_press(key)
-        cls.key_release(key)
-
-    @ classmethod
-    def key_press(cls, key: int):
-        ext.xtest.fake_input(cls.dis, X.KeyPress,
-                             cls.dis.keysym_to_keycode(key))
-        cls.wait()
-
-    @ classmethod
-    def key_release(cls, key: int):
-        ext.xtest.fake_input(cls.dis, X.KeyRelease,
-                             cls.dis.keysym_to_keycode(key))
-        cls.wait()
-
-    @ classmethod
-    def wait(cls):
-        cls.dis.sync()
-        time.sleep(0.001)
+        ImmediateTimeout.enable()
+        pyatspi.Registry.generateKeyboardEvent(
+            cls.display.keysym_to_keycode(key), None, pyatspi.KEY_PRESSRELEASE)
+        ImmediateTimeout.disable()
 
 
 class ImmediateTimeout:
@@ -92,12 +40,15 @@ class ImmediateTimeout:
         cls._log_handler_id = GLib.log_set_handler(
             "dbind", GLib.LogLevelFlags.LEVEL_WARNING, lambda *args: None, None)
 
+        # make sure we get the desktop before setting the instant timeout
         desktop = pyatspi.Registry.getDesktop(0)
+
         # prevent key events from causing blocking time out issues
         # normally need to wait 3 seconds if there's a waiting key event,
         # but they seem to go through.
         # it's also faster.
         pyatspi.setTimeout(0, 0)
+
         # force the timeout to actually refresh through a dbus call
         try:
             desktop.accessibleId
@@ -112,6 +63,7 @@ class ImmediateTimeout:
 
         # reset timeout to default settings
         pyatspi.setTimeout(800, 15000)
+
         # flush the timeout
         try:
             pyatspi.Registry.getDesktop(0).accessibleId

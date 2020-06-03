@@ -1,7 +1,9 @@
+import logging
 import time
 
 import pyatspi
 from Xlib.keysymdef import miscellany as keysym
+from Xlib import XK
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -54,12 +56,15 @@ class Foreground:
         if self._actions is not None:
             self._actions.__exit__()
             self._actions = None
+
         self._overlay.__exit__(*args)
         self._keys.unsubscribe(self._handle_keys)
         self._mouse.unsubscribe(self._handle_mouse)
         self._focus.unsubscribe(self._handle_focus)
 
     def _handle_keys(self, key):
+        logging.debug("handling key %d, '%s'", key, XK.keysym_to_string(key))
+
         changed = False
 
         if key == keysym.XK_Escape:
@@ -87,12 +92,13 @@ class Foreground:
         self._actions.apply_code(self._code)
 
     def _handle_mouse(self):
+        logging.debug("handling mouse")
+
         self.quit_loop()
 
     def _handle_focus(self, new_active_window: pyatspi.Accessible):
-        self.quit_loop()
+        logging.debug("handling focus")
 
-    def _handle_actions(self):
         self.quit_loop()
 
     def quit_loop(self):
