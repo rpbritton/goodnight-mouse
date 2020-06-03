@@ -32,10 +32,4 @@ class Keys(Subscription):
         ImmediateTimeout.disable()
 
     def _handle(self, event):
-        if event.type == pyatspi.deviceevent.KEY_PRESSED_EVENT:
-            self.notify(event.id)
-
-        if len(self._subscribers) == 0:
-            return False
-        else:
-            return True
+        return self.notify(event.id, (event.type == pyatspi.deviceevent.KEY_PRESSED_EVENT))

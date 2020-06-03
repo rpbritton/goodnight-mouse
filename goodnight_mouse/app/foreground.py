@@ -28,11 +28,7 @@ class Foreground:
         self._actions = None
         self._code = ""
 
-        # self._running = False
-
     def __enter__(self):
-        # self._running = True
-
         self._focus.subscribe(self._handle_focus)
         self._mouse.subscribe(self._handle_mouse)
         self._keys.subscribe(self._handle_keys)
@@ -51,8 +47,6 @@ class Foreground:
         return self
 
     def __exit__(self, *args):
-        # self._running = False
-
         if self._actions is not None:
             self._actions.__exit__()
             self._actions = None
@@ -62,9 +56,11 @@ class Foreground:
         self._mouse.unsubscribe(self._handle_mouse)
         self._focus.unsubscribe(self._handle_focus)
 
-    def _handle_keys(self, key):
-        changed = False
+    def _handle_keys(self, key: int, pressed: bool):
+        if pressed is not True:
+            return True
 
+        changed = False
         if key == keysym.XK_Escape:
             self.quit_loop()
         elif key == keysym.XK_BackSpace:
@@ -74,20 +70,21 @@ class Foreground:
         elif 0x00 <= key <= 0xFF:
             self._code += chr(key)
             changed = True
-
         if not changed:
-            return
+            return True
 
         n_valid_actions = self._actions.valid_code(self._code)
 
         if n_valid_actions == 1:
             self._actions.do(self._code)
             self.quit_loop()
-            return
+            return True
 
         if n_valid_actions == 0:
             self._code = ""
         self._actions.apply_code(self._code)
+
+        return True
 
     def _handle_mouse(self):
         logging.debug("handling mouse event")
@@ -100,6 +97,5 @@ class Foreground:
         self.quit_loop()
 
     def quit_loop(self):
-        # if self._running:
         logging.debug("quitting foreground...")
         pyatspi.Registry.stop()

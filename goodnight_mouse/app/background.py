@@ -22,7 +22,7 @@ class Background:
             # make sure caching/connection occurs
             window_name = window.name
             application_name = window.getApplication().name
-            logging.debug("focuse changed to window '%s' from application '%s'",
+            logging.debug("focus changed to window '%s' from application '%s'",
                           window_name, application_name)
         else:
-            logging.debug("focuse changed to none")
+            logging.debug("focus changed to none")
