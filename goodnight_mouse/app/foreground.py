@@ -2,12 +2,11 @@ import logging
 import time
 
 import pyatspi
-from Xlib.keysymdef import miscellany as keysym
-from Xlib import XK
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk
 
 from .actions import Actions
 from .config import Config, WindowConfig
@@ -57,13 +56,16 @@ class Foreground:
         self._focus.unsubscribe(self._handle_focus)
 
     def _handle_keys(self, key: int, pressed: bool):
+        logging.debug("handling key '%s', pressed: %s",
+                      Gdk.keyval_name(key), pressed)
+
         if pressed is not True:
             return True
 
         changed = False
-        if key == keysym.XK_Escape:
+        if key == Gdk.KEY_Escape:
             self.quit_loop()
-        elif key == keysym.XK_BackSpace:
+        elif key == Gdk.KEY_BackSpace:
             if len(self._code) > 0:
                 self._code = self._code[:-1]
                 changed = True

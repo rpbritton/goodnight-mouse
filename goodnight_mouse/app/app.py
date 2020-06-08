@@ -34,8 +34,7 @@ class AppConnection:
         os.kill(self.pid, signal.SIGUSR1)
 
     def background(self):
-        logging.error("already running in background with pid %d")
-        exit(1)
+        logging.fatal("already running in background with pid %d")
 
 
 class App(AppConnection):
@@ -65,6 +64,7 @@ class App(AppConnection):
         self._overlay = Overlay()
 
     def __enter__(self):
+        self._config(self._focus).__enter__()
         self._focus.__enter__()
         self._mouse.__enter__()
         self._keys.__enter__()
@@ -75,6 +75,7 @@ class App(AppConnection):
         return self
 
     def __exit__(self, *args):
+        self._config.__exit__(*args)
         self._focus.__exit__(*args)
         self._mouse.__exit__(*args)
         self._keys.__exit__(*args)
@@ -86,7 +87,7 @@ class App(AppConnection):
         logging.debug("remotely triggered")
         GLib.idle_add(self.foreground)
 
-    def foreground(self):
+    def foreground(self):  # TODO: accept flags
         if self.has_foreground:
             logging.error("already running foreground")
             return

@@ -1,5 +1,6 @@
+import logging
 import re
-from typing import List
+from typing import List, Tuple, Set
 
 import pyatspi
 
@@ -8,135 +9,315 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-
-STATE_LOOKUP = dict(pyatspi.StateType._enum_lookup)
-STATE_LOOKUP = {**STATE_LOOKUP, **{v: k for k, v in STATE_LOOKUP.items()}}
-ROLE_LOOKUP = dict(pyatspi.Role._enum_lookup)
-ROLE_LOOKUP = {**ROLE_LOOKUP, **{v: k for k, v in ROLE_LOOKUP.items()}}
+from .focus import Focus
 
 
-class Config:
-    def __init__(self, raw_config):
-        self.config = raw_config
+class TriggerConfig:
+    def __init__(self, trigger: dict):
+        self._modifiers = 0
+        keymap = Gdk.Keymap.get_default()
+        for modifier_name in Parser.attribute(trigger, "modifiers"):
+            modifier = Parser.modifier(modifier_name)
+            self._modifiers |= modifier
 
-        self.lockfile = raw_config["lockfile"]
+            success, real_modifier = keymap.map_virtual_modifiers(
+                modifier)
+            if success:
+                self._modifiers |= real_modifier
 
-        self._rules = raw_config["rules"]
-        self._functions = raw_config["functions"]
+        self._hotkey = Gdk.keyval_from_name(
+            Parser.attribute(trigger, "hotkey"))
 
-    def _eval_function(self, accessible, function):
-        ok = True
-        if "match" in function:
-            ok = eval_match(accessible, function["match"])
+        self._flags = Parser.attribute(trigger, "flags")
 
-        if not ok:
-            if "else" in function:
-                return self._eval_function(accessible, function["else"])
-            return None
+    @ property
+    def modifiers(self) -> int:
+        return self._modifiers
 
-        if "return" in function:
-            return function["return"]
-        if "call" in function:
-            return self._eval_function(accessible, self._functions[function["call"]])
+    @ property
+    def hotkey(self) -> int:
+        return self._hotkey
+
+    @ property
+    def flags(self) -> List[str]:
+        return self._flags
 
 
-class WindowConfig(Config):
-    def __init__(self, config: Config, window: pyatspi.Accessible):
-        super().__init__(config.config)
-        self.window = window
-        self._rule = self._get_rule()
-        if self._rule is None:
-            return
+class WindowConfig:
+    def __init__(self, window: pyatspi.Accessible, rules: dict):
+        self._accessible = window
 
-        # TODO: check if exists/inheritance
-        self.keys = self._rule["keys"]
+        self._rule = None
+        if self._accessible is not None:
+            for rule in rules:
+                match = Parser.attribute(rule, "condition")
+                if Parser.match(match, window):
+                    self._rule = rule
+                    break
 
-        self.states = [STATE_LOOKUP[state] for state in self._rule["states"]]
+        self._characters = []
+        self._css = Gtk.CssProvider()
+        self._triggers = []
+        self._states = {}
+        self._roles = {}
+        if self._rule is not None:
+            self._characters = [Parser.keysym(
+                character) for character in Parser.attribute(self._rule, "characters")]
+
+            self._css = Parser.css(Parser.attribute(self._rule, "css"))
+
+            self._triggers = [TriggerConfig(
+                trigger) for trigger in Parser.attribute(self._rule, "triggers")]
+
+            self._states = {Parser.state(
+                state) for state in Parser.attribute(self._rule, "states")}
+
+            self._roles = {Parser.role(role)
+                           for role in Parser.attribute(self._rule, "roles")}
+
+    @ property
+    def accessible(self) -> pyatspi.Accessible:
+        return self._accessible
+
+    @ property
+    def characters(self) -> List[int]:
+        return self._characters
+
+    @ property
+    def css(self) -> Gtk.CssProvider:
+        return self._css
+
+    @ property
+    def triggers(self) -> List[TriggerConfig]:
+        return self._triggers
+
+    @ property
+    def states(self) -> Set[int]:
+        return self._states
+
+    @ property
+    def roles(self) -> Set[int]:
+        return self._roles
+
+
+class ActionConfig:
+    @ classmethod
+    def get_actions(cls, window_config: WindowConfig, flags: Set[str]):
+        if window_config is None:
+            return []
+
         empty_collection = pyatspi.Collection(None)
-        self.match_rule = empty_collection.createMatchRule(
-            pyatspi.StateSet.new(self.states), empty_collection.MATCH_ALL,
+        match_rule = empty_collection.createMatchRule(
+            pyatspi.StateSet.new(
+                window_config.states), empty_collection.MATCH_ALL,
             "", empty_collection.MATCH_NONE,
             [], empty_collection.MATCH_NONE,
             "", empty_collection.MATCH_NONE,
             False)
-        self.roles = {ROLE_LOOKUP[role]: function for role,
-                      function in self._rule["roles"].items()}
+        roles = window_config.roles
 
-        self.css = Gtk.CssProvider()
-        self.css.load_from_data(self._rule["css"].encode())
-
-    def _get_rule(self):
-        for rule in self._rules:
-            if "match" in rule:
-                if not eval_match(self.window, rule["match"]):
-                    continue
-            return rule
-        return None
-
-    def _gather_actions(self, accessible: pyatspi.Accessible):
         actions = []
+        accessibles = [window_config.accessible]
+        while len(accessibles) > 0:
+            accessible = accessibles.pop()
 
-        # check current accessible
-        action_type = self.get_action_type(accessible)
-        if action_type is not None:
-            actions.append((action_type, accessible))
+            # check current accessible
+            role = accessible.getRole()
+            if role in window_config.roles:
+                action_properties = Parser.function(
+                    window_config.roles[role], accessible, flags)
+                if action_properties is not None:
+                    actions.append(cls(accessible, action_properties))
 
-        # check childern
-        collection = accessible.queryCollection()
-        children = collection.getMatches(
-            self.match_rule, collection.SORT_ORDER_CANONICAL, 0, False)
-        for child in children:
-            actions += self._gather_actions(child)
+            # check childern
+            collection = accessible.queryCollection()
+            accessibles += collection.getMatches(
+                match_rule, collection.SORT_ORDER_CANONICAL, 0, False)
 
         return actions
 
-    def get_actions(self):
-        return self._gather_actions(self.window)
+    def __init__(self, accessible: pyatspi.Accessible, action_properties: dict):
+        self._accessible = accessible
+        self._css = Parser.css(Parser.attribute(
+            action_properties, "css"))
+        self._position = tuple(Parser.attribute(action_properties, "position"))
+        self._action = Parser.attribute(action_properties, "do")
 
-    def get_action_type(self, accessible: pyatspi.Accessible):
-        role = accessible.getRole()
-        if role in self.roles:
-            return self._eval_function(accessible, self._functions[self.roles[role]])
+    @ property
+    def accessible(self):
+        return self._accessible
+
+    @ property
+    def css(self) -> Gtk.CssProvider:
+        return self._css
+
+    @ property
+    def position(self) -> Tuple[int, int]:
+        return self._position
+
+    def action(self) -> str:
+        return self._action
+
+
+class Config:  # TODO: implement subscription for changes
+    def __init__(self, config: dict):
+        self._config = config
+        self._focus = None
+
+        self._lockfile = Parser.attribute(self._config, "lockfile")
+        self._rules = Parser.attribute(self._config, "rules")
+
+        self._window = WindowConfig(None, self._rules)
+
+    def __call__(self, focus: Focus):
+        self._focus = focus
+
+        return self
+
+    def __enter__(self):
+        if self._focus is None:
+            return None
+
+        self._focus.subscribe(self._handle_focus)
+        self._handle_focus(self._focus.get_active_window())
+
+        return self
+
+    def __exit__(self, *args):
+        self._focus.unsubscribe(self._handle_focus)
+
+    @property
+    def lockfile(self) -> str:
+        return self._lockfile
+
+    @property
+    def window(self) -> WindowConfig:
+        return self._window
+
+    @property
+    def actions(self, flags) -> List[ActionConfig]:
+        return ActionConfig.get_actions(self._window, flags)
+
+    def _handle_focus(self, window: pyatspi.Accessible):
+        self._window = WindowConfig(window, self._rules)
+
+
+class Parser:
+    @classmethod
+    def attribute(cls, dictionary: dict, attribute: str):
+        if attribute in dictionary:
+            return dictionary[attribute]
+        else:
+            logging.fatal("missing %s in %r", attribute, dictionary)
+
+    @classmethod
+    def state(cls, name: str) -> int:
+        value = getattr(pyatspi, "STATE_" + name.upper(), None)
+        if value is None:
+            logging.fatal("unknown state '%s'", name)
+        return value
+
+    @classmethod
+    def role(cls, name: str) -> int:
+        value = getattr(pyatspi, "ROLE_" + name.upper(), None)
+        if value is None:
+            logging.fatal("unknown modifier '%s'", name)
+        return value
+
+    @classmethod
+    def modifier(cls, name: str) -> int:
+        value = getattr(Gdk.ModifierType, name.upper() + "_MASK", None)
+        if value is None:
+            logging.fatal("unknown modifier '%s'", name)
+        return value
+
+    @classmethod
+    def keysym(cls, name: str) -> int:
+        value = Gdk.keyval_from_name(name)
+        if value == Gdk.KEY_VoidSymbol:
+            logging.fatal("unknown character '%s'", name)
+        return value
+
+    @classmethod
+    def css(cls, css: str) -> Gtk.CssProvider:
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(css.encode())
+        return css_provider
+
+    @classmethod
+    def function(cls, function: dict, accessible: pyatspi.Accessible, flags: Set[str] = None):
+        passed = True
+        if "condition" in function:
+            passed = cls.match(function["condition"], accessible, flags)
+
+        if passed is True:
+            if "return" in function:
+                return function["return"]
+            elif "then" in function:
+                return cls.function(function["then"], accessible, flags)
+        elif "else" in function:
+            return cls.function(function["else"], accessible, flags)
+
         return None
 
+    @classmethod
+    def match(cls, match: List[dict], accessible: pyatspi.Accessible, flags: Set[str] = None) -> bool:
+        if flags is None:
+            flags = {}
 
-def match_application(accessible: pyatspi.Accessible, regex: str):
-    application_name = accessible.getApplication().name
-    return re.search(regex, application_name) is not None
+        for submatch in match:
+            matches = True
 
+            if "application" in submatch:
+                matches &= cls._application(
+                    accessible, submatch["application"])
+            if "name" in submatch:
+                matches &= cls._name(
+                    accessible, submatch["name"])
+            if "action" in submatch:
+                matches &= cls._action(
+                    accessible, submatch["action"])
+            if "states" in submatch:
+                matches &= cls._states(
+                    accessible, submatch["states"])
+            if "role" in submatch:
+                matches &= cls._role(
+                    accessible, submatch["role"])
+            if "flags" in submatch:
+                matches &= submatch["flags"].issubset(flags)
+            if "invert" in submatch:
+                matches ^= submatch["invert"]
 
-def match_action(accessible: pyatspi.Accessible, regex: str):
-    try:
-        action = accessible.queryAction()
-        if action.get_nActions() > 0:
-            return re.search(regex, action.getName(0)) is not None
-    except NotImplementedError:
-        return False
-    return False
+            if not matches:
+                return False
 
+        return True
 
-def match_states(accessible: pyatspi.Accessible, states: List[str]):
-    states = [STATE_LOOKUP[state] for state in states]
-    all_states = accessible.getState().getStates()
-    return all(state in all_states for state in states)
+    @ classmethod
+    def _application(cls, accessible: pyatspi.Accessible, regex: str) -> bool:
+        application_name = accessible.getApplication().name
+        return re.search(regex, application_name) is not None
 
+    @ classmethod
+    def _name(cls, accessible: pyatspi.Accessible, regex: str) -> bool:
+        return re.search(regex, accessible.name) is not None
 
-MATCH_CONDITIONS = {
-    "application": match_application,
-    "action": match_action,
-    "states": match_states,
-}
-
-
-def eval_match(accessible: pyatspi.Accessible, match):
-    for submatch in match:
-        ok = True
-        for condition in submatch:
-            if condition in MATCH_CONDITIONS:
-                ok &= MATCH_CONDITIONS[condition](
-                    accessible, submatch[condition])
-        if "invert" in submatch:
-            ok ^= submatch["invert"]
-        if not ok:
+    @ classmethod
+    def _action(cls, accessible: pyatspi.Accessible, regex: str) -> bool:
+        try:
+            action = accessible.queryAction()
+            if action.get_nActions() > 0:
+                return re.search(regex, action.getName(0)) is not None
+        except NotImplementedError:
             return False
-    return True
+
+        return False
+
+    @ classmethod
+    def _states(cls, accessible: pyatspi.Accessible, states: Set[str]):
+        existing_states = set(accessible.getState().getStates())
+        return {Parser.state(state) for state in states}.issubset(existing_states)
+
+    @ classmethod
+    def _role(cls, accessible: pyatspi.Accessible, role: str):
+        return accessible.getRole() == Parser.role(role)

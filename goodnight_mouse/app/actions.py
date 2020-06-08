@@ -1,7 +1,6 @@
 import logging
 
 import pyatspi
-from Xlib.keysymdef import miscellany as keysym
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -163,7 +162,7 @@ class _PressAction(Action):
         component = self._accessible.queryComponent()
         if not component.grabFocus():
             return
-        Emulation.key_tap(keysym.XK_Return)
+        Emulation.key_tap(Gdk.KEY_Return)
 
 
 class _ClickAction(Action):

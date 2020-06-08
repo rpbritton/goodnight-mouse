@@ -1,14 +1,6 @@
-lockfile: "/tmp/goodnight_mouse.pid"
-rules:
-  - name: default
-    match:
-      - application: '.*'
-    keys: "fjdkghsla"
-    # keys: "abc"
+anchors:
+  - &default_action
     css: |
-      .overlay_window {
-        background-color: rgba(100%, 0%, 0%, 0.05);
-      }
       .action_box {
         background-color: #000;
         border: 3px solid #FFF;
@@ -21,57 +13,73 @@ rules:
       .action_character_active {
         color: #00F;
       }
-    states:
-      - STATE_SHOWING
-      - STATE_VISIBLE
-      - STATE_ENABLED
-      - STATE_SENSITIVE
-    roles:
-      ROLE_PUSH_BUTTON: actuate
-      ROLE_TOGGLE_BUTTON: actuate
-      ROLE_COMBO_BOX: actuate
-      ROLE_MENU: actuate
-      ROLE_MENU_ITEM: actuate
-      ROLE_PAGE_TAB: actuate_non_selected
-      ROLE_RADIO_BUTTON: actuate
-      ROLE_SPIN_BUTTON: actuate
-      ROLE_CHECK_BOX: actuate
-      ROLE_CHECK_MENU_ITEM: actuate
-      ROLE_LINK: actuate
-      ROLE_TEXT: focus
-      ROLE_ENTRY: focus
-      ROLE_PASSWORD_TEXT: focus
-      ROLE_SLIDER: focus
-      ROLE_DIAL: actuate
-      ROLE_DATE_EDITOR: focus
-      ROLE_LIST_ITEM: only_native
-functions:
-  actuate:
-    match:
+    position: [x + ww/2 - pw/2, y + wh/2 - ph/2]
+  - &actuate
+    condition:
       - action: '.*'
-    return: native
+    return:
+      - <<: *default_action
+        do: native
     else:
-      match:
-        - states:
-          - STATE_FOCUSABLE
-      return: press
+      condition:
+        - states: { focusable }
+      return:
+        - <<: *default_action
+          do: press # TODO: make these a sequence of keys
       else:
-        return: click
-  actuate_non_selected:
-    match:
-      - states:
-          - STATE_SELECTED
+        return:
+          - <<: *default_action
+            do: click
+  - &actuate_non_selected
+    condition:
+      - states: { selected }
         invert: true
-    call: actuate
-  focus:
-    match:
-      - states:
-          - STATE_FOCUSABLE
-      - states:
-          - STATE_FOCUSED
+    then: *actuate
+  - &focus
+    condition:
+      - states: { focusable }
+      - states: { focused }
         invert: true
-    return: focus
-  only_native:
-    match:
+    return:
+      - <<: *default_action
+        do: focus
+  - &only_native
+    condition:
       - action: 'select'
-    return: native
+    return:
+      - <<: *default_action
+        do: native
+lockfile: "/tmp/goodnight_mouse.pid"
+rules:
+  - &default_rule
+    condition:
+      - application: '.*'
+    characters: [ f, j, d, k, g, h, s, l, a ]
+    triggers:
+      - modifiers: { super }
+        hotkey: d
+        flags: { default }
+    css: |
+      .overlay_window {
+        background-color: rgba(100%, 0%, 0%, 0.05);
+      }
+    states: { showing, visible, enabled, sensitive }
+    roles: &default_roles
+      push_button: *actuate
+      toggle_button: *actuate
+      combo_box: *actuate
+      menu: *actuate
+      menu_item: *actuate
+      page_tab: *actuate_non_selected
+      radio_button: *actuate
+      spin_button: *actuate
+      check_box: *actuate
+      check_menu_item: *actuate
+      link: *actuate
+      text: *focus
+      entry: *focus
+      password_text: *focus
+      slider: *focus
+      dial: *actuate
+      date_editor: *focus
+      list_item: *only_native
