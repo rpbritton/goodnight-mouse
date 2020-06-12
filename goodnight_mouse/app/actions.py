@@ -1,4 +1,5 @@
 import logging
+from typing import List, Set
 
 import pyatspi
 
@@ -7,182 +8,224 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from .config import WindowConfig
+from .config import WindowConfig, ActionConfig
 from .codes import Codes
 from .utils import Emulation
 
 
 class Actions:
-    def __init__(self, config: WindowConfig, container: Gtk.Fixed):
-        self._actions = []
-        self._config = config
+    def __init__(self, container: Gtk.Fixed):
         self._container = container
-        self._code = ""
-        self._codes_generator = Codes(self._config.keys)
+
+        self.actions = []
+        self._code = []
+
+        self._config = WindowConfig()
+        self._codes_generator = Codes([])
+        self._flags = []
+
+    def __call__(self, config: WindowConfig, flags: Set[str] = None):
+        self._config = config
+        self._codes_generator = Codes(self._config.characters)
+        if flags is None:
+            flags = set()
+        self._flags = flags
+
+        return self
 
     def __enter__(self):
-        parsed_actions = self._config.get_actions()
-        codes = self._codes_generator.generate(len(parsed_actions))
+        self.actions = [Action(config, self._container)
+                        for config in self._config.actions(self._flags)]
 
-        self._actions = []
-        for action_type, accessible, code in zip(*zip(*parsed_actions), codes):
-            action = Action.new(self._config, action_type,
-                                accessible, code, self._container)
-            self._actions.append(action.__enter__())
+        codes = self._codes_generator.generate(len(self.actions))
+        for action, code in zip(self.actions, codes):
+            action.code = code
+            action.__enter__()
+
+        self._code = []
 
         return self
 
     def __exit__(self, *args):
-        for action in self._actions:
+        for action in self.actions:
             action.__exit__(*args)
 
-    def valid_code(self, code):
-        return sum(1 for action in self._actions if action.valid_code(code))
+    def matches(self, code: List[int]) -> int:
+        return sum(1 for action in self.actions if action.valid(code))
 
-    def apply_code(self, code):
-        if code == self._code:
+    @property
+    def code(self):
+        return self._code
+
+    @code.setter
+    def code(self, code: List[int]):
+        if code == self.code:
             return
-        self._code = code
+        self._code = code[:]
 
-        for action in self._actions:
-            action.apply_code(self._code)
+        for action in self.actions:
+            action.active_code = self.code
 
     def do(self, code=None):
         if code is None:
-            code = self._code
+            code = self.code
 
-        for action in self._actions:
-            if action.matches_code(code):
+        for action in self.actions:
+            if action.code == code:
                 action.do()
 
 
 class Action:
-    @staticmethod
-    def new(config, action_type: str, *args):
-        if action_type in _ACTION_TYPES:
-            return _ACTION_TYPES[action_type](config, *args)
-        return None
-
-    def __init__(self, config: WindowConfig, accessible: pyatspi.Accessible, code: str, container: Gtk.Fixed):
+    def __init__(self, config: ActionConfig, container: Gtk.Fixed):
         self._config = config
-        self._accessible = accessible
-        self._code = code
         self._container = container
-        self._w = self._h = None
-        self._window_x = self._window_y = None
-        self._window_center_x = self._window_center_y = None
-        self._screen_x = self._screen_y = None
-        self._screen_center_x = self._screen_center_y = None
-        self._code_box = None
-        self._code_labels = []
+
+        self._code = []
+        self._active_code = []
+
+        self.width = self.height = 0
+        self.window_x = self.window_y = 0
+        self.window_center_x = self.window_center_y = 0
+        self.screen_x = self.screen_y = 0
+        self.screen_center_x = self.screen_center_y = 0
+
+        self.box = Gtk.Box()
+        self.box.get_style_context().add_class("action_box")
+        self.box.get_style_context().add_provider(
+            self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
+        self.box.set_halign(Gtk.Align.CENTER)
+
+        self.labels = []
+        self.visible = False
 
     def __enter__(self):
-        self._refresh_extents()
-
-        self._code_box = Gtk.Box()
-        self._code_box.get_style_context().add_provider(
-            self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
-        self._code_box.get_style_context().add_class("action_box")
-        self._code_box.set_halign(Gtk.Align.CENTER)
-        self._container.put(self._code_box, self._window_x, self._window_y)
-
-        self.set_code(self._code)
-
-        self._code_box.show_all()
+        self.show()
 
         return self
 
     def __exit__(self, *args):
-        self._code_box.destroy()
+        self.hide()
+        self._container.remove(self.box)
 
-    def _refresh_extents(self):
-        component = self._accessible.queryComponent()
+    def show(self):
+        component = self._config.accessible.queryComponent()
 
-        self._w, self._h = component.getSize()
+        self.width, self.height = component.getSize()
 
-        self._window_x, self._window_y = component.getPosition(
+        self.window_x, self.window_y = component.getPosition(
             pyatspi.component.XY_WINDOW)
-        self._window_center_x = self._window_x + self._w // 2
-        self._window_center_y = self._window_y + self._h // 2
+        self.window_center_x = self.window_x + self.width // 2
+        self.window_center_y = self.window_y + self.height // 2
 
-        self._screen_x, self._screen_y = component.getPosition(
+        self.screen_x, self.screen_y = component.getPosition(
             pyatspi.component.XY_SCREEN)
-        self._screen_center_x = self._screen_x + self._w // 2
-        self._screen_center_y = self._screen_y + self._h // 2
+        self.screen_center_x = self.screen_x + self.width // 2
+        self.screen_center_y = self.screen_y + self.height // 2
 
-    def set_code(self, code):
-        for code_label in self._code_labels:
-            code_label.destroy()
-        self._code_labels = []
+        if self.visible:
+            self._container.move(self.box, self.window_x, self.window_y)
+        else:
+            self._container.put(self.box, self.window_x, self.window_y)
+
+        self.box.show_all()
+        self.visible = True
+
+    def hide(self):
+        if not self.visible:
+            return
+
+        self.box.hide()
+        self.visible = False
+
+    @property
+    def code(self) -> List[int]:
+        return self._code
+
+    @code.setter
+    def code(self, code: List[int]):
+        while self.labels:
+            self.labels.pop().destroy()
 
         self._code = code
-        for key in iter(self._code):
-            key_label = Gtk.Label(key)
-            key_label.get_style_context().add_provider(
+        for keysym in self._code:
+            character = chr(Gdk.keyval_to_unicode(keysym))
+            label = Gtk.Label(character)
+            label.get_style_context().add_provider(
                 self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
-            key_label.get_style_context().add_class("action_character")
+            label.get_style_context().add_class("action_character")
 
-            self._code_labels.append(key_label)
-            self._code_box.add(key_label)
+            self.labels.append(label)
+            self.box.add(label)
 
-    def valid_code(self, code):
-        return self._code.startswith(code)
+    def valid(self, code: List[int]) -> bool:
+        if len(code) > len(self.code):
+            return False
 
-    def matches_code(self, code):
-        return self._code == code
+        return self.code[:len(code)] == code
 
-    def apply_code(self, code):
-        if self.valid_code(code):
-            for index in range(0, len(code)):
-                self._code_labels[index].get_style_context(
-                ).add_class("action_character_active")
-            for index in range(len(code), len(self._code)):
-                self._code_labels[index].get_style_context(
-                ).remove_class("action_character_active")
-            self._code_box.show()
-        else:
-            self._code_box.hide()
+    @property
+    def active_code(self) -> List[int]:
+        return self._active_code
 
-    def do(self):
-        pass
+    @active_code.setter
+    def active_code(self, code):
+        # print("why", code)
+        # if code == self.active_code:
+        #     return
+        self._active_code = code
 
-
-class _NativeAction(Action):
-    def do(self):
-        logging.debug("doing native action")
-
-        action = self._accessible.queryAction()
-        action.doAction(0)
-
-
-class _PressAction(Action):
-    def do(self):
-        logging.debug("doing press action")
-
-        component = self._accessible.queryComponent()
-        if not component.grabFocus():
+        if not self.valid(code):
+            self.box.hide()
             return
-        Emulation.key_tap(Gdk.KEY_Return)
 
+        for index in range(0, len(code)):
+            self.labels[index].get_style_context().add_class(
+                "action_character_active")
+        for index in range(len(code), len(self._code)):
+            self.labels[index].get_style_context().remove_class(
+                "action_character_active")
+        self.box.show()
 
-class _ClickAction(Action):
     def do(self):
-        logging.debug("doing click action")
-
-        Emulation.mouse_tap(1, self._screen_center_x, self._screen_center_y)
+        print("doing")
 
 
-class _FocusAction(Action):
-    def do(self):
-        logging.debug("doing focus action")
+# class _NativeAction(Action):
+#     def do(self):
+#         logging.debug("doing native action")
 
-        component = self._accessible.queryComponent()
-        component.grabFocus()
+#         action = self._accessible.queryAction()
+#         action.doAction(0)
 
 
-_ACTION_TYPES = {
-    "native": _NativeAction,
-    "press": _PressAction,
-    "click": _ClickAction,
-    "focus": _FocusAction,
-}
+# class _PressAction(Action):
+#     def do(self):
+#         logging.debug("doing press action")
+
+#         component = self._accessible.queryComponent()
+#         if not component.grabFocus():
+#             return
+#         Emulation.key_tap(Gdk.KEY_Return)
+
+
+# class _ClickAction(Action):
+#     def do(self):
+#         logging.debug("doing click action")
+
+#         Emulation.mouse_tap(1, self._screen_center_x, self._screen_center_y)
+
+
+# class _FocusAction(Action):
+#     def do(self):
+#         logging.debug("doing focus action")
+
+#         component = self._accessible.queryComponent()
+#         component.grabFocus()
+
+
+# _ACTION_TYPES = {
+#     "native": _NativeAction,
+#     "press": _PressAction,
+#     "click": _ClickAction,
+#     "focus": _FocusAction,
+# }

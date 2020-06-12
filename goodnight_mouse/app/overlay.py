@@ -13,24 +13,27 @@ from .config import WindowConfig
 
 class Overlay:
     def __init__(self):
-        self._config = None
+        self._config = WindowConfig()
 
-        self._window = Gtk.Window(type=Gtk.WindowType.POPUP)
-        self._window.get_style_context().add_class("overlay_window")
-        self._window.set_title("goodnight_mouse")
-        self._window.set_visual(self._window.get_screen().get_rgba_visual())
-        self._window.set_accept_focus(False)
-        self._window.set_sensitive(False)
-        # self._window.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
+        self.window = Gtk.Window(type=Gtk.WindowType.POPUP)
+        self.window.get_style_context().add_class("overlay_window")
+        self.window.set_title("goodnight_mouse")
+        self.window.set_visual(self.window.get_screen().get_rgba_visual())
+        self.window.set_accept_focus(False)
+        self.window.set_sensitive(False)
+        # self.window.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
 
-        self._container = Gtk.Fixed()
-        self._container.get_style_context().add_class("action_container")
-        self._window.add(self._container)
+        self.container = Gtk.Fixed()
+        self.container.get_style_context().add_class("action_container")
+        self.window.add(self.container)
 
         def remove_input(*args):
-            self._window.input_shape_combine_region(
+            self.window.input_shape_combine_region(
                 cairo.Region(cairo.RectangleInt()))
-        self._window.connect("draw", remove_input)
+        self.window.connect("draw", remove_input)
+
+        self._css_provider = None
+        self.visible = False
 
     def __call__(self, config: WindowConfig):
         self._config = config
@@ -38,36 +41,49 @@ class Overlay:
         return self
 
     def __enter__(self):
-        logging.debug("showing overlay window...")
-
-        self._window.get_style_context().add_provider(
-            self._config.css, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
+        self._css_provider = self._config.css
+        self.window.get_style_context().add_provider(
+            self._css_provider, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS)
 
         self.clear()
-        self.sync_bounds()
-        self._window.show_all()
+        self.show()
 
         return self
 
     def __exit__(self, *args):
-        logging.debug("hiding overlay window...")
-
-        self._window.hide()
+        self.hide()
         self.clear()
 
-        if self._config is not None:
-            self._window.get_style_context().remove_provider(self._config.css)
-            self._config = None
+        if self._css_provider is not None:
+            self.window.get_style_context().remove_provider(self._css_provider)
+            self._css_provider = None
 
-    def sync_bounds(self):
-        component = self._config.window.queryComponent()
+    def show(self):
+        if self._config.accessible is None:
+            self.hide()
+            return
+        if self.visible is True:
+            return
+
+        logging.debug("showing overlay window...")
+
+        component = self._config.accessible.queryComponent()
         bounding_box = component.getExtents(pyatspi.component.XY_SCREEN)
-        self._window.move(bounding_box.x, bounding_box.y)
-        self._window.resize(bounding_box.width, bounding_box.height)
+        self.window.move(bounding_box.x, bounding_box.y)
+        self.window.resize(bounding_box.width, bounding_box.height)
 
-    def get_container(self):
-        return self._container
+        self.window.show_all()
+        self.visible = True
+
+    def hide(self):
+        if self.visible is not True:
+            return
+
+        logging.debug("hiding overlay window...")
+
+        self.window.hide()
+        self.visible = False
 
     def clear(self):
-        for child in self._container.get_children():
-            self._container.remove(child)
+        for child in self.container.get_children():
+            self.container.remove(child)

@@ -1,5 +1,5 @@
 import logging
-import time
+from typing import List, Set
 
 import pyatspi
 
@@ -8,96 +8,117 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk
 
-from .actions import Actions
-from .config import Config, WindowConfig
 from .focus import Focus
-from .keys import Keys
+from .keys import Keys, KeysEvent
 from .mouse import Mouse
+
+from .actions import Actions
+from .config import Config
 from .overlay import Overlay
 
 
 class Foreground:
-    def __init__(self, config: Config, focus: Focus, mouse: Mouse, keys: Keys, overlay: Overlay):
-        self._base_config = config
+    def __init__(self, config: Config, focus: Focus, mouse: Mouse, keys: Keys):
+        self._config = config
         self._focus = focus
         self._mouse = mouse
         self._keys = keys
-        self._overlay = overlay
 
-        self._actions = None
-        self._code = ""
+        self.overlay = Overlay()
+        self.actions = Actions(self.overlay.container)
+
+        self._window_config = self._config.window()
+
+        self.flags = set()
+        self.code = []
+
+    def __call__(self, flags: Set[str] = None):
+        if flags is None:
+            flags = set()
+        self.flags = flags
+
+        return self
 
     def __enter__(self):
         self._focus.subscribe(self._handle_focus)
         self._mouse.subscribe(self._handle_mouse)
         self._keys.subscribe(self._handle_keys)
 
-        active_window = self._focus.get_active_window()
-        if active_window is None:
-            return None
-        config = WindowConfig(
-            self._base_config, self._focus.get_active_window())
+        active_window = self._focus.active_window
+        self._window_config = self._config.window(active_window)
 
-        self._overlay(config).__enter__()
+        self.overlay(self._window_config).__enter__()
+        self.actions(self._window_config, self.flags).__enter__()
 
-        self._actions = Actions(
-            config, self._overlay.get_container()).__enter__()
+        self.code = []
 
         return self
 
     def __exit__(self, *args):
-        if self._actions is not None:
-            self._actions.__exit__()
-            self._actions = None
+        self.actions.__exit__(*args)
+        self.overlay.__exit__(*args)
 
-        self._overlay.__exit__(*args)
         self._keys.unsubscribe(self._handle_keys)
         self._mouse.unsubscribe(self._handle_mouse)
         self._focus.unsubscribe(self._handle_focus)
 
-    def _handle_keys(self, key: int, pressed: bool):
+    def _handle_keys(self, event: KeysEvent):
         logging.debug("handling key '%s', pressed: %s",
-                      Gdk.keyval_name(key), pressed)
+                      Gdk.keyval_name(event.key), (event.pressed))
 
-        if pressed is not True:
+        # only handle presses
+        if event.pressed is not True:
             return True
 
+        # keys to look for
         changed = False
-        if key == Gdk.KEY_Escape:
-            self.quit_loop()
-        elif key == Gdk.KEY_BackSpace:
-            if len(self._code) > 0:
-                self._code = self._code[:-1]
+        if event.key == Gdk.KEY_Escape:
+            self.stop()
+            return True
+        if event.key == Gdk.KEY_BackSpace:
+            if self.code:
+                self.code = self.code[:-1]
                 changed = True
-        elif 0x00 <= key <= 0xFF:
-            self._code += chr(key)
+        if event.key in self._window_config.characters:
+            self.code.append(event.key)
             changed = True
         if not changed:
             return True
 
-        n_valid_actions = self._actions.valid_code(self._code)
+        # check the validity of the new code
+        num_valid_actions = self.actions.matches(self.code)
 
-        if n_valid_actions == 1:
-            self._actions.do(self._code)
-            self.quit_loop()
+        # if only one action is left do that
+        if num_valid_actions == 1:
+            self.actions.do(self.code)
+            self.stop()
             return True
 
-        if n_valid_actions == 0:
-            self._code = ""
-        self._actions.apply_code(self._code)
+        # reset if no actions left
+        if num_valid_actions == 0:
+            self.code = []
+        self.actions.code = self.code
 
+        # returning true means the key is absorbed
         return True
 
     def _handle_mouse(self):
         logging.debug("handling mouse event")
 
-        self.quit_loop()
+        self.stop()
 
-    def _handle_focus(self, new_active_window: pyatspi.Accessible):
+    def _handle_focus(self, window: pyatspi.Accessible):
         logging.debug("handling focus change")
 
-        self.quit_loop()
+        self.stop()
 
-    def quit_loop(self):
-        logging.debug("quitting foreground...")
+    def start(self):
+        if self._window_config.accessible is None:
+            return
+
+        logging.debug("started foreground loop")
+        pyatspi.Registry.start()
+
+    def stop(self):
+        logging.debug("stopped foreground loop")
         pyatspi.Registry.stop()

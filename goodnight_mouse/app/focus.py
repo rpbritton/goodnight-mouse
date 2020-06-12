@@ -5,26 +5,25 @@ from gi.repository import GLib
 from Xlib import Xatom, display
 
 from .subscription import Subscription
-from .utils import ImmediateTimeout
+from .utils import ImmediateTimeout, EMPTY_COLLECTION
 
 
 class Focus(Subscription):
     _ACTIVATE_EVENTS = ["window:activate"]
     _DEACTIVATE_EVENTS = ["window:deactivate"]
 
-    _empty_collection = pyatspi.Collection(None)
-    _ACTIVE_WINDOW_MATCH_RULE = _empty_collection.createMatchRule(
+    _ACTIVE_WINDOW_MATCH_RULE = EMPTY_COLLECTION.createMatchRule(
         pyatspi.StateSet.new([pyatspi.STATE_SHOWING, pyatspi.STATE_VISIBLE,
-                              pyatspi.STATE_ACTIVE]), _empty_collection.MATCH_ALL,
-        "", _empty_collection.MATCH_NONE,
-        [], _empty_collection.MATCH_NONE,
-        "", _empty_collection.MATCH_NONE,
+                              pyatspi.STATE_ACTIVE]), EMPTY_COLLECTION.MATCH_ALL,
+        "", EMPTY_COLLECTION.MATCH_NONE,
+        [], EMPTY_COLLECTION.MATCH_NONE,
+        "", EMPTY_COLLECTION.MATCH_NONE,
         False)
 
     def __init__(self):
         super().__init__()
 
-        self.active_window = None
+        self._active_window = None
 
     def __enter__(self):
         logging.debug("registering focus listener")
@@ -36,7 +35,7 @@ class Focus(Subscription):
             self._deactivate_handle, *self._DEACTIVATE_EVENTS)
         ImmediateTimeout.disable()
 
-        self.active_window = self.force_get_active_window()
+        self.active_window = self.fresh_active_window()
 
         return self
 
@@ -49,20 +48,26 @@ class Focus(Subscription):
             self._deactivate_handle, *self._DEACTIVATE_EVENTS)
 
     def _activate_handle(self, event):
-        if event.source is not self.active_window:
-            self.active_window = event.source
-            self.notify(self.active_window)
+        self.active_window = event.source
 
     def _deactivate_handle(self, event):
-        if event.source is self.active_window:
-            self.active_window = None
-            self.notify(self.active_window)
+        if event.source is not self.active_window:
+            return
+        self.active_window = None
 
-    def get_active_window(self):
-        return self.active_window
+    @property
+    def active_window(self):
+        return self._active_window
+
+    @active_window.setter
+    def active_window(self, window: pyatspi.Accessible = None):
+        if window is self.active_window:
+            return
+        self._active_window = window
+        self.notify(self.active_window)
 
     @classmethod
-    def force_get_active_window(cls):
+    def fresh_active_window(cls):
         dis = display.Display()
         root_window = dis.screen().root
 

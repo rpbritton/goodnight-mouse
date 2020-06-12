@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Dict
 
 import pyatspi
 
@@ -9,125 +9,144 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from .focus import Focus
+from .utils import EMPTY_COLLECTION
 
 
 class TriggerConfig:
-    def __init__(self, trigger: dict):
-        self._modifiers = 0
-        keymap = Gdk.Keymap.get_default()
-        for modifier_name in Parser.attribute(trigger, "modifiers"):
-            modifier = Parser.modifier(modifier_name)
-            self._modifiers |= modifier
-
-            success, real_modifier = keymap.map_virtual_modifiers(
-                modifier)
-            if success:
-                self._modifiers |= real_modifier
-
-        self._hotkey = Gdk.keyval_from_name(
-            Parser.attribute(trigger, "hotkey"))
-
-        self._flags = Parser.attribute(trigger, "flags")
+    def __init__(self, properties: dict):
+        self._properties = properties
 
     @ property
     def modifiers(self) -> int:
-        return self._modifiers
+        if "modifiers" not in self._properties:
+            return 0
+
+        return ConfigParser.modifier_mask(self._properties["modifiers"])
 
     @ property
-    def hotkey(self) -> int:
-        return self._hotkey
+    def key(self) -> int:
+        if "key" not in self._properties:
+            return Gdk.KEY_VoidSymbol
+
+        return ConfigParser.keysym(self._properties["key"])
+
+    @property
+    def press(self) -> bool:
+        if "press" not in self._properties:
+            return True
+
+        return self._properties["press"]
 
     @ property
-    def flags(self) -> List[str]:
-        return self._flags
+    def flags(self) -> Set[str]:
+        if "flags" not in self._properties:
+            return []
 
-
-class WindowConfig:
-    def __init__(self, window: pyatspi.Accessible, rules: dict):
-        self._accessible = window
-
-        self._rule = None
-        if self._accessible is not None:
-            for rule in rules:
-                match = Parser.attribute(rule, "condition")
-                if Parser.match(match, window):
-                    self._rule = rule
-                    break
-
-        self._characters = []
-        self._css = Gtk.CssProvider()
-        self._triggers = []
-        self._states = {}
-        self._roles = {}
-        if self._rule is not None:
-            self._characters = [Parser.keysym(
-                character) for character in Parser.attribute(self._rule, "characters")]
-
-            self._css = Parser.css(Parser.attribute(self._rule, "css"))
-
-            self._triggers = [TriggerConfig(
-                trigger) for trigger in Parser.attribute(self._rule, "triggers")]
-
-            self._states = {Parser.state(
-                state) for state in Parser.attribute(self._rule, "states")}
-
-            self._roles = {Parser.role(role)
-                           for role in Parser.attribute(self._rule, "roles")}
-
-    @ property
-    def accessible(self) -> pyatspi.Accessible:
-        return self._accessible
-
-    @ property
-    def characters(self) -> List[int]:
-        return self._characters
-
-    @ property
-    def css(self) -> Gtk.CssProvider:
-        return self._css
-
-    @ property
-    def triggers(self) -> List[TriggerConfig]:
-        return self._triggers
-
-    @ property
-    def states(self) -> Set[int]:
-        return self._states
-
-    @ property
-    def roles(self) -> Set[int]:
-        return self._roles
+        return set(self._properties["flags"])
 
 
 class ActionConfig:
-    @ classmethod
-    def get_actions(cls, window_config: WindowConfig, flags: Set[str]):
-        if window_config is None:
+    def __init__(self, accessible: pyatspi.Accessible, properties: dict):
+        self.accessible = accessible
+        self._properties = properties
+
+    @ property
+    def css(self) -> Gtk.CssProvider:
+        if "css" not in self._properties:
+            return ConfigParser.css("")
+
+        return ConfigParser.css(self._properties["css"])
+
+    @ property
+    def position(self) -> Tuple[int, int]:
+        if "position" not in self._properties:
+            return ("x", "y")
+
+        return tuple(self._properties["position"])
+
+    @property
+    def do(self):
+        if "do" not in self._properties:
+            return ""
+
+        return self._properties["do"]
+
+
+class WindowConfig:
+    def __init__(self, window: pyatspi.Accessible = None, rules: List[dict] = None):
+        self.accessible = window
+        self._properties = {}
+
+        if rules is None:
+            roles = []
+        if self.accessible is not None:
+            for rule in reversed(rules):
+                if ConfigParser.match(rule["condition"], window):
+                    self._properties = rule
+                    break
+
+    @property
+    def css(self) -> Gtk.CssProvider:
+        if "css" not in self._properties:
+            return ConfigParser.css("")
+
+        return ConfigParser.css(self._properties["css"])
+
+    @property
+    def characters(self) -> List[int]:
+        if "characters" not in self._properties:
             return []
 
-        empty_collection = pyatspi.Collection(None)
-        match_rule = empty_collection.createMatchRule(
-            pyatspi.StateSet.new(
-                window_config.states), empty_collection.MATCH_ALL,
-            "", empty_collection.MATCH_NONE,
-            [], empty_collection.MATCH_NONE,
-            "", empty_collection.MATCH_NONE,
+        return [ConfigParser.keysym(character) for character in self._properties["characters"]]
+
+    @property
+    def triggers(self) -> List[TriggerConfig]:
+        if "triggers" not in self._properties:
+            return []
+
+        return [TriggerConfig(trigger) for trigger in self._properties["triggers"]]
+
+    @property
+    def states(self) -> List[int]:
+        if "states" not in self._properties:
+            return []
+
+        return [ConfigParser.state(state) for state in self._properties["states"]]
+
+    @property
+    def roles(self) -> Dict[int, dict]:
+        if "roles" not in self._properties:
+            return []
+
+        return {ConfigParser.role(role): function for role, function in self._properties["roles"].items()}
+
+    def actions(self, flags: Set[str] = None) -> List[ActionConfig]:
+        if self.accessible is None:
+            return []
+
+        if flags is None:
+            flags = {}
+        match_rule = EMPTY_COLLECTION.createMatchRule(
+            pyatspi.StateSet.new(self.states), EMPTY_COLLECTION.MATCH_ALL,
+            "", EMPTY_COLLECTION.MATCH_NONE,
+            [], EMPTY_COLLECTION.MATCH_NONE,
+            "", EMPTY_COLLECTION.MATCH_NONE,
             False)
-        roles = window_config.roles
+        roles = self.roles
 
         actions = []
-        accessibles = [window_config.accessible]
-        while len(accessibles) > 0:
+        accessibles = [self.accessible]
+        while accessibles:
             accessible = accessibles.pop()
 
             # check current accessible
             role = accessible.getRole()
-            if role in window_config.roles:
-                action_properties = Parser.function(
-                    window_config.roles[role], accessible, flags)
-                if action_properties is not None:
-                    actions.append(cls(accessible, action_properties))
+            if role in roles:
+                properties_list = ConfigParser.function(
+                    roles[role], accessible, flags)
+                if properties_list is not None:
+                    for properties in properties_list:
+                        actions.append(ActionConfig(accessible, properties))
 
             # check childern
             collection = accessible.queryCollection()
@@ -136,115 +155,71 @@ class ActionConfig:
 
         return actions
 
-    def __init__(self, accessible: pyatspi.Accessible, action_properties: dict):
-        self._accessible = accessible
-        self._css = Parser.css(Parser.attribute(
-            action_properties, "css"))
-        self._position = tuple(Parser.attribute(action_properties, "position"))
-        self._action = Parser.attribute(action_properties, "do")
 
-    @ property
-    def accessible(self):
-        return self._accessible
-
-    @ property
-    def css(self) -> Gtk.CssProvider:
-        return self._css
-
-    @ property
-    def position(self) -> Tuple[int, int]:
-        return self._position
-
-    def action(self) -> str:
-        return self._action
-
-
-class Config:  # TODO: implement subscription for changes
+class Config:
     def __init__(self, config: dict):
         self._config = config
-        self._focus = None
 
-        self._lockfile = Parser.attribute(self._config, "lockfile")
-        self._rules = Parser.attribute(self._config, "rules")
-
-        self._window = WindowConfig(None, self._rules)
-
-    def __call__(self, focus: Focus):
-        self._focus = focus
-
-        return self
-
-    def __enter__(self):
-        if self._focus is None:
-            return None
-
-        self._focus.subscribe(self._handle_focus)
-        self._handle_focus(self._focus.get_active_window())
-
-        return self
-
-    def __exit__(self, *args):
-        self._focus.unsubscribe(self._handle_focus)
-
-    @property
+    @ property
     def lockfile(self) -> str:
-        return self._lockfile
+        return self._config["lockfile"]
 
-    @property
-    def window(self) -> WindowConfig:
-        return self._window
-
-    @property
-    def actions(self, flags) -> List[ActionConfig]:
-        return ActionConfig.get_actions(self._window, flags)
-
-    def _handle_focus(self, window: pyatspi.Accessible):
-        self._window = WindowConfig(window, self._rules)
+    def window(self, window: pyatspi.Accessible = None) -> WindowConfig:
+        # TODO: add caching
+        return WindowConfig(window, self._config["rules"])
 
 
-class Parser:
-    @classmethod
-    def attribute(cls, dictionary: dict, attribute: str):
-        if attribute in dictionary:
-            return dictionary[attribute]
-        else:
-            logging.fatal("missing %s in %r", attribute, dictionary)
-
-    @classmethod
+class ConfigParser:
+    @ classmethod
     def state(cls, name: str) -> int:
         value = getattr(pyatspi, "STATE_" + name.upper(), None)
         if value is None:
             logging.fatal("unknown state '%s'", name)
         return value
 
-    @classmethod
+    @ classmethod
     def role(cls, name: str) -> int:
         value = getattr(pyatspi, "ROLE_" + name.upper(), None)
         if value is None:
             logging.fatal("unknown modifier '%s'", name)
         return value
 
-    @classmethod
+    @ classmethod
     def modifier(cls, name: str) -> int:
         value = getattr(Gdk.ModifierType, name.upper() + "_MASK", None)
         if value is None:
             logging.fatal("unknown modifier '%s'", name)
         return value
 
-    @classmethod
+    @ classmethod
+    def modifier_mask(cls, names: List[str]) -> int:
+        modifiers = 0
+
+        keymap = Gdk.Keymap.get_default()
+        for name in names:
+            modifier = cls.modifier(name)
+            modifiers |= modifier
+
+            success, modifier = keymap.map_virtual_modifiers(modifier)
+            if success:
+                modifiers |= modifier
+
+        return modifiers & 0xFF
+
+    @ classmethod
     def keysym(cls, name: str) -> int:
         value = Gdk.keyval_from_name(name)
         if value == Gdk.KEY_VoidSymbol:
             logging.fatal("unknown character '%s'", name)
         return value
 
-    @classmethod
+    @ classmethod
     def css(cls, css: str) -> Gtk.CssProvider:
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(css.encode())
         return css_provider
 
-    @classmethod
+    @ classmethod
     def function(cls, function: dict, accessible: pyatspi.Accessible, flags: Set[str] = None):
         passed = True
         if "condition" in function:
@@ -260,7 +235,7 @@ class Parser:
 
         return None
 
-    @classmethod
+    @ classmethod
     def match(cls, match: List[dict], accessible: pyatspi.Accessible, flags: Set[str] = None) -> bool:
         if flags is None:
             flags = {}
@@ -316,8 +291,8 @@ class Parser:
     @ classmethod
     def _states(cls, accessible: pyatspi.Accessible, states: Set[str]):
         existing_states = set(accessible.getState().getStates())
-        return {Parser.state(state) for state in states}.issubset(existing_states)
+        return {ConfigParser.state(state) for state in states}.issubset(existing_states)
 
     @ classmethod
     def _role(cls, accessible: pyatspi.Accessible, role: str):
-        return accessible.getRole() == Parser.role(role)
+        return accessible.getRole() == ConfigParser.role(role)

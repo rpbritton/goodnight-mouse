@@ -1,3 +1,5 @@
+from typing import Set
+
 from .app import App
 from .config import Config
 
@@ -8,8 +10,8 @@ class Commands:
 
     def start(self):
         with App.new(self._config) as app:
-            app.background()
+            app.start()
 
-    def trigger(self):
+    def trigger(self, flags: Set[str]):
         with App.new(self._config) as app:
-            app.foreground()
+            app.trigger(flags)

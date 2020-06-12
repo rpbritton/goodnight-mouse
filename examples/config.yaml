@@ -55,9 +55,11 @@ rules:
     condition:
       - application: '.*'
     characters: [ f, j, d, k, g, h, s, l, a ]
+    # characters: [a, b, c]
     triggers:
       - modifiers: { super }
-        hotkey: d
+        key: d
+        press: true
         flags: { default }
     css: |
       .overlay_window {

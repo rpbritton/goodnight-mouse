@@ -6,6 +6,14 @@ from .subscription import Subscription
 from .utils import ImmediateTimeout
 
 
+class KeysEvent:
+    def __init__(self, event: pyatspi.deviceevent.DeviceEvent):
+        self.event = event
+        self.key = event.id
+        self.pressed = event.type == pyatspi.KEY_PRESSED_EVENT
+        self.modifiers = event.modifiers
+
+
 class Keys(Subscription):
     def __init__(self):
         super().__init__()
@@ -32,4 +40,4 @@ class Keys(Subscription):
         ImmediateTimeout.disable()
 
     def _handle(self, event):
-        return self.notify(event.id, (event.type == pyatspi.deviceevent.KEY_PRESSED_EVENT))
+        return self.notify(KeysEvent(event))

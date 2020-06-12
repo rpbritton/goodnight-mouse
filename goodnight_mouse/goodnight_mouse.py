@@ -15,6 +15,8 @@ def main():
     parser.add_argument("command", help="program to run",
                         choices=["debugger", "background", "trigger"],
                         nargs="?", default="trigger")
+    parser.add_argument(
+        "-f", "--flags", help="flags to run with", nargs="*", default=[])
     parser.add_argument("-v", "--verbose",
                         help="increase logging", action="store_true")
     parser.add_argument("-c", "--config", help="config file to read",
@@ -31,7 +33,7 @@ def main():
         commands.start()
     elif args.command == "trigger":
         commands = Commands(config)
-        commands.trigger()
+        commands.trigger(set(args.flags))
     elif args.command in ("debugger"):
         # debugger.main(config)
         pass

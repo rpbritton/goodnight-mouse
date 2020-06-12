@@ -4,6 +4,8 @@ import pyatspi
 from Xlib.display import Display
 from gi.repository import GLib
 
+EMPTY_COLLECTION = pyatspi.Collection(None)
+
 
 class Emulation:
     display = Display()
