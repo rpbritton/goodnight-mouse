@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import List, Set
 
 import pyatspi
@@ -8,7 +9,15 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from .config import WindowConfig, ActionConfig
+from .config import (
+    WindowConfig,
+    ActionConfig,
+    ExecuteConfig,
+    ExecuteActionConfig,
+    ExecuteKeyConfig,
+    ExecuteMouseConfig,
+    ExecuteFocusConfig,
+)
 from .codes import Codes
 from .utils import Emulation
 
@@ -66,18 +75,19 @@ class Actions:
         for action in self.actions:
             action.active_code = self.code
 
-    def do(self, code=None):
+    def execute(self, code=None):
         if code is None:
             code = self.code
 
         for action in self.actions:
             if action.code == code:
-                action.do()
+                action.execute()
 
 
 class Action:
     def __init__(self, config: ActionConfig, container: Gtk.Fixed):
         self._config = config
+        self.accessible = self._config.accessible
         self._container = container
 
         self._code = []
@@ -108,7 +118,7 @@ class Action:
         self._container.remove(self.box)
 
     def show(self):
-        component = self._config.accessible.queryComponent()
+        component = self.accessible.queryComponent()
 
         self.width, self.height = component.getSize()
 
@@ -169,9 +179,6 @@ class Action:
 
     @active_code.setter
     def active_code(self, code):
-        # print("why", code)
-        # if code == self.active_code:
-        #     return
         self._active_code = code
 
         if not self.valid(code):
@@ -186,46 +193,43 @@ class Action:
                 "action_character_active")
         self.box.show()
 
-    def do(self):
-        print("doing")
+    def execute(self):
+        executions = {
+            "action": self.execute_action,
+            "key": self.execute_key,
+            "mouse": self.execute_mouse,
+            "focus": self.execute_focus,
+        }
 
+        for execution in self._config.execute:
+            if execution.type in executions:
+                executions[execution.type](execution)
 
-# class _NativeAction(Action):
-#     def do(self):
-#         logging.debug("doing native action")
+    def execute_action(self, config: ExecuteActionConfig):
+        logging.debug("executing action...")
 
-#         action = self._accessible.queryAction()
-#         action.doAction(0)
+        try:
+            action = self.accessible.queryAction()
+            for index in range(action.get_nActions()):
+                if re.search(config.match, action.getName(index)) is not None:
+                    action.doAction(index)
+                    return
+        except NotImplementedError:
+            pass
 
+    def execute_key(self, config: ExecuteKeyConfig):
+        logging.debug("executing key...")
 
-# class _PressAction(Action):
-#     def do(self):
-#         logging.debug("doing press action")
+        Emulation.key(config.key, config.action, 0)
 
-#         component = self._accessible.queryComponent()
-#         if not component.grabFocus():
-#             return
-#         Emulation.key_tap(Gdk.KEY_Return)
+    def execute_mouse(self, config: ExecuteMouseConfig):
+        logging.debug("executing mouse...")
 
+        Emulation.mouse(config.button, config.action,
+                        self.screen_center_x, self.screen_center_y)
 
-# class _ClickAction(Action):
-#     def do(self):
-#         logging.debug("doing click action")
+    def execute_focus(self, config: ExecuteFocusConfig):
+        logging.debug("executing focus...")
 
-#         Emulation.mouse_tap(1, self._screen_center_x, self._screen_center_y)
-
-
-# class _FocusAction(Action):
-#     def do(self):
-#         logging.debug("doing focus action")
-
-#         component = self._accessible.queryComponent()
-#         component.grabFocus()
-
-
-# _ACTION_TYPES = {
-#     "native": _NativeAction,
-#     "press": _PressAction,
-#     "click": _ClickAction,
-#     "focus": _FocusAction,
-# }
+        component = self.accessible.queryComponent()
+        component.grabFocus()

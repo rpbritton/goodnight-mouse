@@ -19,17 +19,26 @@ anchors:
       - action: '.*'
     return:
       - <<: *default_action
-        do: native
+        execute:
+          - type: action
+            match: '.*'
     else:
       condition:
         - states: { focusable }
       return:
         - <<: *default_action
-          do: press # TODO: make these a sequence of keys
+          execute:
+            - type: focus
+            - type: key
+              key: Return
+              action: click
       else:
         return:
           - <<: *default_action
-            do: click
+            execute:
+              - type: mouse
+                button: 1
+                action: click
   - &actuate_non_selected
     condition:
       - states: { selected }
@@ -42,13 +51,16 @@ anchors:
         invert: true
     return:
       - <<: *default_action
-        do: focus
+        execute:
+          - type: focus
   - &only_native
     condition:
       - action: 'select'
     return:
       - <<: *default_action
-        do: native
+        execute:
+          - type: action
+            match: '.*'
 lockfile: "/tmp/goodnight_mouse.pid"
 rules:
   - &default_rule

@@ -1,4 +1,5 @@
 import logging
+import time
 
 import pyatspi
 from gi.repository import GLib
@@ -11,6 +12,7 @@ from .utils import ImmediateTimeout, EMPTY_COLLECTION
 class Focus(Subscription):
     _ACTIVATE_EVENTS = ["window:activate"]
     _DEACTIVATE_EVENTS = ["window:deactivate"]
+    # _EVENTS = ["object:state-changed:active"]
 
     _ACTIVE_WINDOW_MATCH_RULE = EMPTY_COLLECTION.createMatchRule(
         pyatspi.StateSet.new([pyatspi.STATE_SHOWING, pyatspi.STATE_VISIBLE,
@@ -48,6 +50,7 @@ class Focus(Subscription):
             self._deactivate_handle, *self._DEACTIVATE_EVENTS)
 
     def _activate_handle(self, event):
+        print(event)
         self.active_window = event.source
 
     def _deactivate_handle(self, event):
@@ -67,7 +70,7 @@ class Focus(Subscription):
         self.notify(self.active_window)
 
     @classmethod
-    def fresh_active_window(cls):
+    def fresh_active_application(cls):
         dis = display.Display()
         root_window = dis.screen().root
 
@@ -85,12 +88,28 @@ class Focus(Subscription):
         desktop = pyatspi.Registry.getDesktop(0)
         for application in desktop:
             if application.get_process_id() == active_pid:
-                collection = application.queryCollection()
-                active_windows = collection.getMatches(
-                    cls._ACTIVE_WINDOW_MATCH_RULE, collection.SORT_ORDER_CANONICAL, 0, False)
-                if len(active_windows) == 1:
-                    return active_windows[0]
-                else:
-                    return None
+                return application
+
+        return None
+
+    @classmethod
+    def fresh_active_window(cls, application: pyatspi.Application = None):
+        if application is None:
+            application = cls.fresh_active_application()
+            if application is None:
+                return None
+
+        collection = application.queryCollection()
+        windows = collection.getMatches(
+            cls._ACTIVE_WINDOW_MATCH_RULE, collection.SORT_ORDER_CANONICAL, 0, False)
+        if len(windows) == 1:
+            return windows[0]
+
+        # windows = []
+        # for window in application:
+        #     if window.getState().contains(pyatspi.STATE_ACTIVE):
+        #         windows.append(window)
+        # if len(windows) == 1:
+        #     return windows[0]
 
         return None

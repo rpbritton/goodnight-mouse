@@ -11,20 +11,39 @@ class Emulation:
     display = Display()
     root = display.screen().root
 
-    @classmethod  # TODO: look back into Atspi method
-    def mouse_tap(cls, button: int, x: int, y: int):
+    mouse_actions = {
+        "click": "b{}c",
+        "press": "b{}p",
+        "release": "b{}r",
+    }
+
+    @classmethod
+    def mouse(cls, button: int, action: str, x: int, y: int):
+        if action not in cls.mouse_actions:
+            return
+
         pointer = cls.root.query_pointer()
         ImmediateTimeout.enable()
-        pyatspi.Registry.generateMouseEvent(x, y, "b{}c".format(button))
+        pyatspi.Registry.generateMouseEvent(
+            x, y, cls.mouse_actions[action].format(button))
         pyatspi.Registry.generateMouseEvent(
             pointer.root_x, pointer.root_y, "abs")
         ImmediateTimeout.disable()
 
+    key_actions = {
+        "click": pyatspi.KEY_PRESSRELEASE,
+        "press": pyatspi.KEY_PRESS,
+        "release": pyatspi.KEY_RELEASE,
+    }
+
     @classmethod
-    def key_tap(cls, key: int):
+    def key(cls, key: int, action: str, modifiers: int):
+        if action not in cls.key_actions:
+            return
+
         ImmediateTimeout.enable()
         pyatspi.Registry.generateKeyboardEvent(
-            cls.display.keysym_to_keycode(key), None, pyatspi.KEY_PRESSRELEASE)
+            cls.display.keysym_to_keycode(key), None, cls.key_actions[action])
         ImmediateTimeout.disable()
 
 

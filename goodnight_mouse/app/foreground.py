@@ -90,8 +90,8 @@ class Foreground:
 
         # if only one action is left do that
         if num_valid_actions == 1:
-            self.actions.do(self.code)
             self.stop()
+            self.actions.execute(self.code)
             return True
 
         # reset if no actions left

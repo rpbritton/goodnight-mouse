@@ -1,3 +1,4 @@
+from collections import namedtuple
 import logging
 import re
 from typing import List, Tuple, Set, Dict
@@ -45,6 +46,76 @@ class TriggerConfig:
         return set(self._properties["flags"])
 
 
+class ExecuteConfig:
+    @classmethod
+    def new(cls, properties: dict):
+        if "type" not in properties or properties["type"] not in cls.types:
+            return cls(properties)
+
+        return cls.types[properties["type"]](properties)
+
+    def __init__(self, properties: dict):
+        if "type" in properties and properties["type"] in self.types:
+            self.type = properties["type"]
+        else:
+            self.type = None
+
+    types = {}
+
+
+class ExecuteActionConfig(ExecuteConfig):
+    def __init__(self, properties: dict):
+        super().__init__(properties)
+
+        if "match" in properties:
+            self.match = properties["match"]
+        else:
+            self.match = '$^'
+
+
+class ExecuteKeyConfig(ExecuteConfig):
+    def __init__(self, properties: dict):
+        super().__init__(properties)
+
+        if "key" in properties:
+            self.key = ConfigParser.keysym(properties["key"])
+        else:
+            self.key = Gdk.KEY_VoidSymbol
+
+        if "action" in properties:
+            self.action = properties["action"]
+        else:
+            self.action = ""
+
+
+class ExecuteMouseConfig(ExecuteConfig):
+    def __init__(self, properties: dict):
+        super().__init__(properties)
+
+        if "button" in properties:
+            self.button = properties["button"]
+        else:
+            self.key = 0
+
+        if "action" in properties:
+            self.action = properties["action"]
+        else:
+            self.action = ""
+
+
+class ExecuteFocusConfig(ExecuteConfig):
+    def __init__(self, properties: dict):
+        super().__init__(properties)
+
+
+ExecuteConfig.types = {
+    "action": ExecuteActionConfig,
+    "key": ExecuteKeyConfig,
+    "mouse": ExecuteMouseConfig,
+    "focus": ExecuteFocusConfig,
+}
+
+
 class ActionConfig:
     def __init__(self, accessible: pyatspi.Accessible, properties: dict):
         self.accessible = accessible
@@ -65,11 +136,16 @@ class ActionConfig:
         return tuple(self._properties["position"])
 
     @property
-    def do(self):
-        if "do" not in self._properties:
-            return ""
+    def execute(self) -> List[dict]:
+        if "execute" not in self._properties:
+            return []
 
-        return self._properties["do"]
+        executions = []
+        for properties in self._properties["execute"]:
+            execution = ExecuteConfig.new(properties)
+            if execution is not None:
+                executions.append(execution)
+        return executions
 
 
 class WindowConfig:
@@ -79,6 +155,7 @@ class WindowConfig:
 
         if rules is None:
             roles = []
+
         if self.accessible is not None:
             for rule in reversed(rules):
                 if ConfigParser.match(rule["condition"], window):
@@ -281,8 +358,9 @@ class ConfigParser:
     def _action(cls, accessible: pyatspi.Accessible, regex: str) -> bool:
         try:
             action = accessible.queryAction()
-            if action.get_nActions() > 0:
-                return re.search(regex, action.getName(0)) is not None
+            for index in range(action.get_nActions()):
+                if re.search(regex, action.getName(index)) is not None:
+                    return True
         except NotImplementedError:
             return False
 
