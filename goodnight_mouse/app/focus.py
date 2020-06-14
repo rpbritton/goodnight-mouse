@@ -2,7 +2,6 @@ import logging
 import time
 
 import pyatspi
-from gi.repository import GLib
 from Xlib import Xatom, display
 
 from .subscription import Subscription
@@ -12,7 +11,6 @@ from .utils import ImmediateTimeout, EMPTY_COLLECTION
 class Focus(Subscription):
     _ACTIVATE_EVENTS = ["window:activate"]
     _DEACTIVATE_EVENTS = ["window:deactivate"]
-    # _EVENTS = ["object:state-changed:active"]
 
     _ACTIVE_WINDOW_MATCH_RULE = EMPTY_COLLECTION.createMatchRule(
         pyatspi.StateSet.new([pyatspi.STATE_SHOWING, pyatspi.STATE_VISIBLE,
@@ -50,7 +48,6 @@ class Focus(Subscription):
             self._deactivate_handle, *self._DEACTIVATE_EVENTS)
 
     def _activate_handle(self, event):
-        print(event)
         self.active_window = event.source
 
     def _deactivate_handle(self, event):

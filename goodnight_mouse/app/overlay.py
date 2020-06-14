@@ -32,6 +32,8 @@ class Overlay:
                 cairo.Region(cairo.RectangleInt()))
         self.window.connect("draw", remove_input)
 
+        self.x = self.y = self.width = self.height = 0
+
         self._css_provider = None
         self.visible = False
 
@@ -69,8 +71,11 @@ class Overlay:
 
         component = self._config.accessible.queryComponent()
         bounding_box = component.getExtents(pyatspi.component.XY_SCREEN)
-        self.window.move(bounding_box.x, bounding_box.y)
-        self.window.resize(bounding_box.width, bounding_box.height)
+        self.x, self.y = bounding_box.x, bounding_box.y
+        self.width, self.height = bounding_box.width, bounding_box.height
+
+        self.window.move(self.x, self.y)
+        self.window.resize(self.width, self.height)
 
         self.window.show_all()
         self.visible = True
@@ -87,3 +92,12 @@ class Overlay:
     def clear(self):
         for child in self.container.get_children():
             self.container.remove(child)
+
+    def put(self, widget: Gtk.Widget, x: int, y: int):
+        self.container.put(widget, x - self.x, y - self.y)
+
+    def move(self, widget: Gtk.Widget, x: int, y: int):
+        self.container.move(widget, x - self.x, y - self.y)
+
+    def remove(self, widget: Gtk.Widget):
+        self.container.remove(widget)

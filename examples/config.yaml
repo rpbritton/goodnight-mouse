@@ -13,32 +13,33 @@ anchors:
       .action_character_active {
         color: #00F;
       }
-    position: [x + ww/2 - pw/2, y + wh/2 - ph/2]
+    x: $x + $widget_width - $popup_width
+    y: $y + $widget_height - $popup_height
   - &actuate
+    # condition:
+    #   - action: '.*'
+    # return:
+    #   - <<: *default_action
+    #     execute:
+    #       - type: action
+    #         match: '.*'
+    # else:
     condition:
-      - action: '.*'
+      - states: { focusable }
     return:
       - <<: *default_action
         execute:
-          - type: action
-            match: '.*'
+          - type: focus
+          - type: key
+            key: Return
+            action: click
     else:
-      condition:
-        - states: { focusable }
       return:
         - <<: *default_action
           execute:
-            - type: focus
-            - type: key
-              key: Return
+            - type: mouse
+              button: 1
               action: click
-      else:
-        return:
-          - <<: *default_action
-            execute:
-              - type: mouse
-                button: 1
-                action: click
   - &actuate_non_selected
     condition:
       - states: { selected }

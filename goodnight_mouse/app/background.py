@@ -44,10 +44,6 @@ class Background:
         pyatspi.Registry.start()
         self.started = False
 
-    def _pumpEvents(self):
-        pyatspi.Registry.pumpQueuedEvents()
-        return True
-
     def stop(self):
         if not self.started:
             return

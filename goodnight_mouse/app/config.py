@@ -1,6 +1,7 @@
 from collections import namedtuple
 import logging
 import re
+from string import Template
 from typing import List, Tuple, Set, Dict
 
 import pyatspi
@@ -129,11 +130,18 @@ class ActionConfig:
         return ConfigParser.css(self._properties["css"])
 
     @ property
-    def position(self) -> Tuple[int, int]:
-        if "position" not in self._properties:
-            return ("x", "y")
+    def x(self) -> Template:
+        if "x" not in self._properties:
+            return Template("$x")
 
-        return tuple(self._properties["position"])
+        return Template(self._properties["x"])
+
+    @ property
+    def y(self) -> Template:
+        if "y" not in self._properties:
+            return Template("$y")
+
+        return Template(self._properties["y"])
 
     @property
     def execute(self) -> List[dict]:

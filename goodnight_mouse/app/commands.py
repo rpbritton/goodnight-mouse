@@ -1,4 +1,5 @@
 from typing import Set
+import pyatspi
 
 from .app import App
 from .config import Config

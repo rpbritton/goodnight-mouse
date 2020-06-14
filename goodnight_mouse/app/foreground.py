@@ -25,12 +25,14 @@ class Foreground:
         self._keys = keys
 
         self.overlay = Overlay()
-        self.actions = Actions(self.overlay.container)
+        self.actions = Actions(self.overlay)
 
         self._window_config = self._config.window()
 
         self.flags = set()
         self.code = []
+
+        self.started = False
 
     def __call__(self, flags: Set[str] = None):
         if flags is None:
@@ -88,7 +90,7 @@ class Foreground:
         # check the validity of the new code
         num_valid_actions = self.actions.matches(self.code)
 
-        # if only one action is left do that
+        # check if there is only one action left
         if num_valid_actions == 1:
             self.stop()
             self.actions.execute(self.code)
@@ -117,8 +119,17 @@ class Foreground:
             return
 
         logging.debug("started foreground loop")
+        self.started = True
         pyatspi.Registry.start()
+        self.started = False
+
+        # do the remaining action if exists
+        # num_valid_actions = self.actions.matches(self.code)
+        # if num_valid_actions == 1:
+        #     self.actions.execute(self.code)
 
     def stop(self):
+        if not self.started:
+            return
         logging.debug("stopped foreground loop")
         pyatspi.Registry.stop()

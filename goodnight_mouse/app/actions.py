@@ -3,6 +3,7 @@ import re
 from typing import List, Set
 
 import pyatspi
+import numexpr
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -20,11 +21,14 @@ from .config import (
 )
 from .codes import Codes
 from .utils import Emulation
+from .overlay import Overlay
+
+# TODO: use re.compile and match
 
 
 class Actions:
-    def __init__(self, container: Gtk.Fixed):
-        self._container = container
+    def __init__(self, overlay: Overlay):
+        self._overlay = overlay
 
         self.actions = []
         self._code = []
@@ -43,7 +47,7 @@ class Actions:
         return self
 
     def __enter__(self):
-        self.actions = [Action(config, self._container)
+        self.actions = [Action(config, self._overlay)
                         for config in self._config.actions(self._flags)]
 
         codes = self._codes_generator.generate(len(self.actions))
@@ -85,19 +89,21 @@ class Actions:
 
 
 class Action:
-    def __init__(self, config: ActionConfig, container: Gtk.Fixed):
+    def __init__(self, config: ActionConfig, overlay: Overlay):
         self._config = config
         self.accessible = self._config.accessible
-        self._container = container
+        self._overlay = overlay
 
         self._code = []
         self._active_code = []
 
-        self.width = self.height = 0
-        self.window_x = self.window_y = 0
-        self.window_center_x = self.window_center_y = 0
-        self.screen_x = self.screen_y = 0
-        self.screen_center_x = self.screen_center_y = 0
+        self.widget_width = self.height = 0
+        # self.window_x = self.window_y = 0
+        # self.window_center_x = self.window_center_y = 0
+        # self.screen_x = self.screen_y = 0
+        # self.screen_center_x = self.screen_center_y = 0
+        self.x = self.y = 0
+        self.center_x = self.center_y = 0
 
         self.box = Gtk.Box()
         self.box.get_style_context().add_class("action_box")
@@ -115,29 +121,39 @@ class Action:
 
     def __exit__(self, *args):
         self.hide()
-        self._container.remove(self.box)
+        self._overlay.remove(self.box)
 
     def show(self):
+        self.box.show_all()
+
         component = self.accessible.queryComponent()
+        bounding_box = component.getExtents(pyatspi.component.XY_SCREEN)
+        self.x, self.y = bounding_box.x, bounding_box.y
+        self.widget_width, self.widget_height = bounding_box.width, bounding_box.height
 
-        self.width, self.height = component.getSize()
+        popup_size = self.box.get_preferred_size()
+        self.popup_width, self.popup_height = popup_size[1].width, popup_size[1].height
 
-        self.window_x, self.window_y = component.getPosition(
-            pyatspi.component.XY_WINDOW)
-        self.window_center_x = self.window_x + self.width // 2
-        self.window_center_y = self.window_y + self.height // 2
+        self.center_x = self.x + self.widget_width // 2
+        self.center_y = self.y + self.widget_height // 2
 
-        self.screen_x, self.screen_y = component.getPosition(
-            pyatspi.component.XY_SCREEN)
-        self.screen_center_x = self.screen_x + self.width // 2
-        self.screen_center_y = self.screen_y + self.height // 2
+        measurements = {
+            "x": self.x,
+            "y": self.y,
+            "widget_width": self.widget_width,
+            "widget_height": self.widget_height,
+            "popup_width": self.popup_width,
+            "popup_height": self.popup_height,
+        }
+
+        x = numexpr.evaluate(self._config.x.substitute(**measurements)).item()
+        y = numexpr.evaluate(self._config.y.substitute(**measurements)).item()
 
         if self.visible:
-            self._container.move(self.box, self.window_x, self.window_y)
+            self._overlay.move(self.box, x, y)
         else:
-            self._container.put(self.box, self.window_x, self.window_y)
+            self._overlay.put(self.box, x, y)
 
-        self.box.show_all()
         self.visible = True
 
     def hide(self):
@@ -213,7 +229,7 @@ class Action:
             for index in range(action.get_nActions()):
                 if re.search(config.match, action.getName(index)) is not None:
                     action.doAction(index)
-                    return
+                    break
         except NotImplementedError:
             pass
 
@@ -226,7 +242,7 @@ class Action:
         logging.debug("executing mouse...")
 
         Emulation.mouse(config.button, config.action,
-                        self.screen_center_x, self.screen_center_y)
+                        self.center_x, self.center_y)
 
     def execute_focus(self, config: ExecuteFocusConfig):
         logging.debug("executing focus...")
