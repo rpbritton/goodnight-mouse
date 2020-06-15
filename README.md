@@ -27,3 +27,4 @@ export ACCESSIBILITY_ENABLED=1
     * May need `dbus-update-activation-environment --systemd DBUS_SESSION_BUS_ADDRESS DISPLAY XAUTHORITY` in xinit.
 
 ## Run
+```python -m goodnight_mouse --help```
