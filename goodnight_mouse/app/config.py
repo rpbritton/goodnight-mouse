@@ -236,6 +236,11 @@ class WindowConfig:
         while accessibles:
             accessible = accessibles.pop()
 
+            rule = {
+                "type": "rule",
+                "check_children": True,
+            }
+
             # check current accessible
             role = accessible.getRole()
             if role in roles:
@@ -243,9 +248,18 @@ class WindowConfig:
                     roles[role], accessible, flags)
                 if properties_list is not None:
                     for properties in properties_list:
-                        actions.append(ActionConfig(accessible, properties))
+                        if "type" not in properties:
+                            continue
+
+                        if properties["type"] == "action":
+                            actions.append(ActionConfig(
+                                accessible, properties))
+                        elif properties["type"] == "rule":
+                            rule = {**rule, **properties}
 
             # check childern
+            if not rule["check_children"]:
+                continue
             collection = accessible.queryCollection()
             accessibles += collection.getMatches(
                 match_rule, collection.SORT_ORDER_CANONICAL, 0, False)

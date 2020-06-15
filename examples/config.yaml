@@ -33,6 +33,7 @@ rules:
             - states: { focusable }
           return:
             - &default_action
+              type: action
               css: |
                 .action_box {
                   background-color: #000;
@@ -103,6 +104,8 @@ rules:
               - type: mouse
                 button: 2
                 action: click
+          - type: rule
+            check_children: false
 
       # things that want focus
       text: &focus
