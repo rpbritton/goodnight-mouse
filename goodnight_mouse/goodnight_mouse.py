@@ -1,6 +1,10 @@
 import argparse
 import logging
 import yaml
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 from .app import Commands
 # from . import debugger
@@ -26,7 +30,7 @@ def main():
 
     setup_logging(args.verbose)
 
-    config = yaml.safe_load(open(args.config))
+    config = yaml.load(open(args.config), Loader=Loader)
 
     if args.command == "background":
         commands = Commands(config)

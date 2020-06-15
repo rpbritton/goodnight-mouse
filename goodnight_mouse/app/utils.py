@@ -18,17 +18,21 @@ class Emulation:
     }
 
     @classmethod
-    def mouse(cls, button: int, action: str, x: int, y: int):
+    def mouse(cls, button: int, action: str, x: int, y: int, modifiers: int, enable_timeout: bool = True):
         if action not in cls.mouse_actions:
             return
 
         pointer = cls.root.query_pointer()
-        ImmediateTimeout.enable()
+        if enable_timeout:
+            ImmediateTimeout.enable()
+        cls.modifiers(modifiers, True, False)
         pyatspi.Registry.generateMouseEvent(
             x, y, cls.mouse_actions[action].format(button))
+        cls.modifiers(modifiers, False, False)
         pyatspi.Registry.generateMouseEvent(
             pointer.root_x, pointer.root_y, "abs")
-        ImmediateTimeout.disable()
+        if enable_timeout:
+            ImmediateTimeout.disable()
 
     key_actions = {
         "click": pyatspi.KEY_PRESSRELEASE,
@@ -37,14 +41,32 @@ class Emulation:
     }
 
     @classmethod
-    def key(cls, key: int, action: str, modifiers: int):
+    def key(cls, key: int, action: str, modifiers: int, enable_timeout: bool = True):
         if action not in cls.key_actions:
             return
 
-        ImmediateTimeout.enable()
+        if enable_timeout:
+            ImmediateTimeout.enable()
+        cls.modifiers(modifiers, True, False)
         pyatspi.Registry.generateKeyboardEvent(
             cls.display.keysym_to_keycode(key), None, cls.key_actions[action])
-        ImmediateTimeout.disable()
+        cls.modifiers(modifiers, False, False)
+        if enable_timeout:
+            ImmediateTimeout.disable()
+
+    @classmethod
+    def modifiers(cls, modifiers: int, lock: bool, enable_timeout: bool = True):
+        if lock:
+            lock_type = pyatspi.KEY_LOCKMODIFIERS
+        else:
+            lock_type = pyatspi.KEY_UNLOCKMODIFIERS
+
+        if enable_timeout:
+            ImmediateTimeout.enable()
+        pyatspi.Registry.generateKeyboardEvent(
+            modifiers, None, lock_type)
+        if enable_timeout:
+            ImmediateTimeout.disable()
 
 
 class ImmediateTimeout:

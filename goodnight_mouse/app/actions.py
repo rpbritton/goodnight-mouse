@@ -146,8 +146,10 @@ class Action:
             "popup_height": self.popup_height,
         }
 
-        x = numexpr.evaluate(self._config.x.substitute(**measurements)).item()
-        y = numexpr.evaluate(self._config.y.substitute(**measurements)).item()
+        x = int(round(numexpr.evaluate(
+            self._config.x.substitute(**measurements)).item()))
+        y = int(round(numexpr.evaluate(
+            self._config.y.substitute(**measurements)).item()))
 
         if self.visible:
             self._overlay.move(self.box, x, y)
@@ -236,13 +238,13 @@ class Action:
     def execute_key(self, config: ExecuteKeyConfig):
         logging.debug("executing key...")
 
-        Emulation.key(config.key, config.action, 0)
+        Emulation.key(config.key, config.action, config.modifiers)
 
     def execute_mouse(self, config: ExecuteMouseConfig):
         logging.debug("executing mouse...")
 
         Emulation.mouse(config.button, config.action,
-                        self.center_x, self.center_y)
+                        self.center_x, self.center_y, config.modifiers)
 
     def execute_focus(self, config: ExecuteFocusConfig):
         logging.debug("executing focus...")

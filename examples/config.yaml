@@ -1,67 +1,6 @@
 anchors:
-  - &default_action
-    css: |
-      .action_box {
-        background-color: #000;
-        border: 3px solid #FFF;
-        padding: 1px 3px;
-        border-radius: 3px;
-      }
-      .action_character {
-        color: #0F0;
-      }
-      .action_character_active {
-        color: #00F;
-      }
-    x: $x + $widget_width - $popup_width
-    y: $y + $widget_height - $popup_height
-  - &actuate
-    # condition:
-    #   - action: '.*'
-    # return:
-    #   - <<: *default_action
-    #     execute:
-    #       - type: action
-    #         match: '.*'
-    # else:
-    condition:
-      - states: { focusable }
-    return:
-      - <<: *default_action
-        execute:
-          - type: focus
-          - type: key
-            key: Return
-            action: click
-    else:
-      return:
-        - <<: *default_action
-          execute:
-            - type: mouse
-              button: 1
-              action: click
-  - &actuate_non_selected
-    condition:
-      - states: { selected }
-        invert: true
-    then: *actuate
-  - &focus
-    condition:
-      - states: { focusable }
-      - states: { focused }
-        invert: true
-    return:
-      - <<: *default_action
-        execute:
-          - type: focus
-  - &only_native
-    condition:
-      - action: 'select'
-    return:
-      - <<: *default_action
-        execute:
-          - type: action
-            match: '.*'
+  -
+  -
 lockfile: "/tmp/goodnight_mouse.pid"
 rules:
   - &default_rule
@@ -74,27 +13,120 @@ rules:
         key: d
         press: true
         flags: { default }
+      - modifiers: { super, control }
+        key: d
+        press: true
+        flags: { alternative }
     css: |
       .overlay_window {
         background-color: rgba(100%, 0%, 0%, 0.05);
       }
     states: { showing, visible, enabled, sensitive }
     roles: &default_roles
-      push_button: *actuate
+      # normal things that would be clicked with the mouse
+      # avoiding native actions those that cause popup windows are bad
+      push_button: &actuate
+        condition:
+          - flags: { default }
+        then:
+          condition:
+            - states: { focusable }
+          return:
+            - &default_action
+              css: |
+                .action_box {
+                  background-color: #000;
+                  border: 3px solid #FFF;
+                  padding: 1px 3px;
+                  border-radius: 3px;
+                }
+                .action_character {
+                  color: #0F0;
+                }
+                .action_character_active {
+                  color: #00F;
+                }
+              x: $x
+              # y: $y
+              y: $y + $widget_height / 2 - $popup_height / 2
+              execute:
+                - type: focus
+                - type: key
+                  key: Return
+                  action: click
+          else:
+            return:
+              - <<: *default_action
+                execute:
+                  - type: mouse
+                    button: 1
+                    action: click
+        else:
+          condition:
+            - flags: { alternative }
+          then:
+            condition:
+              - states: { focusable }
+            return:
+              - <<: *default_action
+                execute:
+                  - type: mouse
+                    button: 1
+                    action: click
+                    modifiers: { control, shift }
       toggle_button: *actuate
       combo_box: *actuate
-      menu: *actuate
-      menu_item: *actuate
-      page_tab: *actuate_non_selected
       radio_button: *actuate
       spin_button: *actuate
       check_box: *actuate
       check_menu_item: *actuate
       link: *actuate
-      text: *focus
+      # TODO: make explicit clicks
+      menu: *actuate
+      menu_item: *actuate
+
+      # tabs of a page have a unique flow
+      # generally the 'x' isn't available
+      page_tab: &page_tab_action
+        condition:
+          - states: { selected }
+            invert: true
+        return:
+          - <<: *default_action
+            execute:
+              - type: mouse
+                button: 1
+                action: click
+          - <<: *default_action
+            x: $x + $widget_width - $popup_width
+            execute:
+              - type: mouse
+                button: 2
+                action: click
+
+      # things that want focus
+      text: &focus
+        condition:
+          - states: { focusable }
+          - states: { focused }
+            invert: true
+        return:
+          - <<: *default_action
+            execute:
+              - type: focus
       entry: *focus
       password_text: *focus
       slider: *focus
       dial: *actuate
       date_editor: *focus
-      list_item: *only_native
+
+      # sometimes things like search suggestions use these
+      # they're also often not clickable
+      list_item: &only_native
+        condition:
+          - action: 'select'
+        return:
+          - <<: *default_action
+            execute:
+              - type: action
+                match: '.*'

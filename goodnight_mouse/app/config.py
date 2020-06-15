@@ -88,6 +88,12 @@ class ExecuteKeyConfig(ExecuteConfig):
         else:
             self.action = ""
 
+        if "modifiers" in properties:
+            self.modifiers = ConfigParser.modifier_mask(
+                properties["modifiers"])
+        else:
+            self.modifiers = 0
+
 
 class ExecuteMouseConfig(ExecuteConfig):
     def __init__(self, properties: dict):
@@ -102,6 +108,12 @@ class ExecuteMouseConfig(ExecuteConfig):
             self.action = properties["action"]
         else:
             self.action = ""
+
+        if "modifiers" in properties:
+            self.modifiers = ConfigParser.modifier_mask(
+                properties["modifiers"])
+        else:
+            self.modifiers = 0
 
 
 class ExecuteFocusConfig(ExecuteConfig):
@@ -344,7 +356,7 @@ class ConfigParser:
                 matches &= cls._role(
                     accessible, submatch["role"])
             if "flags" in submatch:
-                matches &= submatch["flags"].issubset(flags)
+                matches &= set(submatch["flags"]).issubset(flags)
             if "invert" in submatch:
                 matches ^= submatch["invert"]
 
