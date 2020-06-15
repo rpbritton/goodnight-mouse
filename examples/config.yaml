@@ -12,7 +12,7 @@ rules:
       - modifiers: { super }
         key: d
         press: true
-        flags: { default }
+        flags: { }
       - modifiers: { super, control }
         key: d
         press: true
@@ -27,7 +27,8 @@ rules:
       # avoiding native actions those that cause popup windows are bad
       push_button: &actuate
         condition:
-          - flags: { default }
+          - flags: { alternative }
+            invert: true
         then:
           condition:
             - states: { focusable }
@@ -64,17 +65,14 @@ rules:
                     action: click
         else:
           condition:
-            - flags: { alternative }
-          then:
-            condition:
-              - states: { focusable }
-            return:
-              - <<: *default_action
-                execute:
-                  - type: mouse
-                    button: 1
-                    action: click
-                    modifiers: { control, shift }
+            - states: { focusable }
+          return:
+            - <<: *default_action
+              execute:
+                - type: mouse
+                  button: 1
+                  action: click
+                  modifiers: { control, shift }
       toggle_button: *actuate
       combo_box: *actuate
       radio_button: *actuate
@@ -100,6 +98,19 @@ rules:
                 action: click
           - <<: *default_action
             x: $x + $widget_width - $popup_width
+            css: |
+              .action_box {
+                background-color: #000;
+                border: 3px solid #FFF;
+                padding: 1px 3px;
+                border-radius: 3px;
+              }
+              .action_character {
+                color: #F00;
+              }
+              .action_character_active {
+                color: #00F;
+              }
             execute:
               - type: mouse
                 button: 2
