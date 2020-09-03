@@ -28,3 +28,13 @@ export ACCESSIBILITY_ENABLED=1
 
 ## Run
 ```python -m goodnight_mouse --help```
+
+## FAQ
+
+### Why does this use its own hotkey listener?
+
+It is generally not possible in X11 for a hotkey manager to listen
+to for keys in popup menus, since the popup menu has a global grab.
+Furthermore temporary menus (like the autocompletion suggestions 
+in a web browser), I have found to go away. GM works by using the
+applications accessibility toolkit to intercept the keys.

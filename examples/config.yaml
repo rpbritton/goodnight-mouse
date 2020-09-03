@@ -5,21 +5,22 @@ lockfile: "/tmp/goodnight_mouse.pid"
 rules:
   - &default_rule
     condition:
-      - application: '.*'
-    characters: [ f, j, d, k, g, h, s, l, a ]
-    # characters: [a, b, c]
+      - application: ".*"
+    characters: [f, j, d, k, g, h, s, l, a]
     triggers:
       - modifiers: { super }
-        key: d
+        key: g
         press: true
-        flags: { }
-      - modifiers: { super, control }
-        key: d
+        flags: {}
+      - modifiers: { super, shift }
+        key: G
         press: true
         flags: { alternative }
     css: |
       .overlay_window {
         background-color: rgba(100%, 0%, 0%, 0.05);
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: bold;
       }
     states: { showing, visible, enabled, sensitive }
     roles: &default_roles
@@ -30,15 +31,13 @@ rules:
           - flags: { alternative }
             invert: true
         then:
-          condition:
-            - states: { focusable }
           return:
             - &default_action
               type: action
               css: |
                 .action_box {
                   background-color: #000;
-                  border: 3px solid #FFF;
+                  border: 1px solid #FFF;
                   padding: 1px 3px;
                   border-radius: 3px;
                 }
@@ -52,20 +51,10 @@ rules:
               # y: $y
               y: $y + $widget_height / 2 - $popup_height / 2
               execute:
-                - type: focus
-                - type: key
-                  key: Return
+                - type: mouse
+                  button: 1
                   action: click
-          else:
-            return:
-              - <<: *default_action
-                execute:
-                  - type: mouse
-                    button: 1
-                    action: click
         else:
-          condition:
-            - states: { focusable }
           return:
             - <<: *default_action
               execute:
@@ -89,34 +78,40 @@ rules:
       page_tab: &page_tab_action
         condition:
           - states: { selected }
-            invert: true
-        return:
-          - <<: *default_action
-            execute:
-              - type: mouse
-                button: 1
-                action: click
-          - <<: *default_action
-            x: $x + $widget_width - $popup_width
-            css: |
-              .action_box {
-                background-color: #000;
-                border: 3px solid #FFF;
-                padding: 1px 3px;
-                border-radius: 3px;
-              }
-              .action_character {
-                color: #F00;
-              }
-              .action_character_active {
-                color: #00F;
-              }
-            execute:
-              - type: mouse
-                button: 2
-                action: click
-          - type: rule
-            check_children: false
+        then:
+          return:
+            - type: rule
+              check_children: false
+            - &close_page_tab
+              <<: *default_action
+              x: $x + $widget_width - $popup_width
+              css: |
+                .action_box {
+                  background-color: #000;
+                  border: 1px solid #FFF;
+                  padding: 1px 3px;
+                  border-radius: 3px;
+                }
+                .action_character {
+                  color: #F00;
+                }
+                .action_character_active {
+                  color: #00F;
+                }
+              execute:
+                - type: mouse
+                  button: 2
+                  action: click
+        else:
+          return:
+            - type: rule
+              check_children: false
+            - <<: *default_action
+              execute:
+                - type: mouse
+                  button: 1
+                  action: click
+            - *close_page_tab
 
       # things that want focus
       text: &focus
@@ -134,13 +129,14 @@ rules:
       dial: *actuate
       date_editor: *focus
 
-      # sometimes things like search suggestions use these
-      # they're also often not clickable
+      # list items are often click able but also sometimes not
+      # so only do so if it has an action on it
       list_item: &only_native
         condition:
-          - action: 'select'
+          - action: ".*"
         return:
           - <<: *default_action
-            execute:
-              - type: action
-                match: '.*'
+            #execute:
+            #- type: action
+            #match: '.*'
+      tree_item: *only_native
