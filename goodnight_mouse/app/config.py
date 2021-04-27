@@ -32,7 +32,7 @@ class TriggerConfig:
 
         return ConfigParser.keysym(self._properties["key"])
 
-    @property
+    @ property
     def press(self) -> bool:
         if "press" not in self._properties:
             return True

@@ -6,7 +6,35 @@ rules:
   - &default_rule
     condition:
       - application: ".*"
-    characters: [f, j, d, k, g, h, s, l, a]
+    characters:
+      [
+        q,
+        w,
+        j,
+        r,
+        t,
+        y,
+        u,
+        i,
+        o,
+        p,
+        a,
+        s,
+        d,
+        f,
+        g,
+        h,
+        n,
+        e,
+        l,
+        z,
+        x,
+        c,
+        v,
+        b,
+        k,
+        m,
+      ]
     triggers:
       - modifiers: { super }
         key: g
@@ -21,6 +49,7 @@ rules:
         background-color: rgba(100%, 0%, 0%, 0.05);
         font-family: 'IBM Plex Mono', monospace;
         font-weight: bold;
+        font-size: 14px;
       }
     states: { showing, visible, enabled, sensitive }
     roles: &default_roles
@@ -31,6 +60,8 @@ rules:
           - flags: { alternative }
             invert: true
         then:
+          condition:
+            - states: { focusable }
           return:
             - &default_action
               type: action
@@ -48,12 +79,19 @@ rules:
                   color: #00F;
                 }
               x: $x
-              # y: $y
               y: $y + $widget_height / 2 - $popup_height / 2
               execute:
-                - type: mouse
-                  button: 1
+                - type: focus
+                - type: key
+                  key: Return
                   action: click
+          else:
+            return:
+              - <<: *default_action
+                execute:
+                  - type: mouse
+                    button: 1
+                    action: click
         else:
           return:
             - <<: *default_action

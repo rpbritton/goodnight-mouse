@@ -1,0 +1,3 @@
+#!/bin/bash
+
+python -m goodnight_mouse -c examples/config.yaml background -v

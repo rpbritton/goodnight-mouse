@@ -1,6 +1,5 @@
-import time
-
 import pyatspi
+# import time
 from Xlib.display import Display
 from gi.repository import GLib
 
@@ -26,6 +25,11 @@ class Emulation:
         if enable_timeout:
             ImmediateTimeout.enable()
         cls.modifiers(modifiers, True, False)
+        # if action == "click":
+        #     # a pre-press seems to help with consistency
+        #     pyatspi.Registry.generateMouseEvent(
+        #         x, y, cls.mouse_actions["press"].format(button))
+        #     time.sleep(0.02)
         pyatspi.Registry.generateMouseEvent(
             x, y, cls.mouse_actions[action].format(button))
         cls.modifiers(modifiers, False, False)
