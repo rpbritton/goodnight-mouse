@@ -23,7 +23,7 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
-gboolean signal_quit(gpointer data);
+gboolean signal_quit(gpointer app_ptr);
 
 App *app_new()
 {
@@ -33,30 +33,30 @@ App *app_new()
     gtk_init(NULL, NULL);
     atspi_init();
 
+    // add signal subscription
+    app->signal_sighup = g_unix_signal_add(SIGHUP, signal_quit, app);
+    app->signal_sigint = g_unix_signal_add(SIGINT, signal_quit, app);
+    app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
+
     // create managers
     app->input = input_new();
     app->foreground = foreground_new(app->input);
     app->background = background_new(app->input, app->foreground);
-
-    // add signal handlers
-    app->signal_sighup = g_unix_signal_add(SIGHUP, signal_quit, app);
-    app->signal_sigint = g_unix_signal_add(SIGINT, signal_quit, app);
-    app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
     return app;
 }
 
 void app_destroy(App *app)
 {
-    // remove signal handlers
-    g_source_remove(app->signal_sighup);
-    g_source_remove(app->signal_sigint);
-    g_source_remove(app->signal_sigterm);
-
     // free managers
     background_destroy(app->background);
     foreground_destroy(app->foreground);
     input_destroy(app->input);
+
+    // remove signal subscription
+    g_source_remove(app->signal_sighup);
+    g_source_remove(app->signal_sigint);
+    g_source_remove(app->signal_sigterm);
 
     // exit common libraries
     atspi_exit();
@@ -92,9 +92,9 @@ void app_quit(App *app)
     foreground_quit(app->foreground);
 }
 
-gboolean signal_quit(void *data)
+gboolean signal_quit(gpointer app_ptr)
 {
-    App *app = (App *)data;
+    App *app = (App *)app_ptr;
 
     app_quit(app);
 

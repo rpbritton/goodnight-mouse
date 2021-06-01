@@ -40,13 +40,13 @@ typedef struct AppConfig
 
 typedef struct App
 {
-    Input *input;
-    Background *background;
-    Foreground *foreground;
-
     guint signal_sighup;
     guint signal_sigint;
     guint signal_sigterm;
+
+    Input *input;
+    Background *background;
+    Foreground *foreground;
 } App;
 
 App *app_new();

@@ -32,7 +32,7 @@
 gboolean timeout_enabled = TRUE;
 guint log_handler_id = 0;
 
-void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
+void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data);
 
 void timeout_enable()
 {
@@ -76,10 +76,10 @@ void timeout_disable()
     g_object_unref(desktop);
 }
 
-void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data)
 {
     if (g_strrstr(message, DBUS_TIMEOUT_MESSAGE))
         return;
 
-    g_log_default_handler(log_domain, log_level, message, user_data);
+    g_log_default_handler(log_domain, log_level, message, data);
 }

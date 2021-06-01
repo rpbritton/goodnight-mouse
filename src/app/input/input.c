@@ -32,7 +32,7 @@
 typedef struct Subscriber
 {
     InputCallback callback;
-    gpointer user_data;
+    gpointer data;
     gboolean match_all;
     InputEvent event;
 } Subscriber;
@@ -72,7 +72,7 @@ void input_destroy(Input *input)
     g_free(input);
 }
 
-void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer user_data)
+void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer data)
 {
     Subscriber subscription = {
         .match_all = FALSE,
@@ -82,18 +82,18 @@ void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpo
             .modifiers = modifiers_map(event.modifiers),
         },
         .callback = callback,
-        .user_data = user_data,
+        .data = data,
     };
 
     subscribe(input, subscription);
 }
 
-void input_subscribe_all(Input *input, InputCallback callback, gpointer user_data)
+void input_subscribe_all(Input *input, InputCallback callback, gpointer data)
 {
     Subscriber subscription = {
         .match_all = TRUE,
         .callback = callback,
-        .user_data = user_data,
+        .data = data,
     };
 
     subscribe(input, subscription);
@@ -233,7 +233,7 @@ gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
         if (!subscriber_matches_event(subscriber, event))
             continue;
 
-        if (subscriber->callback(event, subscriber->user_data) == INPUT_CONSUME_EVENT)
+        if (subscriber->callback(event, subscriber->data) == INPUT_CONSUME_EVENT)
             consumption = INPUT_CONSUME_EVENT;
     }
 

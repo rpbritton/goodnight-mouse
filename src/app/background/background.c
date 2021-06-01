@@ -19,7 +19,7 @@
 
 #include "background.h"
 
-InputEventAction trigger_callback(InputEvent event, gpointer user_data);
+InputEventAction trigger_callback(InputEvent event, gpointer data);
 
 Background *background_new(Input *input, Foreground *foreground)
 {
@@ -70,7 +70,7 @@ void background_quit(Background *background)
     g_main_loop_quit(background->loop);
 }
 
-InputEventAction trigger_callback(InputEvent event, gpointer user_data)
+InputEventAction trigger_callback(InputEvent event, gpointer data)
 {
     printf("triggered!\n");
 

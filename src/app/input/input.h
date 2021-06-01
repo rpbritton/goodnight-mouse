@@ -45,12 +45,12 @@ typedef struct InputEvent
     GdkModifierType modifiers;
 } InputEvent;
 
-typedef InputEventAction (*InputCallback)(InputEvent event, gpointer user_data);
+typedef InputEventAction (*InputCallback)(InputEvent event, gpointer data);
 
 Input *input_new();
 void input_destroy(Input *input);
-void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer user_data);
-void input_subscribe_all(Input *input, InputCallback callback, gpointer user_data);
+void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer data);
+void input_subscribe_all(Input *input, InputCallback callback, gpointer data);
 void input_unsubscribe(Input *input, InputCallback callback);
 
 #endif /* SRC_APP_INPUT_INPUT_H */
