@@ -1,18 +1,18 @@
 /**
  * Copyright (C) 2021 Ryan Britton
- * 
+ *
  * This file is part of Goodnight Mouse.
- * 
+ *
  * Goodnight Mouse is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Goodnight Mouse is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,7 +20,8 @@
 #include "app.h"
 
 #include <glib-unix.h>
-//#include <atspi/atspi.h>
+#include <gtk/gtk.h>
+#include <atspi/atspi.h>
 
 gboolean signal_quit(gpointer data);
 
@@ -28,8 +29,9 @@ App *app_new()
 {
     App *app = g_malloc(sizeof(App));
 
-    // initialize atspi
-    //atspi_init();
+    // initialize common libraries
+    gtk_init(NULL, NULL);
+    atspi_init();
 
     // create managers
     app->input = input_new();
@@ -46,18 +48,18 @@ App *app_new()
 
 void app_destroy(App *app)
 {
-    // exit atspi
-    //atspi_exit();
-
-    // free managers
-    input_destroy(app->input);
-    foreground_destroy(app->foreground);
-    background_destroy(app->background);
-
     // remove signal handlers
     g_source_remove(app->signal_sighup);
     g_source_remove(app->signal_sigint);
     g_source_remove(app->signal_sigterm);
+
+    // free managers
+    background_destroy(app->background);
+    foreground_destroy(app->foreground);
+    input_destroy(app->input);
+
+    // exit common libraries
+    atspi_exit();
 
     g_free(app);
 }
