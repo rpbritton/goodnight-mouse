@@ -22,6 +22,7 @@
 
 #include <glib.h>
 #include <atspi/atspi.h>
+#include <gdk/gdk.h>
 
 typedef enum InputEventAction
 {
@@ -41,7 +42,7 @@ typedef struct InputEvent
 {
     AtspiEventType type;
     guint id;
-    gushort modifiers;
+    GdkModifierType modifiers;
 } InputEvent;
 
 typedef InputEventAction (*InputCallback)(InputEvent event, gpointer user_data);

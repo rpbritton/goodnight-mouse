@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include "../utils/timeout.h"
+#include "../utils/modifiers.h"
 
 #define KEYBOARD_EVENTS ((1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_RELEASED_EVENT))
 #define KEYBOARD_SYNC_TYPE (ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME)
@@ -146,7 +147,7 @@ gint subscriber_matches_event(gconstpointer subscriber_ptr, gconstpointer event_
     // compare with event
     if ((subscriber->event.type != event->type) ||
         (subscriber->event.id != event->id) ||
-        (subscriber->event.modifiers != event->modifiers))
+        (map_modifiers(subscriber->event.modifiers) != map_modifiers(event->modifiers)))
         return SUBSCRIPTIONS_NOT_MATCH;
 
     return SUBSCRIPTIONS_MATCH;
@@ -215,7 +216,7 @@ gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
     InputEvent event = {
         .type = atspi_event->type,
         .id = atspi_event->id,
-        .modifiers = atspi_event->modifiers,
+        .modifiers = map_modifiers(atspi_event->modifiers),
     };
     // free given event
     g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
@@ -231,7 +232,7 @@ gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
     {
         Subscriber *subscriber = (Subscriber *)subscriber_list->data;
 
-        if (!subscriber_matches_event(subscriber, &event))
+        if (subscriber_matches_event(subscriber, &event) == SUBSCRIPTIONS_NOT_MATCH)
             continue;
 
         if (subscriber->callback(event, subscriber->user_data) == INPUT_CONSUME_EVENT)
