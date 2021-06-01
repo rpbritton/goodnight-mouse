@@ -19,6 +19,8 @@
 
 #include "background.h"
 
+InputEventAction trigger_callback(InputEvent event, gpointer user_data);
+
 Background *background_new(Input *input, Foreground *foreground)
 {
     Background *background = g_malloc(sizeof(Background));
@@ -42,12 +44,18 @@ void background_destroy(Background *background)
 
 void background_configure(Background *background, BackgroundConfig config)
 {
+    background->trigger_event = config.trigger_event;
+
     return;
 }
 
 void background_run(Background *background)
 {
+    input_subscribe(background->input, background->trigger_event, trigger_callback, background);
+
     g_main_loop_run(background->loop);
+
+    input_unsubscribe(background->input, trigger_callback);
 }
 
 gboolean background_is_running(Background *background)
@@ -60,4 +68,11 @@ void background_quit(Background *background)
     foreground_quit(background->foreground);
 
     g_main_loop_quit(background->loop);
+}
+
+InputEventAction trigger_callback(InputEvent event, gpointer user_data)
+{
+    printf("triggered!\n");
+
+    return INPUT_CONSUME_EVENT;
 }

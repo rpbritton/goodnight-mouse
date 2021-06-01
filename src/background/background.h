@@ -26,11 +26,13 @@
 #include "../input/input.h"
 #include "../foreground/foreground.h"
 
-#define BACKGROUND_DEFAULT_CONFIG \
-    {                             \
-        .trigger_event = {        \
-            .id = GDK_KEY_g,      \
-        },                        \
+#define BACKGROUND_DEFAULT_CONFIG            \
+    {                                        \
+        .trigger_event = {                   \
+            .type = ATSPI_KEY_PRESSED_EVENT, \
+            .id = GDK_KEY_v,                 \
+            .modifiers = GDK_SUPER_MASK,     \
+        },                                   \
     }
 
 typedef struct BackgroundConfig
@@ -41,8 +43,11 @@ typedef struct BackgroundConfig
 typedef struct Background
 {
     GMainLoop *loop;
+
     Input *input;
     Foreground *foreground;
+
+    InputEvent trigger_event;
 } Background;
 
 Background *background_new(Input *input, Foreground *foreground);
