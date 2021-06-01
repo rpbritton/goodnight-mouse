@@ -76,7 +76,11 @@ void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpo
 {
     Subscriber subscription = {
         .match_all = FALSE,
-        .event = event,
+        .event = {
+            .type = event.type,
+            .id = event.id,
+            .modifiers = modifiers_map(event.modifiers),
+        },
         .callback = callback,
         .user_data = user_data,
     };
@@ -140,7 +144,7 @@ gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event)
     // compare with event
     return ((subscriber->event.type == event.type) &&
             (subscriber->event.id == event.id) &&
-            (map_modifiers(subscriber->event.modifiers) == map_modifiers(event.modifiers)));
+            (subscriber->event.modifiers == event.modifiers));
 }
 
 gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback)
@@ -210,7 +214,7 @@ gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
     InputEvent event = {
         .type = atspi_event->type,
         .id = atspi_event->id,
-        .modifiers = map_modifiers(atspi_event->modifiers),
+        .modifiers = modifiers_map(atspi_event->modifiers),
     };
     // free given event
     g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);

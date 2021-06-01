@@ -21,7 +21,7 @@
 
 GdkKeymap *default_keymap = NULL;
 
-GdkModifierType map_modifiers(GdkModifierType modifiers)
+GdkModifierType modifiers_map(GdkModifierType modifiers)
 {
     if (!default_keymap)
         default_keymap = gdk_keymap_get_for_display(gdk_display_get_default());
