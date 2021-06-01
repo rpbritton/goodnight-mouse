@@ -29,9 +29,6 @@
 
 #define MOUSE_EVENTS ((1 << ATSPI_BUTTON_PRESSED_EVENT) | (1 << ATSPI_BUTTON_RELEASED_EVENT))
 
-#define SUBSCRIPTIONS_MATCH 0
-#define SUBSCRIPTIONS_NOT_MATCH -1
-
 typedef struct Subscriber
 {
     InputCallback callback;
@@ -42,9 +39,11 @@ typedef struct Subscriber
 
 void subscribe(Input *input, Subscriber subscription);
 void subscriber_free(gpointer subscriber);
-gint subscriber_matches_subscription(gconstpointer subscriber_ptr, gconstpointer subscription_ptr);
-gint subscriber_matches_event(gconstpointer subscriber_ptr, gconstpointer event_ptr);
-gint subscriber_matches_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
+gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *subscription);
+gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event);
+gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback);
+gint compare_subscriber_matches_subscription(gconstpointer subscriber, gconstpointer subscription);
+gint compare_subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback);
 void register_listeners(Input *input);
 void deregister_listeners(Input *input);
 gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
@@ -98,7 +97,7 @@ void input_subscribe_all(Input *input, InputCallback callback, gpointer user_dat
 
 void subscribe(Input *input, Subscriber subscription)
 {
-    if (g_slist_find_custom(input->subscribers, &subscription, subscriber_matches_subscription))
+    if (g_slist_find_custom(input->subscribers, &subscription, compare_subscriber_matches_subscription))
         return;
 
     Subscriber *subscriber = g_malloc(sizeof(Subscriber));
@@ -110,7 +109,7 @@ void subscribe(Input *input, Subscriber subscription)
 void input_unsubscribe(Input *input, InputCallback callback)
 {
     GSList *subscriber;
-    while ((subscriber = g_slist_find_custom(input->subscribers, callback, subscriber_matches_callback)))
+    while ((subscriber = g_slist_find_custom(input->subscribers, callback, compare_subscriber_matches_callback)))
     {
         subscriber_free(subscriber->data);
         input->subscribers = g_slist_remove_all(input->subscribers, subscriber->data);
@@ -122,47 +121,42 @@ void subscriber_free(gpointer subscriber)
     g_free(subscriber);
 }
 
-gint subscriber_matches_subscription(gconstpointer subscriber_ptr, gconstpointer subscription_ptr)
+gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *subscription)
 {
-    Subscriber *subscriber = (Subscriber *)subscriber_ptr;
-    Subscriber *subscription = (Subscriber *)subscription_ptr;
-
     // compare callback
-    if (subscriber_matches_callback(subscriber, subscription->callback) == SUBSCRIPTIONS_NOT_MATCH)
-        return SUBSCRIPTIONS_NOT_MATCH;
+    if (!subscriber_matches_callback(subscriber, subscription->callback))
+        return FALSE;
 
     // compare with event
-    return subscriber_matches_event(subscriber, &subscription->event);
+    return subscriber_matches_event(subscriber, subscription->event);
 }
 
-gint subscriber_matches_event(gconstpointer subscriber_ptr, gconstpointer event_ptr)
+gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event)
 {
-    Subscriber *subscriber = (Subscriber *)subscriber_ptr;
-    InputEvent *event = (InputEvent *)event_ptr;
-
     // check if should match all
     if (subscriber->match_all)
-        return SUBSCRIPTIONS_MATCH;
+        return TRUE;
 
     // compare with event
-    if ((subscriber->event.type != event->type) ||
-        (subscriber->event.id != event->id) ||
-        (map_modifiers(subscriber->event.modifiers) != map_modifiers(event->modifiers)))
-        return SUBSCRIPTIONS_NOT_MATCH;
-
-    return SUBSCRIPTIONS_MATCH;
+    return ((subscriber->event.type == event.type) &&
+            (subscriber->event.id == event.id) &&
+            (map_modifiers(subscriber->event.modifiers) == map_modifiers(event.modifiers)));
 }
 
-gint subscriber_matches_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr)
+gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback)
 {
-    Subscriber *subscriber = (Subscriber *)subscriber_ptr;
-    InputCallback callback = (InputCallback)callback_ptr;
-
     // compare callback
-    if (subscriber->callback != callback)
-        return SUBSCRIPTIONS_NOT_MATCH;
+    return (subscriber->callback == callback);
+}
 
-    return SUBSCRIPTIONS_MATCH;
+gint compare_subscriber_matches_subscription(gconstpointer subscriber, gconstpointer subscription)
+{
+    return !subscriber_matches_subscription((Subscriber *)subscriber, (Subscriber *)subscription);
+}
+
+gint compare_subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback)
+{
+    return !subscriber_matches_callback((Subscriber *)subscriber, (InputCallback)callback);
 }
 
 void register_listeners(Input *input)
@@ -232,7 +226,7 @@ gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
     {
         Subscriber *subscriber = (Subscriber *)subscriber_list->data;
 
-        if (subscriber_matches_event(subscriber, &event) == SUBSCRIPTIONS_NOT_MATCH)
+        if (!subscriber_matches_event(subscriber, event))
             continue;
 
         if (subscriber->callback(event, subscriber->user_data) == INPUT_CONSUME_EVENT)
