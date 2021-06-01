@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 
-#include "../utils/timeout.h"
-#include "../utils/modifiers.h"
+#include "timeout.h"
+#include "modifiers.h"
 
 #define KEYBOARD_EVENTS ((1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_RELEASED_EVENT))
 #define KEYBOARD_SYNC_TYPE (ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME)
