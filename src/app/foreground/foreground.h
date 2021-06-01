@@ -17,11 +17,32 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_INPUT_MODIFIERS_H
-#define SRC_INPUT_MODIFIERS_H
+#ifndef SRC_APP_FOREGROUND_FOREGROUND_H
+#define SRC_APP_FOREGROUND_FOREGROUND_H
 
-#include <gdk/gdk.h>
+#include <glib.h>
 
-GdkModifierType modifiers_map(GdkModifierType modifiers);
+#include "../input/input.h"
 
-#endif /* SRC_INPUT_MODIFIERS_H */
+#define FOREGROUND_DEFAULT_CONFIG \
+    {                             \
+    }
+
+typedef struct ForegroundConfig
+{
+} ForegroundConfig;
+
+typedef struct Foreground
+{
+    GMainLoop *loop;
+    Input *input;
+} Foreground;
+
+Foreground *foreground_new(Input *input);
+void foreground_destroy(Foreground *foreground);
+void foreground_configure(Foreground *foreground, ForegroundConfig config);
+void foreground_run(Foreground *foreground);
+gboolean foreground_is_running(Foreground *foreground);
+void foreground_quit(Foreground *foreground);
+
+#endif /* SRC_APP_FOREGROUND_FOREGROUND_H */

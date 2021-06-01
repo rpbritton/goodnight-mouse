@@ -22,7 +22,7 @@
 
 #include <glib.h>
 
-#include "app.h"
+#include "app/app.h"
 
 #define DEFAULT_CONFIG             \
     {                              \

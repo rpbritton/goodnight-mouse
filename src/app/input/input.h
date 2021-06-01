@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_INPUT_INPUT_H
-#define SRC_INPUT_INPUT_H
+#ifndef SRC_APP_INPUT_INPUT_H
+#define SRC_APP_INPUT_INPUT_H
 
 #include <glib.h>
 #include <atspi/atspi.h>
@@ -53,4 +53,4 @@ void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpo
 void input_subscribe_all(Input *input, InputCallback callback, gpointer user_data);
 void input_unsubscribe(Input *input, InputCallback callback);
 
-#endif /* SRC_INPUT_INPUT_H */
+#endif /* SRC_APP_INPUT_INPUT_H */

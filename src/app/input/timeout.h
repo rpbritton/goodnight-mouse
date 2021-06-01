@@ -17,32 +17,10 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_FOREGROUND_FOREGROUND_H
-#define SRC_FOREGROUND_FOREGROUND_H
+#ifndef SRC_APP_INPUT_TIMEOUT_H
+#define SRC_APP_INPUT_TIMEOUT_H
 
-#include <glib.h>
+void timeout_enable();
+void timeout_disable();
 
-#include "../input/input.h"
-
-#define FOREGROUND_DEFAULT_CONFIG \
-    {                             \
-    }
-
-typedef struct ForegroundConfig
-{
-} ForegroundConfig;
-
-typedef struct Foreground
-{
-    GMainLoop *loop;
-    Input *input;
-} Foreground;
-
-Foreground *foreground_new(Input *input);
-void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig config);
-void foreground_run(Foreground *foreground);
-gboolean foreground_is_running(Foreground *foreground);
-void foreground_quit(Foreground *foreground);
-
-#endif /* SRC_FOREGROUND_FOREGROUND_H */
+#endif /* SRC_APP_INPUT_TIMEOUT_H */

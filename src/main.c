@@ -17,7 +17,7 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "app.h"
+#include "app/app.h"
 #include "config.h"
 
 int main(int argc, char **argv)

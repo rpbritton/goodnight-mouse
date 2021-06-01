@@ -17,10 +17,11 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_INPUT_TIMEOUT_H
-#define SRC_INPUT_TIMEOUT_H
+#ifndef SRC_APP_INPUT_MODIFIERS_H
+#define SRC_APP_INPUT_MODIFIERS_H
 
-void timeout_enable();
-void timeout_disable();
+#include <gdk/gdk.h>
 
-#endif /* SRC_INPUT_TIMEOUT_H */
+GdkModifierType modifiers_map(GdkModifierType modifiers);
+
+#endif /* SRC_APP_INPUT_MODIFIERS_H */

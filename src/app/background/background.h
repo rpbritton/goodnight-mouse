@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_BACKGROUND_BACKGROUND_H
-#define SRC_BACKGROUND_BACKGROUND_H
+#ifndef SRC_APP_BACKGROUND_BACKGROUND_H
+#define SRC_APP_BACKGROUND_BACKGROUND_H
 
 #include <glib.h>
 #include <gdk/gdk.h>
@@ -57,4 +57,4 @@ void background_run(Background *background);
 gboolean background_is_running(Background *background);
 void background_quit(Background *background);
 
-#endif /* SRC_BACKGROUND_BACKGROUND_H */
+#endif /* SRC_APP_BACKGROUND_BACKGROUND_H */
