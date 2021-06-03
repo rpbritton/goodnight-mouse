@@ -26,15 +26,6 @@
 #include "../input/input.h"
 #include "../foreground/foreground.h"
 
-#define BACKGROUND_DEFAULT_CONFIG            \
-    {                                        \
-        .trigger_event = {                   \
-            .type = ATSPI_KEY_PRESSED_EVENT, \
-            .id = GDK_KEY_v,                 \
-            .modifiers = GDK_SUPER_MASK,     \
-        },                                   \
-    }
-
 typedef struct BackgroundConfig
 {
     InputEvent trigger_event;

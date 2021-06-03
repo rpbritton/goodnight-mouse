@@ -24,13 +24,6 @@
 
 #include "app/app.h"
 
-#define DEFAULT_CONFIG             \
-    {                              \
-        .app = APP_DEFAULT_CONFIG, \
-                                   \
-        .run_once_now = FALSE,     \
-    }
-
 typedef struct Config
 {
     AppConfig app;
@@ -38,6 +31,6 @@ typedef struct Config
     gboolean run_once_now;
 } Config;
 
-Config get_config(int argc, char **argv);
+Config config_parse(int argc, char **argv);
 
 #endif /* SRC_CONFIG_H */

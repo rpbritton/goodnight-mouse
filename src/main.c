@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 {
     App *app = app_new();
 
-    Config config = get_config(argc, argv);
+    Config config = config_parse(argc, argv);
     app_configure(app, config.app);
 
     if (config.run_once_now)

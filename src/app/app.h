@@ -26,12 +26,6 @@
 #include "background/background.h"
 #include "foreground/foreground.h"
 
-#define APP_DEFAULT_CONFIG                       \
-    {                                            \
-        .background = BACKGROUND_DEFAULT_CONFIG, \
-        .foreground = FOREGROUND_DEFAULT_CONFIG, \
-    }
-
 typedef struct AppConfig
 {
     BackgroundConfig background;

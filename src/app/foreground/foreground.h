@@ -24,10 +24,6 @@
 
 #include "../input/input.h"
 
-#define FOREGROUND_DEFAULT_CONFIG \
-    {                             \
-    }
-
 typedef struct ForegroundConfig
 {
 } ForegroundConfig;
