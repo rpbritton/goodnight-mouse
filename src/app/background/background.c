@@ -19,7 +19,8 @@
 
 #include "background.h"
 
-InputEventAction trigger_callback(InputEvent event, gpointer data);
+static gboolean trigger_foreground(gpointer background_ptr);
+static InputEventAction input_callback(InputEvent event, gpointer background_ptr);
 
 Background *background_new(Input *input, Foreground *foreground)
 {
@@ -44,18 +45,23 @@ void background_destroy(Background *background)
 
 void background_configure(Background *background, BackgroundConfig config)
 {
-    background->trigger_event = config.trigger_event;
-
-    return;
+    background->trigger_event = (InputEvent){
+        .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
+        .id = config.trigger_id,
+        .modifiers = config.trigger_modifiers,
+    };
 }
 
 void background_run(Background *background)
 {
-    input_subscribe(background->input, background->trigger_event, trigger_callback, background);
+    if (background_is_running(background))
+        return;
+
+    input_subscribe(background->input, background->trigger_event, input_callback, background);
 
     g_main_loop_run(background->loop);
 
-    input_unsubscribe(background->input, trigger_callback);
+    input_unsubscribe(background->input, input_callback);
 }
 
 gboolean background_is_running(Background *background)
@@ -70,9 +76,21 @@ void background_quit(Background *background)
     g_main_loop_quit(background->loop);
 }
 
-InputEventAction trigger_callback(InputEvent event, gpointer data)
+static gboolean trigger_foreground(gpointer background_ptr)
 {
-    printf("triggered!\n");
+    Background *background = (Background *)background_ptr;
+
+    // start running the foreground
+    foreground_run(background->foreground);
+
+    // remove glib source
+    return FALSE;
+}
+
+static InputEventAction input_callback(InputEvent event, gpointer background_ptr)
+{
+    if (event.type == INPUT_KEY_PRESSED)
+        g_idle_add_full(G_PRIORITY_HIGH_IDLE, trigger_foreground, background_ptr, NULL);
 
     return INPUT_CONSUME_EVENT;
 }

@@ -19,15 +19,13 @@
 
 #include "input.h"
 
-#include <stdio.h>
-
 #include "timeout.h"
 #include "modifiers.h"
 
-#define KEYBOARD_EVENTS ((1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_RELEASED_EVENT))
+#define KEYBOARD_EVENTS (INPUT_KEY_PRESSED_EVENT | ATSPI_KEY_RELEASED)
 #define KEYBOARD_SYNC_TYPE (ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME)
 
-#define MOUSE_EVENTS ((1 << ATSPI_BUTTON_PRESSED_EVENT) | (1 << ATSPI_BUTTON_RELEASED_EVENT))
+#define MOUSE_EVENTS (INPUT_BUTTON_PRESSED_EVENT | INPUT_BUTTON_RELEASED)
 
 typedef struct Subscriber
 {
@@ -212,7 +210,7 @@ gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
 {
     // extract event
     InputEvent event = {
-        .type = atspi_event->type,
+        .type = (1 << atspi_event->type),
         .id = atspi_event->id,
         .modifiers = modifiers_map(atspi_event->modifiers),
     };

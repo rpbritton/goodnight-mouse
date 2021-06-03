@@ -30,6 +30,14 @@ typedef enum InputEventAction
     INPUT_CONSUME_EVENT = TRUE,
 } InputEventAction;
 
+typedef enum InputEventType
+{
+    INPUT_KEY_PRESSED = (1 << ATSPI_KEY_PRESSED_EVENT),
+    INPUT_KEY_RELEASED = (1 << ATSPI_KEY_RELEASED_EVENT),
+    INPUT_BUTTON_PRESSED = (1 << ATSPI_BUTTON_PRESSED_EVENT),
+    INPUT_BUTTON_RELEASED = (1 << ATSPI_BUTTON_RELEASED_EVENT),
+} InputEventType;
+
 typedef struct Input
 {
     GSList *subscribers;
@@ -40,7 +48,7 @@ typedef struct Input
 
 typedef struct InputEvent
 {
-    AtspiEventType type;
+    InputEventType type;
     guint id;
     GdkModifierType modifiers;
 } InputEvent;

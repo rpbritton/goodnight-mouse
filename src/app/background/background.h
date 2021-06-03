@@ -28,7 +28,8 @@
 
 typedef struct BackgroundConfig
 {
-    InputEvent trigger_event;
+    guint trigger_id;
+    GdkModifierType trigger_modifiers;
 } BackgroundConfig;
 
 typedef struct Background

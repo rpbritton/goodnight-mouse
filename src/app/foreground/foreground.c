@@ -19,6 +19,8 @@
 
 #include "foreground.h"
 
+static InputEventAction input_callback(InputEvent event, gpointer background_ptr);
+
 Foreground *foreground_new(Input *input)
 {
     Foreground *foreground = g_malloc(sizeof(Foreground));
@@ -46,7 +48,14 @@ void foreground_configure(Foreground *foreground, ForegroundConfig config)
 
 void foreground_run(Foreground *foreground)
 {
+    if (foreground_is_running(foreground))
+        return;
+
+    input_subscribe_all(foreground->input, input_callback, foreground);
+
     g_main_loop_run(foreground->loop);
+
+    input_unsubscribe(foreground->input, input_callback);
 }
 
 gboolean foreground_is_running(Foreground *foreground)
@@ -57,4 +66,12 @@ gboolean foreground_is_running(Foreground *foreground)
 void foreground_quit(Foreground *foreground)
 {
     g_main_loop_quit(foreground->loop);
+}
+
+static InputEventAction input_callback(InputEvent event, gpointer background_ptr)
+{
+    g_message("foreground can now consume!");
+
+    return INPUT_RELAY_EVENT;
+    //return INPUT_CONSUME_EVENT;
 }
