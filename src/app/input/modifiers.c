@@ -19,7 +19,7 @@
 
 #include "modifiers.h"
 
-GdkKeymap *default_keymap = NULL;
+static GdkKeymap *default_keymap = NULL;
 
 GdkModifierType modifiers_map(GdkModifierType modifiers)
 {

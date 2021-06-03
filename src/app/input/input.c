@@ -22,10 +22,10 @@
 #include "timeout.h"
 #include "modifiers.h"
 
-#define KEYBOARD_EVENTS (INPUT_KEY_PRESSED_EVENT | ATSPI_KEY_RELEASED)
+#define KEYBOARD_EVENTS (INPUT_KEY_PRESSED | ATSPI_KEY_RELEASED)
 #define KEYBOARD_SYNC_TYPE (ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME)
 
-#define MOUSE_EVENTS (INPUT_BUTTON_PRESSED_EVENT | INPUT_BUTTON_RELEASED)
+#define MOUSE_EVENTS (INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED)
 
 typedef struct Subscriber
 {
@@ -35,16 +35,16 @@ typedef struct Subscriber
     InputEvent event;
 } Subscriber;
 
-void subscribe(Input *input, Subscriber subscription);
-void subscriber_free(gpointer subscriber);
-gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *subscription);
-gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event);
-gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback);
-gint compare_subscriber_matches_subscription(gconstpointer subscriber, gconstpointer subscription);
-gint compare_subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback);
-void register_listeners(Input *input);
-void deregister_listeners(Input *input);
-gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
+static void subscribe(Input *input, Subscriber subscription);
+static void subscriber_free(gpointer subscriber);
+static gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *subscription);
+static gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event);
+static gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback);
+static gint compare_subscriber_matches_subscription(gconstpointer subscriber, gconstpointer subscription);
+static gint compare_subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback);
+static void register_listeners(Input *input);
+static void deregister_listeners(Input *input);
+static gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
 
 Input *input_new()
 {
@@ -97,7 +97,7 @@ void input_subscribe_all(Input *input, InputCallback callback, gpointer data)
     subscribe(input, subscription);
 }
 
-void subscribe(Input *input, Subscriber subscription)
+static void subscribe(Input *input, Subscriber subscription)
 {
     if (g_slist_find_custom(input->subscribers, &subscription, compare_subscriber_matches_subscription))
         return;
@@ -118,12 +118,12 @@ void input_unsubscribe(Input *input, InputCallback callback)
     }
 }
 
-void subscriber_free(gpointer subscriber)
+static void subscriber_free(gpointer subscriber)
 {
     g_free(subscriber);
 }
 
-gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *subscription)
+static gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *subscription)
 {
     // compare callback
     if (!subscriber_matches_callback(subscriber, subscription->callback))
@@ -133,35 +133,35 @@ gboolean subscriber_matches_subscription(Subscriber *subscriber, Subscriber *sub
     return subscriber_matches_event(subscriber, subscription->event);
 }
 
-gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event)
+static gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event)
 {
     // check if should match all
     if (subscriber->match_all)
         return TRUE;
 
     // compare with event
-    return ((subscriber->event.type == event.type) &&
+    return ((subscriber->event.type & event.type) &&
             (subscriber->event.id == event.id) &&
             (subscriber->event.modifiers == event.modifiers));
 }
 
-gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback)
+static gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback)
 {
     // compare callback
     return (subscriber->callback == callback);
 }
 
-gint compare_subscriber_matches_subscription(gconstpointer subscriber, gconstpointer subscription)
+static gint compare_subscriber_matches_subscription(gconstpointer subscriber, gconstpointer subscription)
 {
     return !subscriber_matches_subscription((Subscriber *)subscriber, (Subscriber *)subscription);
 }
 
-gint compare_subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback)
+static gint compare_subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback)
 {
     return !subscriber_matches_callback((Subscriber *)subscriber, (InputCallback)callback);
 }
 
-void register_listeners(Input *input)
+static void register_listeners(Input *input)
 {
     // disable timeout to prevent long blocking on pending key events
     timeout_disable();
@@ -184,7 +184,7 @@ void register_listeners(Input *input)
     timeout_enable();
 }
 
-void deregister_listeners(Input *input)
+static void deregister_listeners(Input *input)
 {
     // disable timeout to prevent long blocking on pending key events
     timeout_disable();
@@ -206,7 +206,7 @@ void deregister_listeners(Input *input)
     timeout_enable();
 }
 
-gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
+static gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
 {
     // extract event
     InputEvent event = {

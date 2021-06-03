@@ -23,7 +23,7 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
-gboolean signal_quit(gpointer app_ptr);
+static gboolean signal_quit(gpointer app_ptr);
 
 App *app_new()
 {
@@ -92,7 +92,7 @@ void app_quit(App *app)
     foreground_quit(app->foreground);
 }
 
-gboolean signal_quit(gpointer app_ptr)
+static gboolean signal_quit(gpointer app_ptr)
 {
     App *app = (App *)app_ptr;
 

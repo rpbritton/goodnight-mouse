@@ -19,7 +19,6 @@
 
 #include "timeout.h"
 
-#include <stdio.h>
 #include <atspi/atspi.h>
 
 // default timeouts, found in atspi-misc.c
@@ -29,10 +28,10 @@
 // timeout log message, found in dbus-pending-call.c
 #define DBUS_TIMEOUT_MESSAGE "Did not receive a reply."
 
-gboolean timeout_enabled = TRUE;
-guint log_handler_id = 0;
+static gboolean timeout_enabled = TRUE;
+static guint log_handler_id = 0;
 
-void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data);
+static void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data);
 
 void timeout_enable()
 {
@@ -76,7 +75,7 @@ void timeout_disable()
     g_object_unref(desktop);
 }
 
-void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data)
+static void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data)
 {
     if (g_strrstr(message, DBUS_TIMEOUT_MESSAGE))
         return;
