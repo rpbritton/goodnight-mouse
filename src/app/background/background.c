@@ -71,6 +71,9 @@ gboolean background_is_running(Background *background)
 
 void background_quit(Background *background)
 {
+    if (!background_is_running(background))
+        return;
+
     foreground_quit(background->foreground);
 
     g_main_loop_quit(background->loop);

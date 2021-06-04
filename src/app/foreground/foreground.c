@@ -19,7 +19,7 @@
 
 #include "foreground.h"
 
-static InputEventAction input_callback(InputEvent event, gpointer background_ptr);
+static InputEventAction input_callback(InputEvent event, gpointer foreground_ptr);
 
 Foreground *foreground_new(Input *input)
 {
@@ -65,13 +65,47 @@ gboolean foreground_is_running(Foreground *foreground)
 
 void foreground_quit(Foreground *foreground)
 {
+    if (!foreground_is_running(foreground))
+        return;
+
     g_main_loop_quit(foreground->loop);
 }
 
-static InputEventAction input_callback(InputEvent event, gpointer background_ptr)
+static gboolean input_callback_idle(gpointer foreground_ptr)
 {
-    g_message("foreground can now consume!");
+    foreground_quit(foreground_ptr);
 
-    return INPUT_RELAY_EVENT;
-    //return INPUT_CONSUME_EVENT;
+    // remove glib source
+    return FALSE;
+}
+
+static InputEventAction input_callback(InputEvent event, gpointer foreground_ptr)
+{
+    Foreground *foreground = (Foreground *)foreground;
+
+    if (event.type == INPUT_KEY_PRESSED)
+    {
+        switch (event.id)
+        {
+        case GDK_KEY_Escape:
+            g_message("escaped!");
+            //foreground_quit(foreground);
+            g_idle_add_full(G_PRIORITY_HIGH_IDLE, input_callback_idle, foreground_ptr, NULL);
+            return INPUT_CONSUME_EVENT;
+        }
+    }
+    else if (event.type == INPUT_BUTTON_PRESSED)
+    {
+        switch (event.id)
+        {
+        default:
+            g_message("mouse clicked!");
+            //foreground_quit(foreground);
+            g_idle_add_full(G_PRIORITY_HIGH_IDLE, input_callback_idle, foreground_ptr, NULL);
+            return INPUT_RELAY_EVENT;
+        }
+    }
+
+    g_message("key has been consumed");
+    return INPUT_CONSUME_EVENT;
 }
