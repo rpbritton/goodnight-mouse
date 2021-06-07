@@ -19,7 +19,13 @@
 
 #include "foreground.h"
 
-static InputEventAction input_callback(InputEvent event, gpointer foreground_ptr);
+static InputResponse input_callback(InputEvent event, gpointer foreground_ptr);
+
+static InputEvent all_events = {
+    .type = INPUT_ALL_TYPES,
+    .id = INPUT_ALL_IDS,
+    .modifiers = INPUT_ALL_MODIFIERS,
+};
 
 Foreground *foreground_new(Input *input)
 {
@@ -51,7 +57,7 @@ void foreground_run(Foreground *foreground)
     if (foreground_is_running(foreground))
         return;
 
-    input_subscribe_all(foreground->input, input_callback, foreground);
+    input_subscribe(foreground->input, all_events, input_callback, foreground);
 
     g_main_loop_run(foreground->loop);
 
@@ -71,41 +77,28 @@ void foreground_quit(Foreground *foreground)
     g_main_loop_quit(foreground->loop);
 }
 
-static gboolean input_callback_idle(gpointer foreground_ptr)
+static InputResponse input_callback(InputEvent event, gpointer foreground_ptr)
 {
-    foreground_quit(foreground_ptr);
-
-    // remove glib source
-    return FALSE;
-}
-
-static InputEventAction input_callback(InputEvent event, gpointer foreground_ptr)
-{
-    Foreground *foreground = (Foreground *)foreground;
+    Foreground *foreground = (Foreground *)foreground_ptr;
 
     if (event.type == INPUT_KEY_PRESSED)
     {
         switch (event.id)
         {
         case GDK_KEY_Escape:
-            g_message("escaped!");
-            //foreground_quit(foreground);
-            g_idle_add_full(G_PRIORITY_HIGH_IDLE, input_callback_idle, foreground_ptr, NULL);
+            foreground_quit(foreground);
             return INPUT_CONSUME_EVENT;
         }
     }
-    else if (event.type == INPUT_BUTTON_PRESSED)
+    else if (event.type & (INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED))
     {
         switch (event.id)
         {
         default:
-            g_message("mouse clicked!");
-            //foreground_quit(foreground);
-            g_idle_add_full(G_PRIORITY_HIGH_IDLE, input_callback_idle, foreground_ptr, NULL);
+            foreground_quit(foreground);
             return INPUT_RELAY_EVENT;
         }
     }
 
-    g_message("key has been consumed");
     return INPUT_CONSUME_EVENT;
 }

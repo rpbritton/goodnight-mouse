@@ -19,8 +19,8 @@
 
 #include "background.h"
 
-static gboolean trigger_foreground(gpointer background_ptr);
-static InputEventAction input_callback(InputEvent event, gpointer background_ptr);
+static InputResponse input_callback(InputEvent event, gpointer background_ptr);
+static gboolean start_foreground(gpointer background_ptr);
 
 Background *background_new(Input *input, Foreground *foreground)
 {
@@ -79,21 +79,19 @@ void background_quit(Background *background)
     g_main_loop_quit(background->loop);
 }
 
-static gboolean trigger_foreground(gpointer background_ptr)
+static InputResponse input_callback(InputEvent event, gpointer background_ptr)
+{
+    if (event.type == INPUT_KEY_PRESSED)
+        g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
+
+    return INPUT_CONSUME_EVENT;
+}
+
+static gboolean start_foreground(gpointer background_ptr)
 {
     Background *background = (Background *)background_ptr;
 
-    // start running the foreground
     foreground_run(background->foreground);
 
-    // remove glib source
-    return FALSE;
-}
-
-static InputEventAction input_callback(InputEvent event, gpointer background_ptr)
-{
-    if (event.type == INPUT_KEY_PRESSED)
-        g_idle_add_full(G_PRIORITY_HIGH_IDLE, trigger_foreground, background_ptr, NULL);
-
-    return INPUT_CONSUME_EVENT;
+    return G_SOURCE_REMOVE;
 }
