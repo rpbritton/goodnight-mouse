@@ -17,25 +17,24 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_INPUT_INPUT_H
-#define SRC_APP_INPUT_INPUT_H
+#ifndef SRC_APP_INPUT_SUBSCRIBER_H
+#define SRC_APP_INPUT_SUBSCRIBER_H
 
 #include <glib.h>
-#include <atspi/atspi.h>
 
 #include "event.h"
 
-typedef struct Input
+typedef struct Subscriber
 {
-    GSList *subscribers;
+    InputEvent event;
+    InputCallback callback;
+    gpointer data;
+} Subscriber;
 
-    AtspiDeviceListener *keyboard_listener;
-    AtspiDeviceListener *mouse_listener;
-} Input;
+Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer data);
+void subscriber_free(Subscriber *subscriber);
+InputResponse subscriber_call(Subscriber *subscriber, InputEvent event);
+gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event);
+gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback);
 
-Input *input_new();
-void input_destroy(Input *input);
-void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer data);
-void input_unsubscribe(Input *input, InputCallback callback);
-
-#endif /* SRC_APP_INPUT_INPUT_H */
+#endif /* SRC_APP_INPUT_SUBSCRIBER_H */
