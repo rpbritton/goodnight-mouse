@@ -32,13 +32,13 @@ static void register_listeners(Input *input);
 static void deregister_listeners(Input *input);
 static gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
 static void subscriber_free_generic(gpointer subscriber);
-static gint subscriber_matches_callback_generic(gconstpointer subscriber, gconstpointer source);
+static gint subscriber_matches_callback_generic(gconstpointer subscriber, gconstpointer callback);
 
 Input *input_new()
 {
-    Input *input = g_malloc(sizeof(Input));
+    Input *input = g_new(Input, 1);
 
-    // initialize subscriber linked list
+    // initialize subscriber list
     input->subscribers = NULL;
 
     // register listeners
@@ -136,11 +136,11 @@ static gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr
 
     // find matching subscribers
     InputResponse consumption = INPUT_RELAY_EVENT;
-    for (GSList *subscriber_list = input->subscribers;
-         subscriber_list != NULL;
-         subscriber_list = subscriber_list->next)
+    for (GSList *subscriber_node = input->subscribers;
+         subscriber_node != NULL;
+         subscriber_node = subscriber_node->next)
     {
-        Subscriber *subscriber = (Subscriber *)subscriber_list->data;
+        Subscriber *subscriber = (Subscriber *)subscriber_node->data;
 
         if (!subscriber_matches_event(subscriber, event))
             continue;

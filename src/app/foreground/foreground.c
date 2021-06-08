@@ -29,12 +29,12 @@ static InputEvent all_events = {
 
 Foreground *foreground_new(Input *input)
 {
-    Foreground *foreground = g_malloc(sizeof(Foreground));
-
-    foreground->input = input;
+    Foreground *foreground = g_new(Foreground, 1);
 
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);
+
+    foreground->input = input;
 
     return foreground;
 }

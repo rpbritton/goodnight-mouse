@@ -24,7 +24,7 @@ static gboolean start_foreground(gpointer background_ptr);
 
 Background *background_new(Input *input, Foreground *foreground)
 {
-    Background *background = g_malloc(sizeof(Background));
+    Background *background = g_new(Background, 1);
 
     background->input = input;
     background->foreground = foreground;

@@ -27,7 +27,7 @@ static gboolean signal_quit(gpointer app_ptr);
 
 App *app_new()
 {
-    App *app = g_malloc(sizeof(App));
+    App *app = g_new(App, 1);
 
     // initialize common libraries
     gtk_init(NULL, NULL);
