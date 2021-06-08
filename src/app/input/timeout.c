@@ -37,33 +37,33 @@ void timeout_enable()
 {
     if (timeout_enabled)
         return;
-
-    // fetch an accessible to call an event from
-    AtspiAccessible *desktop = atspi_get_desktop(0);
-
-    // unhide log timeout warnings
-    g_log_remove_handler("dbind", log_handler_id);
+    timeout_enabled = TRUE;
 
     // set the default timeouts
     atspi_set_timeout(METHOD_CALL_TIMEOUT, APP_STARTUP_TIME);
 
     // make a call that will actually force the timeout setting
+    AtspiAccessible *desktop = atspi_get_desktop(0);
     atspi_accessible_get_id(desktop, NULL);
 
     // unref the accessible
     g_object_unref(desktop);
+
+    // unhide log timeout warnings
+    g_log_remove_handler("dbind", log_handler_id);
 }
 
 void timeout_disable()
 {
     if (!timeout_enabled)
         return;
-
-    // fetch an accessible to call an event from
-    AtspiAccessible *desktop = atspi_get_desktop(0);
+    timeout_enabled = FALSE;
 
     // hide log timeout warnings
     log_handler_id = g_log_set_handler("dbind", G_LOG_LEVEL_WARNING, log_handler, NULL);
+
+    // fetch an accessible to call on before disabling
+    AtspiAccessible *desktop = atspi_get_desktop(0);
 
     // set the timeout to zero
     atspi_set_timeout(0, 0);
