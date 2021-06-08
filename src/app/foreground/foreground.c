@@ -20,6 +20,7 @@
 #include "foreground.h"
 
 static InputResponse input_callback(InputEvent event, gpointer foreground_ptr);
+static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr);
 
 static InputEvent all_events = {
     .type = INPUT_ALL_TYPES,
@@ -36,11 +37,17 @@ Foreground *foreground_new(Input *input)
 
     foreground->input = input;
 
+    // create members
+    foreground->focus = focus_new();
+
     return foreground;
 }
 
 void foreground_destroy(Foreground *foreground)
 {
+    // destroy members
+    focus_destroy(foreground->focus);
+
     // free main loop
     g_main_loop_unref(foreground->loop);
 
@@ -57,11 +64,15 @@ void foreground_run(Foreground *foreground)
     if (foreground_is_running(foreground))
         return;
 
+    // subscribe to events
     input_subscribe(foreground->input, all_events, input_callback, foreground);
+    focus_subscribe(foreground->focus, focus_callback, foreground);
 
     g_main_loop_run(foreground->loop);
 
+    // unsubscribe to events
     input_unsubscribe(foreground->input, input_callback);
+    focus_unsubscribe(foreground->focus, focus_callback);
 }
 
 gboolean foreground_is_running(Foreground *foreground)
@@ -101,4 +112,14 @@ static InputResponse input_callback(InputEvent event, gpointer foreground_ptr)
     }
 
     return INPUT_CONSUME_EVENT;
+}
+
+static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr)
+{
+    // window focus changed, quit
+    Foreground *foreground = (Foreground *)foreground_ptr;
+    foreground_quit(foreground);
+
+    if (window)
+        g_object_unref(window);
 }

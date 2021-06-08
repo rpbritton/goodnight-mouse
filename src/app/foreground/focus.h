@@ -17,32 +17,25 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_FOREGROUND_FOREGROUND_H
-#define SRC_APP_FOREGROUND_FOREGROUND_H
+#ifndef SRC_APP_FOREGROUND_FOCUS_H
+#define SRC_APP_FOREGROUND_FOCUS_H
 
 #include <glib.h>
+#include <atspi/atspi.h>
 
-#include "../input/input.h"
-
-#include "focus.h"
-
-typedef struct ForegroundConfig
+typedef struct Focus
 {
-} ForegroundConfig;
+    GSList *subscribers;
+    AtspiEventListener *listener;
+    AtspiAccessible *window;
+} Focus;
 
-typedef struct Foreground
-{
-    GMainLoop *loop;
+typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
 
-    Input *input;
-    Focus *focus;
-} Foreground;
+Focus *focus_new();
+void focus_destroy(Focus *focus);
+void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
+void focus_unsubscribe(Focus *focus, FocusCallback callback);
+AtspiAccessible *focus_get_window(Focus *focus);
 
-Foreground *foreground_new(Input *input);
-void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig config);
-void foreground_run(Foreground *foreground);
-gboolean foreground_is_running(Foreground *foreground);
-void foreground_quit(Foreground *foreground);
-
-#endif /* SRC_APP_FOREGROUND_FOREGROUND_H */
+#endif /* SRC_APP_FOREGROUND_FOCUS_H */
