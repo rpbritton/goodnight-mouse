@@ -57,10 +57,15 @@ void background_run(Background *background)
     if (background_is_running(background))
         return;
 
+    // subscribe events
     input_subscribe(background->input, background->trigger_event, input_callback, background);
 
+    // run loop
+    g_debug("background: Starting loop");
     g_main_loop_run(background->loop);
+    g_debug("background: Starting loop");
 
+    // unsubscribe events
     input_unsubscribe(background->input, input_callback);
 }
 
@@ -91,7 +96,10 @@ static gboolean start_foreground(gpointer background_ptr)
 {
     Background *background = (Background *)background_ptr;
 
+    // run foreground
+    g_debug("background: Running foreground");
     foreground_run(background->foreground);
+    g_debug("background: Finished foreground");
 
     return G_SOURCE_REMOVE;
 }

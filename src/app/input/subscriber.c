@@ -26,7 +26,7 @@ Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer da
     Subscriber *subscriber = g_new(Subscriber, 1);
 
     *subscriber = (Subscriber){
-        .event = (InputEvent){
+        .event = {
             .type = event.type,
             .id = event.id,
             .modifiers = (event.modifiers == INPUT_ALL_MODIFIERS) ? INPUT_ALL_MODIFIERS : modifiers_map(event.modifiers),

@@ -23,7 +23,7 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 
-#include "../subscriptions/input/input.h"
+#include "../input/input.h"
 #include "../foreground/foreground.h"
 
 typedef struct BackgroundConfig

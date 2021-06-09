@@ -28,13 +28,13 @@ static const InputEvent ALL_EVENTS = {
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
-Foreground *foreground_new(Input *input, Focus *focus, Accessibles *accessibles)
+Foreground *foreground_new(Input *input, Focus *focus, Actions *actions)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
     foreground->input = input;
     foreground->focus = focus;
-    foreground->accessibles = accessibles;
+    foreground->actions = actions;
 
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);
@@ -60,13 +60,16 @@ void foreground_run(Foreground *foreground)
     if (foreground_is_running(foreground))
         return;
 
-    // subscribe to events
+    // subscribe events
     input_subscribe(foreground->input, ALL_EVENTS, input_callback, foreground);
     focus_subscribe(foreground->focus, focus_callback, foreground);
 
+    // run loop
+    g_debug("foreground: Starting loop");
     g_main_loop_run(foreground->loop);
+    g_debug("foreground: Stopping loop");
 
-    // unsubscribe to events
+    // unsubscribe events
     input_unsubscribe(foreground->input, input_callback);
     focus_unsubscribe(foreground->focus, focus_callback);
 }

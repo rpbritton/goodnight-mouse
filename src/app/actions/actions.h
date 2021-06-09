@@ -17,33 +17,26 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AD82229D_9BCD_4C49_AC37_47128F926D4E
-#define AD82229D_9BCD_4C49_AC37_47128F926D4E
+#ifndef FE2ED0B7_0D51_459D_933A_9C5B78C8E618
+#define FE2ED0B7_0D51_459D_933A_9C5B78C8E618
 
 #include <glib.h>
 
-#include "../input/input.h"
 #include "../focus/focus.h"
-#include "../actions/actions.h"
 
-typedef struct ForegroundConfig
+typedef struct Actions
 {
-} ForegroundConfig;
-
-typedef struct Foreground
-{
-    GMainLoop *loop;
-
-    Input *input;
     Focus *focus;
-    Actions *actions;
-} Foreground;
 
-Foreground *foreground_new(Input *input, Focus *focus, Actions *actions);
-void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig config);
-void foreground_run(Foreground *foreground);
-gboolean foreground_is_running(Foreground *foreground);
-void foreground_quit(Foreground *foreground);
+    GSList *subscribers;
+} Actions;
 
-#endif /* AD82229D_9BCD_4C49_AC37_47128F926D4E */
+typedef void (*ActionsCallback)(GHashTable *list, gpointer data);
+
+Actions *actions_new(Focus *focus);
+void actions_destroy(Actions *actions);
+void actions_subscribe(Actions *actions, ActionsCallback callback, gpointer data);
+void actions_unsubscribe(Actions *actions, ActionsCallback callback);
+GList *actions_list(Actions *actions);
+
+#endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */

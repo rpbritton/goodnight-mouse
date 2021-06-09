@@ -41,8 +41,8 @@ App *app_new()
     // create managers
     app->input = input_new();
     app->focus = focus_new();
-    app->accessibles = accessibles_new(app->focus);
-    app->foreground = foreground_new(app->input, app->focus, app->accessibles);
+    app->actions = actions_new(app->focus);
+    app->foreground = foreground_new(app->input, app->focus, app->actions);
     app->background = background_new(app->input, app->foreground);
 
     return app;
@@ -53,7 +53,7 @@ void app_destroy(App *app)
     // free managers
     background_destroy(app->background);
     foreground_destroy(app->foreground);
-    accessibles_destroy(app->accessibles);
+    actions_destroy(app->actions);
     focus_destroy(app->focus);
     input_destroy(app->input);
 

@@ -22,9 +22,9 @@
 
 #include <glib.h>
 
-#include "subscriptions/input/input.h"
-#include "subscriptions/focus/focus.h"
-#include "subscriptions/accessibles/accessibles.h"
+#include "input/input.h"
+#include "focus/focus.h"
+#include "actions/actions.h"
 #include "background/background.h"
 #include "foreground/foreground.h"
 
@@ -42,7 +42,7 @@ typedef struct App
 
     Input *input;
     Focus *focus;
-    Accessibles *accessibles;
+    Actions *actions;
     Background *background;
     Foreground *foreground;
 } App;
