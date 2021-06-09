@@ -30,7 +30,7 @@ typedef struct Subscriber
 
 static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
 static void focus_callback(AtspiEvent *event, void *focus_ptr);
-static AtspiAccessible *force_get_window();
+static AtspiAccessible *force_window();
 
 Focus *focus_new()
 {
@@ -45,7 +45,7 @@ Focus *focus_new()
     atspi_event_listener_register(focus->listener, WINDOW_DEACTIVATE_EVENT, NULL);
 
     // get first window
-    focus->window = force_get_window(focus);
+    focus->window = force_window(focus);
 
     return focus;
 }
@@ -118,7 +118,7 @@ static void focus_callback(AtspiEvent *event, void *focus_ptr)
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
-AtspiAccessible *focus_get_window(Focus *focus)
+AtspiAccessible *focus_window(Focus *focus)
 {
     if (focus->window)
         g_object_ref(focus->window);
@@ -126,7 +126,7 @@ AtspiAccessible *focus_get_window(Focus *focus)
     return focus->window;
 }
 
-static AtspiAccessible *force_get_window()
+static AtspiAccessible *force_window()
 {
     AtspiAccessible *active_window = NULL;
 
