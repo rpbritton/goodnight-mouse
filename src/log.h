@@ -17,30 +17,16 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#ifndef CCEACF73_FB4F_4D02_AC64_ADE6E0BB919A
+#define CCEACF73_FB4F_4D02_AC64_ADE6E0BB919A
 
-// use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
-// use getopt.h for arguments
+#include <glib.h>
 
-static const Config DEFAULT_CONFIG = {
-    .run_once = FALSE,
-
-    .log = {
-        .debug = TRUE,
-    },
-
-    .app = {
-        .foreground = {},
-        .background = {
-            .trigger_id = GDK_KEY_v,
-            .trigger_modifiers = GDK_SUPER_MASK,
-        },
-    },
-};
-
-Config config_parse(int argc, char **argv)
+typedef struct LogConfig
 {
-    Config config = DEFAULT_CONFIG;
+    gboolean debug;
+} LogConfig;
 
-    return config;
-}
+void log_setup(LogConfig config);
+
+#endif /* CCEACF73_FB4F_4D02_AC64_ADE6E0BB919A */

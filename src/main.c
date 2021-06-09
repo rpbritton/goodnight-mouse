@@ -19,15 +19,18 @@
 
 #include "app/app.h"
 #include "config.h"
+#include "log.h"
 
 int main(int argc, char **argv)
 {
-    App *app = app_new();
-
     Config config = config_parse(argc, argv);
+
+    log_setup(config.log);
+
+    App *app = app_new();
     app_configure(app, config.app);
 
-    if (config.run_once_now)
+    if (config.run_once)
         app_run_once(app);
     else
         app_run(app);

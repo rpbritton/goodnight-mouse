@@ -22,13 +22,15 @@
 
 #include <glib.h>
 
+#include "log.h"
 #include "app/app.h"
 
 typedef struct Config
 {
-    AppConfig app;
+    gboolean run_once;
 
-    gboolean run_once_now;
+    LogConfig log;
+    AppConfig app;
 } Config;
 
 Config config_parse(int argc, char **argv);
