@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_CONFIG_H
-#define SRC_CONFIG_H
+#ifndef E72C461F_B3E0_4080_8624_9A8F366A3903
+#define E72C461F_B3E0_4080_8624_9A8F366A3903
 
 #include <glib.h>
 
@@ -33,4 +33,4 @@ typedef struct Config
 
 Config config_parse(int argc, char **argv);
 
-#endif /* SRC_CONFIG_H */
+#endif /* E72C461F_B3E0_4080_8624_9A8F366A3903 */

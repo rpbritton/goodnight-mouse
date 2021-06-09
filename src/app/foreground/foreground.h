@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_FOREGROUND_FOREGROUND_H
-#define SRC_APP_FOREGROUND_FOREGROUND_H
+#ifndef AD82229D_9BCD_4C49_AC37_47128F926D4E
+#define AD82229D_9BCD_4C49_AC37_47128F926D4E
 
 #include <glib.h>
 
@@ -46,4 +46,4 @@ void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
 void foreground_quit(Foreground *foreground);
 
-#endif /* SRC_APP_FOREGROUND_FOREGROUND_H */
+#endif /* AD82229D_9BCD_4C49_AC37_47128F926D4E */

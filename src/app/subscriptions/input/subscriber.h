@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_INPUT_SUBSCRIBER_H
-#define SRC_APP_INPUT_SUBSCRIBER_H
+#ifndef BD2D3A3A_EF81_4C26_A692_58D39FBCBA95
+#define BD2D3A3A_EF81_4C26_A692_58D39FBCBA95
 
 #include <glib.h>
 
@@ -37,4 +37,4 @@ InputResponse subscriber_call(Subscriber *subscriber, InputEvent event);
 gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event);
 gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback);
 
-#endif /* SRC_APP_INPUT_SUBSCRIBER_H */
+#endif /* BD2D3A3A_EF81_4C26_A692_58D39FBCBA95 */

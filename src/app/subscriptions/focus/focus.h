@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_FOREGROUND_FOCUS_H
-#define SRC_APP_FOREGROUND_FOCUS_H
+#ifndef C771728F_10C2_4C46_86DE_E96D9E622166
+#define C771728F_10C2_4C46_86DE_E96D9E622166
 
 #include <glib.h>
 #include <atspi/atspi.h>
@@ -38,4 +38,4 @@ void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
 void focus_unsubscribe(Focus *focus, FocusCallback callback);
 AtspiAccessible *focus_get_window(Focus *focus);
 
-#endif /* SRC_APP_FOREGROUND_FOCUS_H */
+#endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */

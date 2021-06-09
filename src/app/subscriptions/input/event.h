@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_INPUT_EVENT_H
-#define SRC_APP_INPUT_EVENT_H
+#ifndef E34E90F1_4A14_4140_9689_E5590AD1C2FE
+#define E34E90F1_4A14_4140_9689_E5590AD1C2FE
 
 #include <gdk/gdk.h>
 #include <atspi/atspi.h>
@@ -50,4 +50,4 @@ typedef enum InputResponse
 
 typedef InputResponse (*InputCallback)(InputEvent event, gpointer data);
 
-#endif /* SRC_APP_INPUT_EVENT_H */
+#endif /* E34E90F1_4A14_4140_9689_E5590AD1C2FE */

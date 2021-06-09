@@ -17,10 +17,10 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_INPUT_TIMEOUT_H
-#define SRC_APP_INPUT_TIMEOUT_H
+#ifndef CD17EB91_6DBD_4657_8EFF_B3D1D0B7FFB1
+#define CD17EB91_6DBD_4657_8EFF_B3D1D0B7FFB1
 
 void timeout_enable();
 void timeout_disable();
 
-#endif /* SRC_APP_INPUT_TIMEOUT_H */
+#endif /* CD17EB91_6DBD_4657_8EFF_B3D1D0B7FFB1 */

@@ -17,11 +17,11 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_INPUT_MODIFIERS_H
-#define SRC_APP_INPUT_MODIFIERS_H
+#ifndef CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84
+#define CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84
 
 #include <gdk/gdk.h>
 
 GdkModifierType modifiers_map(GdkModifierType modifiers);
 
-#endif /* SRC_APP_INPUT_MODIFIERS_H */
+#endif /* CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84 */

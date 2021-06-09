@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_APP_H
-#define SRC_APP_APP_H
+#ifndef B1E39E9E_46A9_450C_AE4B_72A95E00B143
+#define B1E39E9E_46A9_450C_AE4B_72A95E00B143
 
 #include <glib.h>
 
@@ -55,4 +55,4 @@ void app_run_once(App *app);
 gboolean app_is_running(App *app);
 void app_quit(App *app);
 
-#endif /* SRC_APP_APP_H */
+#endif /* B1E39E9E_46A9_450C_AE4B_72A95E00B143 */

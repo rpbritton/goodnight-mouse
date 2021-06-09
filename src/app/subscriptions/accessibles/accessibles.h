@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_FOREGROUND_ACCESSIBLES_H
-#define SRC_APP_FOREGROUND_ACCESSIBLES_H
+#ifndef FE2ED0B7_0D51_459D_933A_9C5B78C8E618
+#define FE2ED0B7_0D51_459D_933A_9C5B78C8E618
 
 #include <glib.h>
 
@@ -32,4 +32,4 @@ typedef struct Accessibles
 Accessibles *accessibles_new(Focus *focus);
 void accessibles_destroy(Accessibles *accessibles);
 
-#endif /* SRC_APP_FOREGROUND_ACCESSIBLES_H */
+#endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */
