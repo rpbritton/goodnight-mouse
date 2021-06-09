@@ -22,7 +22,7 @@
 static InputResponse input_callback(InputEvent event, gpointer foreground_ptr);
 static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr);
 
-static InputEvent all_events = {
+static const InputEvent ALL_EVENTS = {
     .type = INPUT_ALL_TYPES,
     .id = INPUT_ALL_IDS,
     .modifiers = INPUT_ALL_MODIFIERS,
@@ -61,7 +61,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // subscribe to events
-    input_subscribe(foreground->input, all_events, input_callback, foreground);
+    input_subscribe(foreground->input, ALL_EVENTS, input_callback, foreground);
     focus_subscribe(foreground->focus, focus_callback, foreground);
 
     g_main_loop_run(foreground->loop);

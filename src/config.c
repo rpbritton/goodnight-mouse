@@ -22,7 +22,7 @@
 // use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
 // use getopt.h for arguments
 
-static const Config default_config = {
+static const Config DEFAULT_CONFIG = {
     .app = {
         .foreground = {},
         .background = {
@@ -36,7 +36,7 @@ static const Config default_config = {
 
 Config config_parse(int argc, char **argv)
 {
-    Config config = default_config;
+    Config config = DEFAULT_CONFIG;
 
     return config;
 }
