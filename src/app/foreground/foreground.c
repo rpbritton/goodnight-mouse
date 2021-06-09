@@ -28,26 +28,22 @@ static InputEvent all_events = {
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
-Foreground *foreground_new(Input *input)
+Foreground *foreground_new(Input *input, Focus *focus, Accessibles *accessibles)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
+    foreground->input = input;
+    foreground->focus = focus;
+    foreground->accessibles = accessibles;
+
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);
-
-    foreground->input = input;
-
-    // create members
-    foreground->focus = focus_new();
 
     return foreground;
 }
 
 void foreground_destroy(Foreground *foreground)
 {
-    // destroy members
-    focus_destroy(foreground->focus);
-
     // free main loop
     g_main_loop_unref(foreground->loop);
 

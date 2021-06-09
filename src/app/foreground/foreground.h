@@ -22,9 +22,9 @@
 
 #include <glib.h>
 
-#include "../input/input.h"
-
-#include "focus.h"
+#include "../subscriptions/input/input.h"
+#include "../subscriptions/focus/focus.h"
+#include "../subscriptions/accessibles/accessibles.h"
 
 typedef struct ForegroundConfig
 {
@@ -36,9 +36,10 @@ typedef struct Foreground
 
     Input *input;
     Focus *focus;
+    Accessibles *accessibles;
 } Foreground;
 
-Foreground *foreground_new(Input *input);
+Foreground *foreground_new(Input *input, Focus *focus, Accessibles *accessibles);
 void foreground_destroy(Foreground *foreground);
 void foreground_configure(Foreground *foreground, ForegroundConfig config);
 void foreground_run(Foreground *foreground);

@@ -17,42 +17,19 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SRC_APP_APP_H
-#define SRC_APP_APP_H
+#ifndef SRC_APP_FOREGROUND_ACCESSIBLES_H
+#define SRC_APP_FOREGROUND_ACCESSIBLES_H
 
 #include <glib.h>
 
-#include "subscriptions/input/input.h"
-#include "subscriptions/focus/focus.h"
-#include "subscriptions/accessibles/accessibles.h"
-#include "background/background.h"
-#include "foreground/foreground.h"
+#include "../focus/focus.h"
 
-typedef struct AppConfig
+typedef struct Accessibles
 {
-    BackgroundConfig background;
-    ForegroundConfig foreground;
-} AppConfig;
-
-typedef struct App
-{
-    guint signal_sighup;
-    guint signal_sigint;
-    guint signal_sigterm;
-
-    Input *input;
     Focus *focus;
-    Accessibles *accessibles;
-    Background *background;
-    Foreground *foreground;
-} App;
+} Accessibles;
 
-App *app_new();
-void app_destroy(App *app);
-void app_configure(App *app, AppConfig config);
-void app_run(App *app);
-void app_run_once(App *app);
-gboolean app_is_running(App *app);
-void app_quit(App *app);
+Accessibles *accessibles_new(Focus *focus);
+void accessibles_destroy(Accessibles *accessibles);
 
-#endif /* SRC_APP_APP_H */
+#endif /* SRC_APP_FOREGROUND_ACCESSIBLES_H */
