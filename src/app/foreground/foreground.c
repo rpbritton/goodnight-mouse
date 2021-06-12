@@ -19,16 +19,22 @@
 
 #include "foreground.h"
 
-static InputResponse input_callback(InputEvent event, gpointer foreground_ptr);
+static InputResponse keyboard_callback(InputEvent event, gpointer foreground_ptr);
+static InputResponse mouse_callback(InputEvent event, gpointer foreground_ptr);
 static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr);
 
-static const InputEvent ALL_EVENTS = {
-    .type = INPUT_ALL_TYPES,
+static const InputEvent KEYBOARD_EVENTS = {
+    .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
     .id = INPUT_ALL_IDS,
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
-Foreground *foreground_new(Input *input, Focus *focus, Actions *actions)
+static const InputEvent MOUSE_EVENTS = {
+    .type = INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED,
+    .id = INPUT_ALL_IDS,
+    .modifiers = INPUT_ALL_MODIFIERS,
+};
+
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -61,7 +67,8 @@ void foreground_run(Foreground *foreground)
         return;
 
     // subscribe events
-    input_subscribe(foreground->input, ALL_EVENTS, input_callback, foreground);
+    input_subscribe(foreground->input, KEYBOARD_EVENTS, keyboard_callback, foreground);
+    input_subscribe(foreground->input, MOUSE_EVENTS, mouse_callback, foreground);
     focus_subscribe(foreground->focus, focus_callback, foreground);
 
     // run loop
@@ -70,7 +77,8 @@ void foreground_run(Foreground *foreground)
     g_debug("foreground: Stopping loop");
 
     // unsubscribe events
-    input_unsubscribe(foreground->input, input_callback);
+    input_unsubscribe(foreground->input, keyboard_callback);
+    input_unsubscribe(foreground->input, mouse_callback);
     focus_unsubscribe(foreground->focus, focus_callback);
 }
 
@@ -87,30 +95,28 @@ void foreground_quit(Foreground *foreground)
     g_main_loop_quit(foreground->loop);
 }
 
-static InputResponse input_callback(InputEvent event, gpointer foreground_ptr)
+static InputResponse keyboard_callback(InputEvent event, gpointer foreground_ptr)
 {
-    Foreground *foreground = (Foreground *)foreground_ptr;
+    if (event.type != INPUT_KEY_PRESSED)
+        return INPUT_CONSUME_EVENT;
 
-    if (event.type == INPUT_KEY_PRESSED)
+    switch (event.id)
     {
-        switch (event.id)
-        {
-        case GDK_KEY_Escape:
-            foreground_quit(foreground);
-            return INPUT_CONSUME_EVENT;
-        }
-    }
-    else if (event.type & (INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED))
-    {
-        switch (event.id)
-        {
-        default:
-            foreground_quit(foreground);
-            return INPUT_RELAY_EVENT;
-        }
+    case GDK_KEY_Escape:
+        foreground_quit(foreground_ptr);
+        break;
+    default:
+        // todo: notify controller
+        break;
     }
 
     return INPUT_CONSUME_EVENT;
+}
+
+static InputResponse mouse_callback(InputEvent event, gpointer foreground_ptr)
+{
+    foreground_quit(foreground_ptr);
+    return INPUT_RELAY_EVENT;
 }
 
 static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr)
