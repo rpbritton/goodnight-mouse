@@ -17,26 +17,14 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FE2ED0B7_0D51_459D_933A_9C5B78C8E618
-#define FE2ED0B7_0D51_459D_933A_9C5B78C8E618
+#include "execution.h"
 
-#include <glib.h>
-
-#include "../focus/focus.h"
-
-typedef struct Actions
+void control_execution_press(Control *control)
 {
-    Focus *focus;
+    g_warning("control_execution_press: todo");
+}
 
-    GSList *subscribers;
-} Actions;
-
-typedef void (*ActionsCallback)(GHashTable *list, gpointer data);
-
-Actions *actions_new(Focus *focus);
-void actions_destroy(Actions *actions);
-void actions_subscribe(Actions *actions, ActionsCallback callback, gpointer data);
-void actions_unsubscribe(Actions *actions, ActionsCallback callback);
-GList *actions_list(Actions *actions);
-
-#endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */
+void control_execution_focus(Control *control)
+{
+    g_warning("control_execution_focus: todo");
+}

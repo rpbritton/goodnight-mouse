@@ -17,22 +17,13 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef E6235E1E_3D35_4FBB_8900_4B67D274702D
-#define E6235E1E_3D35_4FBB_8900_4B67D274702D
+#ifndef B7325ADF_09A4_4914_BE0D_C91B03468344
+#define B7325ADF_09A4_4914_BE0D_C91B03468344
 
 #include <atspi/atspi.h>
 
-typedef void (*InteractionCallback)();
+#include "control.h"
 
-typedef struct Interaction
-{
-    AtspiAccessible *accessible;
-    InteractionCallback *callback;
-} Interaction;
+ControlType control_identify_type(AtspiAccessible *accessible);
 
-Interaction *interaction_new(AtspiAccessible *accessible);
-void interaction_free(Interaction *interaction);
-void interaction_call(Interaction *interaction);
-//void interaction_pos(Action *action);
-
-#endif /* E6235E1E_3D35_4FBB_8900_4B67D274702D */
+#endif /* B7325ADF_09A4_4914_BE0D_C91B03468344 */

@@ -35,12 +35,13 @@ static const InputEvent MOUSE_EVENTS = {
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
+Foreground *foreground_new(Input *input, Focus *focus, Controller *controller)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
     foreground->input = input;
     foreground->focus = focus;
-    foreground->actions = actions;
+    foreground->controller = controller;
 
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);

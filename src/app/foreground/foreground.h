@@ -24,7 +24,7 @@
 
 #include "../input/input.h"
 #include "../focus/focus.h"
-#include "../actions/actions.h"
+#include "../controller/controller.h"
 
 typedef struct ForegroundConfig
 {
@@ -36,10 +36,10 @@ typedef struct Foreground
 
     Input *input;
     Focus *focus;
-    Actions *actions;
+    Controller *controller;
 } Foreground;
 
-Foreground *foreground_new(Input *input, Focus *focus, Actions *actions);
+Foreground *foreground_new(Input *input, Focus *focus, Controller *controller);
 void foreground_destroy(Foreground *foreground);
 void foreground_configure(Foreground *foreground, ForegroundConfig config);
 void foreground_run(Foreground *foreground);
