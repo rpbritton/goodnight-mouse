@@ -24,8 +24,8 @@ TARGET_EXEC := $(TARGET_DIR)/goodnight_mouse
 SRCS := $(shell find $(SRC_DIR) -name *.c)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
-CC := gcc
 CFLAGS := -Wall
+CFLAGS := -DG_LOG_DOMAIN=\"GoodnightMouse\" -DG_LOG_USE_STRUCTURED=1
 
 CFLAGS += $(shell pkg-config --cflags glib-2.0)
 LDFLAGS += $(shell pkg-config --libs glib-2.0)
@@ -37,11 +37,14 @@ CFLAGS += $(shell pkg-config --cflags gtk+-3.0)
 LDFLAGS += $(shell pkg-config --libs gtk+-3.0)
 
 build: $(OBJS)
-	$(CC) $(LDFLAGS) -o $(TARGET_EXEC) $^
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET_EXEC) $^
 
 $(BUILD_DIR)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+debug: CFLAGS += -g
+debug: build
 
 .PHONY: clean
 clean:

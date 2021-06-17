@@ -19,13 +19,26 @@
 
 #include "app/app.h"
 #include "config.h"
-#include "log.h"
+
+static void set_verbose_logging()
+{
+    const gchar *current_domains = g_getenv("G_MESSAGES_DEBUG");
+    if (current_domains)
+    {
+        const gchar *all_domains = g_strdup_printf("%s,%s", current_domains, G_LOG_DOMAIN);
+        g_setenv("G_MESSAGES_DEBUG", all_domains, FALSE);
+        g_free((void *)all_domains);
+    }
+    else
+        g_setenv("G_MESSAGES_DEBUG", G_LOG_DOMAIN, FALSE);
+}
 
 int main(int argc, char **argv)
 {
     Config config = config_parse(argc, argv);
 
-    log_setup(config.log);
+    if (config.log_verbose)
+        set_verbose_logging();
 
     App *app = app_new();
     app_configure(app, config.app);

@@ -24,10 +24,7 @@
 
 static const Config DEFAULT_CONFIG = {
     .run_once = FALSE,
-
-    .log = {
-        .debug = TRUE,
-    },
+    .log_verbose = TRUE,
 
     .app = {
         .foreground = {},
