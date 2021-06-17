@@ -25,16 +25,18 @@ SRCS := $(shell find $(SRC_DIR) -name *.c)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
 CFLAGS := -Wall
-CFLAGS := -DG_LOG_DOMAIN=\"GoodnightMouse\" -DG_LOG_USE_STRUCTURED=1
+LDFLAGS :=
 
-CFLAGS += $(shell pkg-config --cflags glib-2.0)
-LDFLAGS += $(shell pkg-config --libs glib-2.0)
-CFLAGS += $(shell pkg-config --cflags atspi-2)
-LDFLAGS += $(shell pkg-config --libs atspi-2)
-CFLAGS += $(shell pkg-config --cflags gobject-2.0)
-LDFLAGS += $(shell pkg-config --libs gobject-2.0)
-CFLAGS += $(shell pkg-config --cflags gtk+-3.0)
-LDFLAGS += $(shell pkg-config --libs gtk+-3.0)
+LIBS := glib-2.0 atspi-2 gobject-2.0 gtk+-3.0
+CFLAGS += $(shell pkg-config --cflags $(LIBS))
+LDFLAGS += $(shell pkg-config --libs $(LIBS))
+
+CFLAGS += -DG_LOG_DOMAIN=\"GoodnightMouse\" -DG_LOG_USE_STRUCTURED=1
+
+.DEFAULT_GOAL := build
+
+debug: CFLAGS += -g
+debug: build
 
 build: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET_EXEC) $^
@@ -42,9 +44,6 @@ build: $(OBJS)
 $(BUILD_DIR)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ -c $<
-
-debug: CFLAGS += -g
-debug: build
 
 .PHONY: clean
 clean:
