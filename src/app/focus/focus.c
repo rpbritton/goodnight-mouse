@@ -29,7 +29,9 @@ typedef struct Subscriber
 } Subscriber;
 
 static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
-static void focus_callback(AtspiEvent *event, void *focus_ptr);
+static void activation_callback(AtspiEvent *event, void *focus_ptr);
+static void deactivation_callback(AtspiEvent *event, void *focus_ptr);
+static void notify_subscribers(Focus *focus);
 static AtspiAccessible *force_window();
 
 Focus *focus_new()
@@ -39,13 +41,14 @@ Focus *focus_new()
     // initialize subscriber list
     focus->subscribers = NULL;
 
-    // register listeners
-    focus->listener = atspi_event_listener_new(focus_callback, focus, NULL);
-    atspi_event_listener_register(focus->listener, WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_register(focus->listener, WINDOW_DEACTIVATE_EVENT, NULL);
-
     // get first window
     focus->window = force_window(focus);
+
+    // register listeners
+    focus->listener_activation = atspi_event_listener_new(activation_callback, focus, NULL);
+    atspi_event_listener_register(focus->listener_activation, WINDOW_ACTIVATE_EVENT, NULL);
+    focus->listener_deactivation = atspi_event_listener_new(deactivation_callback, focus, NULL);
+    atspi_event_listener_register(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
 
     return focus;
 }
@@ -53,9 +56,10 @@ Focus *focus_new()
 void focus_destroy(Focus *focus)
 {
     // deregister listeners
-    atspi_event_listener_deregister(focus->listener, WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_deregister(focus->listener, WINDOW_DEACTIVATE_EVENT, NULL);
-    g_object_unref(focus->listener);
+    atspi_event_listener_deregister(focus->listener_activation, WINDOW_ACTIVATE_EVENT, NULL);
+    g_object_unref(focus->listener_activation);
+    atspi_event_listener_deregister(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
+    g_object_unref(focus->listener_deactivation);
 
     // free subscriber lists
     g_slist_free_full(focus->subscribers, g_free);
@@ -91,31 +95,56 @@ static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer 
     return !(((Subscriber *)subscriber)->callback == callback);
 }
 
-static void focus_callback(AtspiEvent *event, void *focus_ptr)
+static void activation_callback(AtspiEvent *event, void *focus_ptr)
 {
     Focus *focus = (Focus *)focus_ptr;
 
-    // update window
+    // set focused window
     if (focus->window)
         g_object_unref(focus->window);
-    if (g_str_equal(event->type, WINDOW_ACTIVATE_EVENT))
-        focus->window = g_object_ref(event->source);
-    else
-        focus->window = NULL;
+    focus->window = g_object_ref(event->source);
 
     // notify subscribers
-    for (GSList *subscriber_node = focus->subscribers;
-         subscriber_node != NULL;
-         subscriber_node = subscriber_node->next)
+    g_debug("focus: Activated window '%s'", atspi_accessible_get_name(focus->window, NULL));
+    notify_subscribers(focus);
+
+    g_boxed_free(ATSPI_TYPE_EVENT, event);
+}
+
+static void deactivation_callback(AtspiEvent *event, void *focus_ptr)
+{
+    Focus *focus = (Focus *)focus_ptr;
+
+    // check to make sure we should be removing the currently focused window
+    if (focus->window != event->source)
+    {
+        g_debug("focus: Deactivated inactive window");
+        g_boxed_free(ATSPI_TYPE_EVENT, event);
+        return;
+    }
+
+    // set focused window
+    if (focus->window)
+        g_object_unref(focus->window);
+    focus->window = NULL;
+
+    // notify subscribers
+    g_debug("focus: Deactivated window");
+    notify_subscribers(focus);
+
+    g_boxed_free(ATSPI_TYPE_EVENT, event);
+}
+
+static void notify_subscribers(Focus *focus)
+{
+    for (GSList *sub = focus->subscribers; sub; sub = sub->next)
     {
         if (focus->window)
             g_object_ref(focus->window);
 
-        Subscriber *subscriber = (Subscriber *)subscriber_node->data;
+        Subscriber *subscriber = (Subscriber *)sub->data;
         subscriber->callback(focus->window, subscriber->data);
     }
-
-    g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
 AtspiAccessible *focus_window(Focus *focus)
@@ -132,6 +161,8 @@ static AtspiAccessible *force_window()
 
     // get the (only) desktop
     AtspiAccessible *desktop = atspi_get_desktop(0);
+
+    // todo: consider alternative approach (x libraries; it's faster)
 
     // loop through all applications
     gint num_applications = atspi_accessible_get_child_count(desktop, NULL);
@@ -156,7 +187,9 @@ static AtspiAccessible *force_window()
                 if (!active_window)
                     active_window = g_object_ref(window);
                 else
-                    g_warning("More than two windows say they have focus!");
+                    g_warning("More than one window says they have focus! Using '%s', not '%s'",
+                              atspi_accessible_get_name(active_window, NULL),
+                              atspi_accessible_get_name(window, NULL));
             }
 
             g_object_unref(state_set);
