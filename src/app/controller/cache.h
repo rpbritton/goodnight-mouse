@@ -17,30 +17,23 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FE2ED0B7_0D51_459D_933A_9C5B78C8E618
-#define FE2ED0B7_0D51_459D_933A_9C5B78C8E618
+#ifndef CFCF927F_0647_4D08_A205_B92BCBF48C80
+#define CFCF927F_0647_4D08_A205_B92BCBF48C80
 
 #include <glib.h>
+#include <atspi/atspi.h>
 
-#include "../focus/focus.h"
-#include "control.h"
-#include "cache.h"
-
-typedef struct Controller
+typedef struct Cache
 {
-    Focus *focus;
+    GHashTable *windows;
+    AtspiMatchRule *match_rule;
+} Cache;
 
-    GSList *subscribers;
+Cache *cache_new();
+void cache_destroy(Cache *cache);
+GArray *cache_list(Cache *cache, AtspiAccessible *window);
+void cache_add(Cache *cache, AtspiAccessible *accessible);
+void cache_add_window(Cache *cache, AtspiAccessible *window);
+void cache_remove(Cache *cache, AtspiAccessible *accessible);
 
-    Cache *cache;
-} Controller;
-
-typedef void (*ControllerCallback)(GHashTable *list, gpointer data);
-
-Controller *controller_new(Focus *focus);
-void controller_destroy(Controller *controller);
-void controller_subscribe(Controller *controller, ControllerCallback callback, gpointer data);
-void controller_unsubscribe(Controller *controller, ControllerCallback callback);
-GArray *controller_list(Controller *controller);
-
-#endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */
+#endif /* CFCF927F_0647_4D08_A205_B92BCBF48C80 */
