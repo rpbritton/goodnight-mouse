@@ -78,6 +78,9 @@ void controller_destroy(Controller *controller)
     g_hash_table_remove_all(controller->windows_cache);
     g_hash_table_unref(controller->windows_cache);
 
+    // free match rule
+    g_object_unref(controller->match_rule);
+
     g_free(controller);
 }
 

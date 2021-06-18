@@ -61,6 +61,9 @@ void focus_destroy(Focus *focus)
     atspi_event_listener_deregister(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
     g_object_unref(focus->listener_deactivation);
 
+    // unref window
+    g_object_unref(focus->window);
+
     // free subscriber lists
     g_slist_free_full(focus->subscribers, g_free);
 
@@ -105,8 +108,11 @@ static void activation_callback(AtspiEvent *event, void *focus_ptr)
     focus->window = g_object_ref(event->source);
 
     // notify subscribers
-    g_debug("focus: Activated window '%s'", atspi_accessible_get_name(focus->window, NULL));
     notify_subscribers(focus);
+
+    const gchar *active_name = atspi_accessible_get_name(focus->window, NULL);
+    g_debug("focus: Activated window '%s'", active_name);
+    g_free((void *)active_name);
 
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
@@ -129,8 +135,9 @@ static void deactivation_callback(AtspiEvent *event, void *focus_ptr)
     focus->window = NULL;
 
     // notify subscribers
-    g_debug("focus: Deactivated window");
     notify_subscribers(focus);
+
+    g_debug("focus: Deactivated window");
 
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
@@ -162,7 +169,7 @@ static AtspiAccessible *force_window()
     // get the (only) desktop
     AtspiAccessible *desktop = atspi_get_desktop(0);
 
-    // todo: consider alternative approach (x libraries; it's faster)
+    // todo: consider alternative approach (e.g. X11 libraries; it's faster)
 
     // loop through all applications
     gint num_applications = atspi_accessible_get_child_count(desktop, NULL);
@@ -184,12 +191,19 @@ static AtspiAccessible *force_window()
             AtspiStateSet *state_set = atspi_accessible_get_state_set(window);
             if (atspi_state_set_contains(state_set, ATSPI_STATE_ACTIVE))
             {
-                if (!active_window)
-                    active_window = g_object_ref(window);
-                else
+                if (active_window)
+                {
+                    const gchar *active_name = atspi_accessible_get_name(active_window, NULL);
+                    const gchar *other_name = atspi_accessible_get_name(window, NULL);
                     g_warning("More than one window says they have focus! Using '%s', not '%s'",
-                              atspi_accessible_get_name(active_window, NULL),
-                              atspi_accessible_get_name(window, NULL));
+                              active_name, other_name);
+                    g_free((void *)active_name);
+                    g_free((void *)other_name);
+                }
+                else
+                {
+                    active_window = g_object_ref(window);
+                }
             }
 
             g_object_unref(state_set);
