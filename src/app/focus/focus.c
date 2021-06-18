@@ -107,12 +107,12 @@ static void activation_callback(AtspiEvent *event, void *focus_ptr)
         g_object_unref(focus->window);
     focus->window = g_object_ref(event->source);
 
-    // notify subscribers
-    notify_subscribers(focus);
-
     const gchar *active_name = atspi_accessible_get_name(focus->window, NULL);
     g_debug("focus: Activated window '%s'", active_name);
     g_free((void *)active_name);
+
+    // notify subscribers
+    notify_subscribers(focus);
 
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
@@ -134,10 +134,10 @@ static void deactivation_callback(AtspiEvent *event, void *focus_ptr)
         g_object_unref(focus->window);
     focus->window = NULL;
 
+    g_debug("focus: Deactivated window");
+
     // notify subscribers
     notify_subscribers(focus);
-
-    g_debug("focus: Deactivated window");
 
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
