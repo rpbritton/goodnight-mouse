@@ -28,7 +28,16 @@ typedef struct Subscriber
 } Subscriber;
 
 static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
-static GList *get_controls(AtspiAccessible *accessible);
+
+static void controls_free(gpointer controls_ptr);
+static GHashTable *controls_lookup(Controller *controller, AtspiAccessible *window);
+static GArray *controls_list(Controller *controller, AtspiAccessible *window);
+static void controls_add(Controller *controller, AtspiAccessible *accessible);
+static void controls_remove(Controller *controller, AtspiAccessible *accessible);
+
+static AtspiAccessible *accessible_get_window(AtspiAccessible *accessible);
+
+static void focus_callback(AtspiAccessible *window, gpointer controller_ptr);
 
 Controller *controller_new(Focus *focus)
 {
@@ -36,16 +45,38 @@ Controller *controller_new(Focus *focus)
 
     controller->focus = focus;
 
-    // initialize subscriber list
+    // register listeners
+    focus_subscribe(controller->focus, focus_callback, controller);
+
+    // init subscriber list
     controller->subscribers = NULL;
+
+    // init window cache
+    controller->windows = g_hash_table_new_full(NULL, NULL, g_object_unref, controls_free);
+
+    // create match rule
+    GArray *roles = control_identify_list_roles();
+    controller->match_rule = atspi_match_rule_new(NULL, ATSPI_Collection_MATCH_NONE,
+                                                  NULL, ATSPI_Collection_MATCH_NONE,
+                                                  roles, ATSPI_Collection_MATCH_ANY,
+                                                  NULL, ATSPI_Collection_MATCH_NONE,
+                                                  FALSE);
+    g_array_unref(roles);
 
     return controller;
 }
 
 void controller_destroy(Controller *controller)
 {
+    // deregister listeners
+    focus_unsubscribe(controller->focus, focus_callback);
+
     // free subscriber lists
     g_slist_free_full(controller->subscribers, g_free);
+
+    // free window cache
+    g_hash_table_remove_all(controller->windows);
+    g_hash_table_unref(controller->windows);
 
     g_free(controller);
 }
@@ -82,51 +113,160 @@ static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer 
     return !(((Subscriber *)subscriber)->callback == callback);
 }
 
-GList *controller_list(Controller *controller)
+GArray *controller_list(Controller *controller)
 {
     AtspiAccessible *window = focus_window(controller->focus);
     if (!window)
         return NULL;
 
-    GList *list = get_controls(window);
+    GArray *list = controls_list(controller, window);
 
     g_object_unref(window);
 
     return list;
 }
 
-static GList *get_controls(AtspiAccessible *accessible)
+static void controls_free(gpointer controls_ptr)
 {
-    GList *list = NULL;
+    GHashTable *controls = (GHashTable *)controls_ptr;
 
-    // check accessible
-    ControlType type = control_identify_type(accessible);
-    switch (type)
+    g_hash_table_remove_all(controls);
+    g_hash_table_unref(controls);
+}
+
+static GHashTable *controls_lookup(Controller *controller, AtspiAccessible *window)
+{
+    gpointer controls_ptr = g_hash_table_lookup(controller->windows, window);
+    if (!controls_ptr)
     {
-    case CONTROL_TYPE_UNKNOWN:
-        // don't use if unknown
-        break;
-    case CONTROL_TYPE_NONINTERACTIVE:
-        // don't check children if not interactive
-        return list;
-    default:
-        // add control
-        list = g_list_append(list, control_new(accessible, type));
-        break;
+        controls_ptr = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+        g_hash_table_insert(controller->windows, g_object_ref(window), controls_ptr);
+        controls_add(controller, window);
     }
 
-    // check children
-    gint num_children = atspi_accessible_get_child_count(accessible, NULL);
-    for (gint child_index = 0; child_index < num_children; child_index++)
+    return g_hash_table_ref((GHashTable *)controls_ptr);
+}
+
+static GArray *controls_list(Controller *controller, AtspiAccessible *window)
+{
+    GHashTable *controls = controls_lookup(controller, window);
+
+    GArray *controls_list = g_array_sized_new(FALSE, FALSE, sizeof(Control *), g_hash_table_size(controls));
+
+    GHashTableIter iter;
+    g_hash_table_iter_init(&iter, controls);
+
+    // todo: check if showing (alternative, maintain a cache)
+    gpointer accessible_ptr, null_ptr;
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
     {
-        AtspiAccessible *child = atspi_accessible_get_child_at_index(accessible, child_index, NULL);
-        if (!child)
-            continue;
-
-        list = g_list_concat(list, get_controls(child));
-
-        g_object_unref(child);
+        Control *control = control_new((AtspiAccessible *)accessible_ptr);
+        g_array_append_val(controls_list, control);
     }
 
-    return list;
+    g_hash_table_unref(controls);
+    return controls_list;
+}
+
+static void controls_add(Controller *controller, AtspiAccessible *accessible)
+{
+    // get collection interface
+    AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
+    if (!collection)
+    {
+        g_warning("controller: Collection is NULL");
+        return;
+    }
+
+    // search for matching accessibles
+    GArray *accessibles = atspi_collection_get_matches(collection,
+                                                       controller->match_rule,
+                                                       ATSPI_Collection_SORT_ORDER_CANONICAL,
+                                                       0, TRUE, NULL);
+    g_object_unref(collection);
+    if (!accessibles)
+    {
+        g_warning("controller: Accessibles is NULL");
+        return;
+    }
+
+    // get reference to list of current controls
+    AtspiAccessible *window = accessible_get_window(accessible);
+    GHashTable *controls = controls_lookup(controller, window);
+
+    // add returned accessibles
+    for (gint accessible_index = 0; accessible_index < accessibles->len; accessible_index++)
+    {
+        AtspiAccessible *child_accessible = g_array_index(accessibles, AtspiAccessible *, accessible_index);
+
+        if (!g_hash_table_contains(controls, child_accessible))
+            g_hash_table_add(controls, child_accessible);
+        else
+            g_object_unref(child_accessible);
+    }
+
+    g_object_unref(window);
+    g_hash_table_unref(controls);
+    g_array_unref(accessibles);
+}
+
+static void controls_remove(Controller *controller, AtspiAccessible *accessible)
+{
+    // todo: remove children? Maybe just check them all
+    g_message("I need to remove something... but what?");
+}
+
+static AtspiAccessible *accessible_get_window(AtspiAccessible *accessible)
+{
+    // check if passed accessible is root
+    AtspiAccessible *desktop = atspi_get_desktop(0);
+    if (accessible == desktop)
+    {
+        g_object_unref(desktop);
+        return NULL;
+    }
+
+    // check if passed accessible is an application
+    AtspiAccessible *application = atspi_accessible_get_parent(accessible, NULL);
+    if (application == desktop)
+    {
+        g_object_unref(desktop);
+        g_object_unref(application);
+        return NULL;
+    }
+
+    AtspiAccessible *window = g_object_ref(accessible);
+    while (TRUE)
+    {
+        // check if application parent is the desktop
+        AtspiAccessible *application_parent = atspi_accessible_get_parent(application, NULL);
+        if (application_parent == desktop)
+        {
+            g_object_unref(application_parent);
+            break;
+        }
+
+        // move references up a parent
+        g_object_unref(window);
+        window = application;
+        application = application_parent;
+    }
+
+    g_object_unref(desktop);
+    g_object_unref(application);
+
+    return window;
+}
+
+static void focus_callback(AtspiAccessible *window, gpointer controller_ptr)
+{
+    if (!window)
+        return;
+
+    Controller *controller = (Controller *)controller_ptr;
+
+    if (!g_hash_table_contains(controller->windows, window))
+        controls_add(controller, window);
+
+    g_object_unref(window);
 }

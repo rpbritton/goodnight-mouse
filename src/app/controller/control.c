@@ -19,20 +19,23 @@
 
 #include "control.h"
 
+#include "identify.h"
 #include "execution.h"
 
-Control *control_new(AtspiAccessible *accessible, ControlType type)
+Control *control_new(AtspiAccessible *accessible)
 {
     Control *control = g_new(Control, 1);
 
-    control->type = type;
+    control->type = control_identify_type(accessible);
     control->accessible = g_object_ref(accessible);
 
     return control;
 }
 
-void control_free(Control *control)
+void control_free(gpointer control_ptr)
 {
+    Control *control = (Control *)control_ptr;
+
     g_object_unref(control->accessible);
 
     g_free(control);

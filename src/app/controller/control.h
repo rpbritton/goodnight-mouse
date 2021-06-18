@@ -24,8 +24,7 @@
 
 typedef enum ControlType
 {
-    CONTROL_TYPE_UNKNOWN,
-    CONTROL_TYPE_NONINTERACTIVE,
+    CONTROL_TYPE_NONE,
     CONTROL_TYPE_PRESS,
     CONTROL_TYPE_FOCUS,
 } ControlType;
@@ -34,10 +33,11 @@ typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
+    // track children?
 } Control;
 
-Control *control_new(AtspiAccessible *accessible, ControlType type);
-void control_free(Control *control);
+Control *control_new(AtspiAccessible *accessible);
+void control_free(gpointer control_ptr);
 void control_execute(Control *control);
 //void control_pos(Action *action);
 // colors? all settings?

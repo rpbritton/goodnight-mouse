@@ -24,6 +24,7 @@
 
 #include "control.h"
 
+GArray *control_identify_list_roles();
 ControlType control_identify_type(AtspiAccessible *accessible);
 
 #endif /* B7325ADF_09A4_4914_BE0D_C91B03468344 */
