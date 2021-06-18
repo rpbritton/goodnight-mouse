@@ -31,7 +31,7 @@ LIBS := glib-2.0 atspi-2 gobject-2.0 gtk+-3.0
 CFLAGS += $(shell pkg-config --cflags $(LIBS))
 LDFLAGS += $(shell pkg-config --libs $(LIBS))
 
-CFLAGS += -DG_LOG_DOMAIN=\"GoodnightMouse\" -DG_LOG_USE_STRUCTURED=1
+CFLAGS += -DG_LOG_DOMAIN=\"GoodnightMouse\"
 
 .DEFAULT_GOAL := build
 
