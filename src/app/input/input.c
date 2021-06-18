@@ -104,7 +104,7 @@ static void deregister_listeners(Input *input)
     timeout_disable();
 
     // deregister keyboard listener
-    for (gint modifier_mask = 0; modifier_mask < 256; modifier_mask++)
+    for (gint modifier_mask = 0; modifier_mask < 0xFF; modifier_mask++)
         atspi_deregister_keystroke_listener(input->keyboard_listener,
                                             NULL,
                                             modifier_mask,
