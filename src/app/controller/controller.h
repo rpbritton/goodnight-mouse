@@ -31,7 +31,7 @@ typedef struct Controller
 
     GSList *subscribers;
 
-    GHashTable *windows;
+    GHashTable *windows_cache;
     AtspiMatchRule *match_rule;
 } Controller;
 

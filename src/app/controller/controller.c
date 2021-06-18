@@ -29,11 +29,11 @@ typedef struct Subscriber
 
 static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
 
-static void controls_free(gpointer controls_ptr);
-static GHashTable *controls_lookup(Controller *controller, AtspiAccessible *window);
-static GArray *controls_list(Controller *controller, AtspiAccessible *window);
-static void controls_add(Controller *controller, AtspiAccessible *accessible);
-static void controls_remove(Controller *controller, AtspiAccessible *accessible);
+static void window_cache_free(gpointer window_cache_ptr);
+static GHashTable *window_cache_get(Controller *controller, AtspiAccessible *window);
+static GArray *window_cache_list(Controller *controller, AtspiAccessible *window);
+static void window_cache_add(Controller *controller, AtspiAccessible *accessible);
+static void window_cache_remove(Controller *controller, AtspiAccessible *accessible);
 
 static AtspiAccessible *accessible_get_window(AtspiAccessible *accessible);
 
@@ -52,7 +52,7 @@ Controller *controller_new(Focus *focus)
     controller->subscribers = NULL;
 
     // init window cache
-    controller->windows = g_hash_table_new_full(NULL, NULL, g_object_unref, controls_free);
+    controller->windows_cache = g_hash_table_new_full(NULL, NULL, g_object_unref, window_cache_free);
 
     // create match rule
     GArray *roles = control_identify_list_roles();
@@ -74,9 +74,9 @@ void controller_destroy(Controller *controller)
     // free subscriber lists
     g_slist_free_full(controller->subscribers, g_free);
 
-    // free window cache
-    g_hash_table_remove_all(controller->windows);
-    g_hash_table_unref(controller->windows);
+    // free window caches
+    g_hash_table_remove_all(controller->windows_cache);
+    g_hash_table_unref(controller->windows_cache);
 
     g_free(controller);
 }
@@ -119,56 +119,56 @@ GArray *controller_list(Controller *controller)
     if (!window)
         return NULL;
 
-    GArray *list = controls_list(controller, window);
+    GArray *list = window_cache_list(controller, window);
 
     g_object_unref(window);
 
     return list;
 }
 
-static void controls_free(gpointer controls_ptr)
+static void window_cache_free(gpointer window_cache_ptr)
 {
-    GHashTable *controls = (GHashTable *)controls_ptr;
+    GHashTable *window_cache = (GHashTable *)window_cache_ptr;
 
-    g_hash_table_remove_all(controls);
-    g_hash_table_unref(controls);
+    g_hash_table_remove_all(window_cache);
+    g_hash_table_unref(window_cache);
 }
 
-static GHashTable *controls_lookup(Controller *controller, AtspiAccessible *window)
+static GHashTable *window_cache_get(Controller *controller, AtspiAccessible *window)
 {
-    gpointer controls_ptr = g_hash_table_lookup(controller->windows, window);
-    if (!controls_ptr)
+    gpointer window_cache_ptr = g_hash_table_lookup(controller->windows_cache, window);
+    if (!window_cache_ptr)
     {
-        controls_ptr = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
-        g_hash_table_insert(controller->windows, g_object_ref(window), controls_ptr);
-        controls_add(controller, window);
+        window_cache_ptr = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+        g_hash_table_insert(controller->windows_cache, g_object_ref(window), window_cache_ptr);
+        window_cache_add(controller, window);
     }
 
-    return g_hash_table_ref((GHashTable *)controls_ptr);
+    return g_hash_table_ref((GHashTable *)window_cache_ptr);
 }
 
-static GArray *controls_list(Controller *controller, AtspiAccessible *window)
+static GArray *window_cache_list(Controller *controller, AtspiAccessible *window)
 {
-    GHashTable *controls = controls_lookup(controller, window);
+    GHashTable *window_cache = window_cache_get(controller, window);
 
-    GArray *controls_list = g_array_sized_new(FALSE, FALSE, sizeof(Control *), g_hash_table_size(controls));
+    GArray *window_cache_list = g_array_sized_new(FALSE, FALSE, sizeof(Control *), g_hash_table_size(window_cache));
 
     GHashTableIter iter;
-    g_hash_table_iter_init(&iter, controls);
+    g_hash_table_iter_init(&iter, window_cache);
 
-    // todo: check if showing (alternative, maintain a cache)
+    // todo: check if showing (alternative, maintain interactivity in cache)
     gpointer accessible_ptr, null_ptr;
     while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
     {
         Control *control = control_new((AtspiAccessible *)accessible_ptr);
-        g_array_append_val(controls_list, control);
+        g_array_append_val(window_cache_list, control);
     }
 
-    g_hash_table_unref(controls);
-    return controls_list;
+    g_hash_table_unref(window_cache);
+    return window_cache_list;
 }
 
-static void controls_add(Controller *controller, AtspiAccessible *accessible)
+static void window_cache_add(Controller *controller, AtspiAccessible *accessible)
 {
     // get collection interface
     AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
@@ -190,27 +190,27 @@ static void controls_add(Controller *controller, AtspiAccessible *accessible)
         return;
     }
 
-    // get reference to list of current controls
+    // get reference to list of current window cache
     AtspiAccessible *window = accessible_get_window(accessible);
-    GHashTable *controls = controls_lookup(controller, window);
+    GHashTable *window_cache = window_cache_get(controller, window);
 
     // add returned accessibles
     for (gint accessible_index = 0; accessible_index < accessibles->len; accessible_index++)
     {
         AtspiAccessible *child_accessible = g_array_index(accessibles, AtspiAccessible *, accessible_index);
 
-        if (!g_hash_table_contains(controls, child_accessible))
-            g_hash_table_add(controls, child_accessible);
+        if (!g_hash_table_contains(window_cache, child_accessible))
+            g_hash_table_add(window_cache, child_accessible);
         else
             g_object_unref(child_accessible);
     }
 
     g_object_unref(window);
-    g_hash_table_unref(controls);
+    g_hash_table_unref(window_cache);
     g_array_unref(accessibles);
 }
 
-static void controls_remove(Controller *controller, AtspiAccessible *accessible)
+static void window_cache_remove(Controller *controller, AtspiAccessible *accessible)
 {
     // todo: remove children? Maybe just check them all
     g_message("I need to remove something... but what?");
@@ -265,8 +265,8 @@ static void focus_callback(AtspiAccessible *window, gpointer controller_ptr)
 
     Controller *controller = (Controller *)controller_ptr;
 
-    if (!g_hash_table_contains(controller->windows, window))
-        controls_add(controller, window);
+    if (!g_hash_table_contains(controller->windows_cache, window))
+        window_cache_add(controller, window);
 
     g_object_unref(window);
 }
