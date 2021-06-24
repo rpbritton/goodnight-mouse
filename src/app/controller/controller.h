@@ -30,9 +30,11 @@ typedef struct Controller
 {
     Focus *focus;
 
-    GSList *subscribers;
-
     Cache *cache;
+
+    GSList *subscribers;
+    AtspiEventListener *listener_child_add;
+    AtspiEventListener *listener_child_remove;
 } Controller;
 
 typedef void (*ControllerCallback)(GHashTable *list, gpointer data);

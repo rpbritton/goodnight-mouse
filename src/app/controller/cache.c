@@ -23,7 +23,6 @@
 #include "identify.h"
 
 static void window_cache_free(gpointer window_cache_ptr);
-static GHashTable *window_cache_get(Cache *cache, AtspiAccessible *window);
 static AtspiAccessible *accessible_get_window(AtspiAccessible *accessible);
 
 Cache *cache_new()
@@ -45,6 +44,13 @@ Cache *cache_new()
     return cache;
 }
 
+static void window_cache_free(gpointer window_cache_ptr)
+{
+    GHashTable *window_cache = (GHashTable *)window_cache_ptr;
+    g_hash_table_remove_all(window_cache);
+    g_hash_table_unref(window_cache);
+}
+
 void cache_destroy(Cache *cache)
 {
     // free window caches
@@ -57,38 +63,17 @@ void cache_destroy(Cache *cache)
     g_free(cache);
 }
 
-static void window_cache_free(gpointer window_cache_ptr)
-{
-    GHashTable *window_cache = (GHashTable *)window_cache_ptr;
-    g_hash_table_remove_all(window_cache);
-    g_hash_table_unref(window_cache);
-}
-
-static GHashTable *window_cache_get(Cache *cache, AtspiAccessible *window)
-{
-    gpointer cache_ptr = g_hash_table_lookup(cache->windows, window);
-
-    // if not found create and add
-    if (!cache_ptr)
-    {
-        cache_ptr = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
-        g_hash_table_insert(cache->windows, g_object_ref(window), cache_ptr);
-        cache_add(cache, window);
-    }
-
-    return g_hash_table_ref((GHashTable *)cache_ptr);
-}
-
 GArray *cache_list(Cache *cache, AtspiAccessible *window)
 {
-    GHashTable *window_cache = window_cache_get(cache, window);
+    GHashTable *window_cache = g_hash_table_lookup(cache->windows, window);
+    if (!window_cache)
+        return NULL;
 
     GArray *cache_list = g_array_sized_new(FALSE, FALSE, sizeof(Control *), g_hash_table_size(window_cache));
 
+    // todo: check if showing (alternative, maintain interactivity in cache)
     GHashTableIter iter;
     g_hash_table_iter_init(&iter, window_cache);
-
-    // todo: check if showing (alternative, maintain interactivity in cache)
     gpointer accessible_ptr, null_ptr;
     while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
     {
@@ -96,13 +81,25 @@ GArray *cache_list(Cache *cache, AtspiAccessible *window)
         g_array_append_val(cache_list, control);
     }
 
-    g_hash_table_unref(window_cache);
     return cache_list;
 }
 
 void cache_add(Cache *cache, AtspiAccessible *accessible)
 {
-    // get collection interface
+    // get the current window cache
+    AtspiAccessible *window = accessible_get_window(accessible);
+    if (!window)
+        return;
+    GHashTable *window_cache = g_hash_table_lookup(cache->windows, window);
+    g_object_unref(window);
+    if (!window_cache)
+        return;
+
+    // check the accessible itself
+    if (control_identify_type(accessible) != CONTROL_TYPE_NONE)
+        g_hash_table_add(window_cache, g_object_ref(accessible));
+
+    // get collection interface for children
     AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
     if (!collection)
     {
@@ -122,30 +119,28 @@ void cache_add(Cache *cache, AtspiAccessible *accessible)
         return;
     }
 
-    // get the current window cache
-    AtspiAccessible *window = accessible_get_window(accessible);
-    GHashTable *window_cache = window_cache_get(cache, window);
-    g_object_unref(window);
-
     // add returned accessibles
     for (gint accessible_index = 0; accessible_index < accessibles->len; accessible_index++)
     {
         AtspiAccessible *child_accessible = g_array_index(accessibles, AtspiAccessible *, accessible_index);
 
-        if (g_hash_table_contains(window_cache, child_accessible))
-            g_object_unref(window_cache);
-        else
+        if (!g_hash_table_contains(window_cache, child_accessible))
             g_hash_table_add(window_cache, child_accessible);
+        else
+            g_object_unref(child_accessible);
     }
 
-    g_hash_table_unref(window_cache);
     g_array_unref(accessibles);
 }
 
 void cache_add_window(Cache *cache, AtspiAccessible *window)
 {
-    GHashTable *window_cache = window_cache_get(cache, window);
-    g_hash_table_unref(window_cache);
+    if (g_hash_table_contains(cache->windows, window))
+        return;
+
+    GHashTable *window_cache = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+    g_hash_table_insert(cache->windows, g_object_ref(window), window_cache);
+    cache_add(cache, window);
 }
 
 void cache_remove(Cache *cache, AtspiAccessible *accessible)
@@ -172,6 +167,11 @@ static AtspiAccessible *accessible_get_window(AtspiAccessible *accessible)
         g_object_unref(application);
         return NULL;
     }
+    else if (!application)
+    {
+        g_object_unref(desktop);
+        return NULL;
+    }
 
     AtspiAccessible *window = g_object_ref(accessible);
     while (TRUE)
@@ -181,6 +181,12 @@ static AtspiAccessible *accessible_get_window(AtspiAccessible *accessible)
         if (application_parent == desktop)
         {
             g_object_unref(application_parent);
+            break;
+        }
+        else if (!application_parent)
+        {
+            g_object_unref(window);
+            window = NULL;
             break;
         }
 

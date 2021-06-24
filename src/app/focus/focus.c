@@ -62,7 +62,8 @@ void focus_destroy(Focus *focus)
     g_object_unref(focus->listener_deactivation);
 
     // unref window
-    g_object_unref(focus->window);
+    if (focus->window)
+        g_object_unref(focus->window);
 
     // free subscriber lists
     g_slist_free_full(focus->subscribers, g_free);

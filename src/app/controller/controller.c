@@ -22,6 +22,9 @@
 #include "identify.h"
 #include "cache.h"
 
+#define EVENT_CHILD_ADD "object:children-changed:add"
+#define EVENT_CHILD_REMOVE "object:children-changed:remove"
+
 typedef struct Subscriber
 {
     ControllerCallback callback;
@@ -31,8 +34,10 @@ typedef struct Subscriber
 static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
 
 static void callback_focus(AtspiAccessible *window, gpointer controller_ptr);
-//static void callback_child_add();
-//static void callback_child_remove();
+static void callback_child_document_load(AtspiEvent *event, gpointer controller_ptr);
+static void callback_child_add(AtspiEvent *event, gpointer controller_ptr);
+static void callback_child_remove(AtspiEvent *event, gpointer controller_ptr);
+// window deleted event?
 
 Controller *controller_new(Focus *focus)
 {
@@ -49,6 +54,12 @@ Controller *controller_new(Focus *focus)
     // register listeners
     focus_subscribe(controller->focus, callback_focus, controller);
 
+    controller->listener_child_add = atspi_event_listener_new(callback_child_add, controller, NULL);
+    atspi_event_listener_register(controller->listener_child_add, EVENT_CHILD_ADD, NULL);
+
+    controller->listener_child_remove = atspi_event_listener_new(callback_child_remove, controller, NULL);
+    atspi_event_listener_register(controller->listener_child_remove, EVENT_CHILD_REMOVE, NULL);
+
     return controller;
 }
 
@@ -56,6 +67,12 @@ void controller_destroy(Controller *controller)
 {
     // deregister listeners
     focus_unsubscribe(controller->focus, callback_focus);
+
+    atspi_event_listener_deregister(controller->listener_child_add, EVENT_CHILD_ADD, NULL);
+    g_object_unref(controller->listener_child_add);
+
+    atspi_event_listener_deregister(controller->listener_child_remove, EVENT_CHILD_REMOVE, NULL);
+    g_object_unref(controller->listener_child_remove);
 
     // free subscriber lists
     g_slist_free_full(controller->subscribers, g_free);
@@ -121,4 +138,31 @@ static void callback_focus(AtspiAccessible *window, gpointer controller_ptr)
     cache_add_window(controller->cache, window);
 
     g_object_unref(window);
+}
+
+static void callback_child_add(AtspiEvent *event, gpointer controller_ptr)
+{
+    Controller *controller = (Controller *)controller_ptr;
+
+    g_message("add: name of sender: %s, name of source: %s, detail 1: %d, detail 2: %d, num children: %d", atspi_accessible_get_name(event->sender, NULL), atspi_accessible_get_name(event->source, NULL), event->detail1, event->detail2, atspi_accessible_get_child_count(event->source, NULL));
+
+    // get added child
+    AtspiAccessible *child = atspi_accessible_get_child_at_index(event->source, event->detail1, NULL);
+
+    // check if child is found, otherwise check parent
+    if (child)
+        cache_add(controller->cache, child);
+    else
+        cache_add(controller->cache, event->source);
+
+    if (child)
+        g_object_unref(child);
+    g_boxed_free(ATSPI_TYPE_EVENT, event);
+}
+
+static void callback_child_remove(AtspiEvent *event, gpointer controller_ptr)
+{
+    g_message("removed: name of sender: %s, name of source: %s", atspi_accessible_get_name(event->sender, NULL), atspi_accessible_get_name(event->source, NULL));
+
+    g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
