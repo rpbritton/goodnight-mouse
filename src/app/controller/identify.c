@@ -152,7 +152,6 @@ static const ControlType role_to_type[ATSPI_ROLE_COUNT] = {
     CONTROL_TYPE_NONE,  // ATSPI_ROLE_LAST_DEFINED
 };
 
-//static gboolean accessible_is_interactive(AtspiAccessible *accessible);
 GArray *control_identify_list_roles()
 {
     GArray *roles_list = g_array_new(FALSE, FALSE, sizeof(AtspiRole));
@@ -170,17 +169,3 @@ ControlType control_identify_type(AtspiAccessible *accessible)
     AtspiRole role = atspi_accessible_get_role(accessible, NULL);
     return role_to_type[role];
 }
-
-//static gboolean accessible_is_interactive(AtspiAccessible *accessible)
-//{
-//    AtspiStateSet *state_set = atspi_accessible_get_state_set(accessible);
-//
-//    gboolean is_interactive = atspi_state_set_contains(state_set, ATSPI_STATE_SHOWING) &&
-//                              atspi_state_set_contains(state_set, ATSPI_STATE_VISIBLE) &&
-//                              atspi_state_set_contains(state_set, ATSPI_STATE_ENABLED) &&
-//                              atspi_state_set_contains(state_set, ATSPI_STATE_SENSITIVE);
-//
-//    g_object_unref(state_set);
-//
-//    return is_interactive;
-//}

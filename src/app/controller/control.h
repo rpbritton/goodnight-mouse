@@ -33,7 +33,6 @@ typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
-    // track children?
 } Control;
 
 Control *control_new(AtspiAccessible *accessible);
