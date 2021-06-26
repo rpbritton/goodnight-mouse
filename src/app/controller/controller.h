@@ -24,15 +24,15 @@
 
 #include "../focus/focus.h"
 #include "control.h"
-#include "cache.h"
 
 typedef struct Controller
 {
     Focus *focus;
 
-    Cache *cache;
-
     GSList *subscribers;
+
+    AtspiMatchRule *match_interactive;
+
     AtspiEventListener *listener_child_add;
     AtspiEventListener *listener_child_remove;
 } Controller;
@@ -43,6 +43,6 @@ Controller *controller_new(Focus *focus);
 void controller_destroy(Controller *controller);
 void controller_subscribe(Controller *controller, ControllerCallback callback, gpointer data);
 void controller_unsubscribe(Controller *controller, ControllerCallback callback);
-GArray *controller_list(Controller *controller);
+GList *controller_list(Controller *controller);
 
 #endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */
