@@ -19,9 +19,12 @@
 
 #include "foreground.h"
 
-static InputResponse keyboard_callback(InputEvent event, gpointer foreground_ptr);
-static InputResponse mouse_callback(InputEvent event, gpointer foreground_ptr);
-static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr);
+static void callback_control_add(Control *control, gpointer foreground_ptr);
+static void callback_control_remove(Control *control, gpointer foreground_ptr);
+
+static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr);
+static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
+static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 static const InputEvent KEYBOARD_EVENTS = {
     .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
@@ -35,13 +38,15 @@ static const InputEvent MOUSE_EVENTS = {
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
-Foreground *foreground_new(Input *input, Focus *focus, Controller *controller)
+Foreground *foreground_new(Input *input, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
+    // add members
     foreground->input = input;
     foreground->focus = focus;
-    foreground->controller = controller;
+
+    foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
 
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);
@@ -51,6 +56,9 @@ Foreground *foreground_new(Input *input, Focus *focus, Controller *controller)
 
 void foreground_destroy(Foreground *foreground)
 {
+    // free members
+    registry_destroy(foreground->registry);
+
     // free main loop
     g_main_loop_unref(foreground->loop);
 
@@ -67,20 +75,70 @@ void foreground_run(Foreground *foreground)
     if (foreground_is_running(foreground))
         return;
 
+    // get active window
+    AtspiAccessible *window = focus_window(foreground->focus);
+    if (!window)
+    {
+        g_warning("foreground: No active window, stopping.");
+        return;
+    }
+
+    // create a registry for the window
+    registry_watch(foreground->registry, window);
+    g_object_unref(window);
+    // todo: check codes, not registry
+    //if (registry_done(foreground->registry))
+    //{
+    //    g_warning("foreground: Registry has nothing to do.");
+    //    return;
+    //}
+
     // subscribe events
-    input_subscribe(foreground->input, KEYBOARD_EVENTS, keyboard_callback, foreground);
-    input_subscribe(foreground->input, MOUSE_EVENTS, mouse_callback, foreground);
-    focus_subscribe(foreground->focus, focus_callback, foreground);
+    input_subscribe(foreground->input, KEYBOARD_EVENTS, callback_keyboard, foreground);
+    input_subscribe(foreground->input, MOUSE_EVENTS, callback_mouse, foreground);
+    focus_subscribe(foreground->focus, callback_focus, foreground);
+
+    //g_message("fetching list");
+    //struct timeval tval_before, tval_after, tval_result;
+    //gettimeofday(&tval_before, NULL);
+    //GList *list = registry_list(foreground->registry);
+    //gettimeofday(&tval_after, NULL);
+    //timersub(&tval_after, &tval_before, &tval_result);
+    //gint length = g_list_length(list);
+    //g_message("got list: length: %d, time: %ld.%06ld", length, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
+    //
+    //gettimeofday(&tval_before, NULL);
+    //for (GList *control = list; control; control = control->next)
+    //{
+    //    AtspiAccessible *accessible = (AtspiAccessible *)control->data;
+    //    AtspiRole role = atspi_accessible_get_role(accessible, NULL);
+    //}
+    //gettimeofday(&tval_after, NULL);
+    //timersub(&tval_after, &tval_before, &tval_result);
+    //g_message("time to get roles 1: %ld.%06ld", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
+    //
+    //gettimeofday(&tval_before, NULL);
+    //for (GList *control = list; control; control = control->next)
+    //{
+    //    AtspiAccessible *accessible = (AtspiAccessible *)control->data;
+    //    AtspiRole role = atspi_accessible_get_role(accessible, NULL);
+    //}
+    //gettimeofday(&tval_after, NULL);
+    //timersub(&tval_after, &tval_before, &tval_result);
+    //g_message("time to get roles 2: %ld.%06ld", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
 
     // run loop
     g_debug("foreground: Starting loop");
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
+    // stop registry
+    registry_watch(foreground->registry, NULL);
+
     // unsubscribe events
-    input_unsubscribe(foreground->input, keyboard_callback);
-    input_unsubscribe(foreground->input, mouse_callback);
-    focus_unsubscribe(foreground->focus, focus_callback);
+    input_unsubscribe(foreground->input, callback_keyboard);
+    input_unsubscribe(foreground->input, callback_mouse);
+    focus_unsubscribe(foreground->focus, callback_focus);
 }
 
 gboolean foreground_is_running(Foreground *foreground)
@@ -96,7 +154,15 @@ void foreground_quit(Foreground *foreground)
     g_main_loop_quit(foreground->loop);
 }
 
-static InputResponse keyboard_callback(InputEvent event, gpointer foreground_ptr)
+static void callback_control_add(Control *control, gpointer foreground_ptr)
+{
+}
+
+static void callback_control_remove(Control *control, gpointer foreground_ptr)
+{
+}
+
+static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
 {
     if (event.type != INPUT_KEY_PRESSED)
         return INPUT_CONSUME_EVENT;
@@ -107,25 +173,25 @@ static InputResponse keyboard_callback(InputEvent event, gpointer foreground_ptr
         foreground_quit(foreground_ptr);
         break;
     default:
-        // todo: notify controller
+        // todo: notify registry
         break;
     }
 
     return INPUT_CONSUME_EVENT;
 }
 
-static InputResponse mouse_callback(InputEvent event, gpointer foreground_ptr)
+static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
 {
     foreground_quit(foreground_ptr);
     return INPUT_RELAY_EVENT;
 }
 
-static void focus_callback(AtspiAccessible *window, gpointer foreground_ptr)
+static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
 {
+    if (window)
+        g_object_unref(window);
+
     // window focus changed, quit
     Foreground *foreground = (Foreground *)foreground_ptr;
     foreground_quit(foreground);
-
-    if (window)
-        g_object_unref(window);
 }

@@ -24,7 +24,6 @@
 
 #include "input/input.h"
 #include "focus/focus.h"
-#include "controller/controller.h"
 #include "background/background.h"
 #include "foreground/foreground.h"
 
@@ -42,7 +41,6 @@ typedef struct App
 
     Input *input;
     Focus *focus;
-    Controller *controller;
     Background *background;
     Foreground *foreground;
 } App;

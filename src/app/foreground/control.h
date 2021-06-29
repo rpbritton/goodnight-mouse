@@ -29,13 +29,21 @@ typedef enum ControlType
     CONTROL_TYPE_FOCUS,
 } ControlType;
 
+typedef enum ControlState
+{
+    CONTROL_STATE_ADD,
+    CONTROL_STATE_REMOVE,
+    CONTROL_STATE_EXISTS,
+} ControlState;
+
 typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
+    ControlState state;
 } Control;
 
-Control *control_new(AtspiAccessible *accessible);
+Control *control_new(ControlType type, AtspiAccessible *accessible);
 void control_free(gpointer control_ptr);
 void control_execute(Control *control);
 //void control_pos(Action *action);

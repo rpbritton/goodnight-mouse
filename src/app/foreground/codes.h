@@ -17,35 +17,9 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AD82229D_9BCD_4C49_AC37_47128F926D4E
-#define AD82229D_9BCD_4C49_AC37_47128F926D4E
+#ifndef B10FD127_9857_4FE9_AF02_AB3EC418F0FF
+#define B10FD127_9857_4FE9_AF02_AB3EC418F0FF
 
-#include <glib.h>
 
-#include "../input/input.h"
-#include "../focus/focus.h"
 
-#include "registry.h"
-
-typedef struct ForegroundConfig
-{
-} ForegroundConfig;
-
-typedef struct Foreground
-{
-    GMainLoop *loop;
-
-    Input *input;
-    Focus *focus;
-
-    Registry *registry;
-} Foreground;
-
-Foreground *foreground_new(Input *input, Focus *focus);
-void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig config);
-void foreground_run(Foreground *foreground);
-gboolean foreground_is_running(Foreground *foreground);
-void foreground_quit(Foreground *foreground);
-
-#endif /* AD82229D_9BCD_4C49_AC37_47128F926D4E */
+#endif /* B10FD127_9857_4FE9_AF02_AB3EC418F0FF */

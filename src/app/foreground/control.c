@@ -17,35 +17,42 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AD82229D_9BCD_4C49_AC37_47128F926D4E
-#define AD82229D_9BCD_4C49_AC37_47128F926D4E
+#include "control.h"
 
-#include <glib.h>
+#include "identify.h"
+#include "execution.h"
 
-#include "../input/input.h"
-#include "../focus/focus.h"
-
-#include "registry.h"
-
-typedef struct ForegroundConfig
+Control *control_new(ControlType type, AtspiAccessible *accessible)
 {
-} ForegroundConfig;
+    Control *control = g_new(Control, 1);
 
-typedef struct Foreground
+    control->type = type;
+    control->accessible = g_object_ref(accessible);
+    control->state = CONTROL_STATE_ADD;
+
+    return control;
+}
+
+void control_free(gpointer control_ptr)
 {
-    GMainLoop *loop;
+    Control *control = (Control *)control_ptr;
 
-    Input *input;
-    Focus *focus;
+    g_object_unref(control->accessible);
 
-    Registry *registry;
-} Foreground;
+    g_free(control);
+}
 
-Foreground *foreground_new(Input *input, Focus *focus);
-void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig config);
-void foreground_run(Foreground *foreground);
-gboolean foreground_is_running(Foreground *foreground);
-void foreground_quit(Foreground *foreground);
-
-#endif /* AD82229D_9BCD_4C49_AC37_47128F926D4E */
+void control_execute(Control *control)
+{
+    switch (control->type)
+    {
+    case CONTROL_TYPE_PRESS:
+        control_execution_press(control);
+        break;
+    case CONTROL_TYPE_FOCUS:
+        control_execution_focus(control);
+        break;
+    default:
+        break;
+    }
+}

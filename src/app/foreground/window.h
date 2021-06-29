@@ -17,41 +17,9 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "control.h"
+#ifndef CD11B90E_5DEF_4A3C_9FA5_7626C9545641
+#define CD11B90E_5DEF_4A3C_9FA5_7626C9545641
 
-#include "identify.h"
-#include "execution.h"
 
-Control *control_new(AtspiAccessible *accessible)
-{
-    Control *control = g_new(Control, 1);
 
-    control->type = control_identify_type(accessible);
-    control->accessible = g_object_ref(accessible);
-
-    return control;
-}
-
-void control_free(gpointer control_ptr)
-{
-    Control *control = (Control *)control_ptr;
-
-    g_object_unref(control->accessible);
-
-    g_free(control);
-}
-
-void control_execute(Control *control)
-{
-    switch (control->type)
-    {
-    case CONTROL_TYPE_PRESS:
-        control_execution_press(control);
-        break;
-    case CONTROL_TYPE_FOCUS:
-        control_execution_focus(control);
-        break;
-    default:
-        break;
-    }
-}
+#endif /* CD11B90E_5DEF_4A3C_9FA5_7626C9545641 */

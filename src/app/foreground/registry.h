@@ -21,21 +21,26 @@
 #define FE2ED0B7_0D51_459D_933A_9C5B78C8E618
 
 #include <glib.h>
+#include <atspi/atspi.h>
 
-#include "../focus/focus.h"
 #include "control.h"
 
-typedef struct Controller
+typedef void (*RegistryCallback)(Control *control, gpointer data);
+
+typedef struct Registry
 {
-    Focus *focus;
+    RegistryCallback callback_add;
+    RegistryCallback callback_remove;
+    gpointer callback_data;
 
     AtspiMatchRule *match_interactive;
-} Controller;
 
-typedef void (*ControllerCallback)(GHashTable *list, gpointer data);
+    AtspiAccessible *window;
+    GHashTable *controls;
+} Registry;
 
-Controller *controller_new(Focus *focus);
-void controller_destroy(Controller *controller);
-GList *controller_list(Controller *controller);
+Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data);
+void registry_destroy(Registry *registry);
+void registry_watch(Registry *registry, AtspiAccessible *window);
 
 #endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */
