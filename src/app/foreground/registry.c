@@ -33,7 +33,7 @@ Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer d
     registry->callback_remove = remove;
     registry->callback_data = data;
 
-    // create match rules
+    // create match rule
     AtspiStateSet *interactive_states = atspi_state_set_new(NULL);
     atspi_state_set_add(interactive_states, ATSPI_STATE_SHOWING);
     atspi_state_set_add(interactive_states, ATSPI_STATE_VISIBLE);
@@ -55,13 +55,11 @@ Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer d
 
 void registry_destroy(Registry *registry)
 {
-    // clean up watching
+    // reset watched window
     registry_watch(registry, NULL);
 
     // free members
     g_hash_table_unref(registry->controls);
-
-    // free match rules
     g_object_unref(registry->match_interactive);
 
     g_free(registry);
@@ -69,15 +67,21 @@ void registry_destroy(Registry *registry)
 
 void registry_watch(Registry *registry, AtspiAccessible *window)
 {
-    // do nothing if same
-    if (registry->window == window)
-        return;
+    // remove all controls
+    GHashTableIter iter;
+    gpointer accessible_ptr, control_ptr;
+    g_hash_table_iter_init(&iter, registry->controls);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
+    {
+        registry->callback_remove(control_ptr, registry->callback_data);
+        g_hash_table_remove(registry->controls, accessible_ptr);
+    }
 
-    // clean up
+    // free window
     if (registry->window)
         g_object_unref(registry->window);
-    g_hash_table_remove_all(registry->controls);
 
+    // do nothing if no window
     if (!window)
     {
         registry->window = NULL;
@@ -91,7 +95,7 @@ void registry_watch(Registry *registry, AtspiAccessible *window)
     // fetch new controls
     registry_refresh(registry);
 
-    g_message("length: %d", g_hash_table_size(registry->controls));
+    //g_message("length: %d", g_hash_table_size(registry->controls));
 }
 
 static void registry_refresh(Registry *registry)
@@ -109,7 +113,7 @@ static void registry_refresh(Registry *registry)
     // refresh the registry
     registry_refresh_recurse(registry, registry->window);
 
-    // remove controls
+    // remove controls first
     g_hash_table_iter_init(&iter, registry->controls);
     while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
     {
@@ -175,4 +179,9 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     g_object_unref(collection);
 
     return;
+}
+
+guint registry_count(Registry *registry)
+{
+    return g_hash_table_size(registry->controls);
 }

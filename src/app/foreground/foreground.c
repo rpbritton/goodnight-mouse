@@ -83,15 +83,17 @@ void foreground_run(Foreground *foreground)
         return;
     }
 
-    // create a registry for the window
+    // let the registry watch the window
     registry_watch(foreground->registry, window);
     g_object_unref(window);
-    // todo: check codes, not registry
-    //if (registry_done(foreground->registry))
-    //{
-    //    g_warning("foreground: Registry has nothing to do.");
-    //    return;
-    //}
+
+    // check if there are no controls
+    if (registry_count(foreground->registry) == 0)
+    {
+        g_warning("foreground: No controls found on active window, stopping.");
+        registry_watch(foreground->registry, NULL);
+        return;
+    }
 
     // subscribe events
     input_subscribe(foreground->input, KEYBOARD_EVENTS, callback_keyboard, foreground);
@@ -132,13 +134,13 @@ void foreground_run(Foreground *foreground)
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
-    // stop registry
-    registry_watch(foreground->registry, NULL);
-
     // unsubscribe events
     input_unsubscribe(foreground->input, callback_keyboard);
     input_unsubscribe(foreground->input, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus);
+
+    // reset registry
+    registry_watch(foreground->registry, NULL);
 }
 
 gboolean foreground_is_running(Foreground *foreground)
@@ -156,10 +158,18 @@ void foreground_quit(Foreground *foreground)
 
 static void callback_control_add(Control *control, gpointer foreground_ptr)
 {
+    Foreground *foreground = (Foreground *)foreground_ptr;
+
+    codes_add_control(foreground->codes, control);
+    overlay_add_control(foreground->overlay, control);
 }
 
 static void callback_control_remove(Control *control, gpointer foreground_ptr)
 {
+    Foreground *foreground = (Foreground *)foreground_ptr;
+
+    codes_remove_control(foreground->codes, control);
+    overlay_remove_control(foreground->overlay, control);
 }
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)

@@ -42,5 +42,6 @@ typedef struct Registry
 Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data);
 void registry_destroy(Registry *registry);
 void registry_watch(Registry *registry, AtspiAccessible *window);
+guint registry_count(Registry *registry);
 
 #endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */

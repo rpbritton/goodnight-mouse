@@ -20,6 +20,22 @@
 #ifndef CD11B90E_5DEF_4A3C_9FA5_7626C9545641
 #define CD11B90E_5DEF_4A3C_9FA5_7626C9545641
 
+#include <glib.h>
+#include <gdk/gdk.h>
 
+#include "control.h"
+
+typedef struct OverlayConfig
+{
+} OverlayConfig;
+
+typedef struct Overlay
+{
+} Overlay;
+
+Overlay *overlay_new();
+void overlay_destroy(Overlay *overlay);
+void overlay_add_control(Overlay *overlay, Control *control);
+void overlay_remove_control(Overlay *overlay, Control *control);
 
 #endif /* CD11B90E_5DEF_4A3C_9FA5_7626C9545641 */

@@ -26,9 +26,12 @@
 #include "../focus/focus.h"
 
 #include "registry.h"
+#include "codes.h"
+#include "overlay.h"
 
 typedef struct ForegroundConfig
 {
+    CodesConfig codes;
 } ForegroundConfig;
 
 typedef struct Foreground
@@ -39,6 +42,8 @@ typedef struct Foreground
     Focus *focus;
 
     Registry *registry;
+    Codes *codes;
+    Overlay *overlay;
 } Foreground;
 
 Foreground *foreground_new(Input *input, Focus *focus);

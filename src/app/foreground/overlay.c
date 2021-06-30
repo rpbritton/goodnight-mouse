@@ -17,31 +17,24 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef B10FD127_9857_4FE9_AF02_AB3EC418F0FF
-#define B10FD127_9857_4FE9_AF02_AB3EC418F0FF
+#include "overlay.h"
 
-#include <glib.h>
-#include <gdk/gdk.h>
-
-#include "control.h"
-
-typedef struct CodesConfig
+Overlay *overlay_new()
 {
-    GArray *keys;
-} CodesConfig;
+    Overlay *overlay = g_new(Overlay, 1);
 
-typedef struct Codes
+    return overlay;
+}
+
+void overlay_destroy(Overlay *overlay)
 {
-    GArray *keys;
+    g_free(overlay);
+}
 
-    GNode *tree;
-} Codes;
+void overlay_add_control(Overlay *overlay, Control *control)
+{
+}
 
-Codes *codes_new(CodesConfig config);
-void codes_destroy(Codes *codes);
-void codes_add_control(Codes *codes, Control *control);
-void codes_remove_control(Codes *codes, Control *control);
-void codes_add_key(Codes *codes, guint key);
-void codes_remove_key(Codes *codes);
-
-#endif /* B10FD127_9857_4FE9_AF02_AB3EC418F0FF */
+void overlay_remove_control(Overlay *overlay, Control *control)
+{
+}
