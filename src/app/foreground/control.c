@@ -28,7 +28,6 @@ Control *control_new(ControlType type, AtspiAccessible *accessible)
 
     control->type = type;
     control->accessible = g_object_ref(accessible);
-    control->state = CONTROL_STATE_ADD;
 
     return control;
 }

@@ -91,7 +91,7 @@ void foreground_run(Foreground *foreground)
     if (registry_count(foreground->registry) == 0)
     {
         g_warning("foreground: No controls found on active window, stopping.");
-        registry_watch(foreground->registry, NULL);
+        registry_reset(foreground->registry);
         return;
     }
 
@@ -134,13 +134,13 @@ void foreground_run(Foreground *foreground)
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
+    // reset members
+    registry_reset(foreground->registry);
+
     // unsubscribe events
     input_unsubscribe(foreground->input, callback_keyboard);
     input_unsubscribe(foreground->input, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus);
-
-    // reset registry
-    registry_watch(foreground->registry, NULL);
 }
 
 gboolean foreground_is_running(Foreground *foreground)

@@ -49,37 +49,47 @@ Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer d
     // intitialize members
     registry->window = NULL;
     registry->controls = g_hash_table_new_full(NULL, NULL, g_object_unref, control_free);
+    registry->controls_fresh = g_hash_table_new(NULL, NULL);
 
     return registry;
 }
 
 void registry_destroy(Registry *registry)
 {
-    // reset watched window
-    registry_watch(registry, NULL);
+    // clean up
+    registry_reset(registry);
 
     // free members
     g_hash_table_unref(registry->controls);
+    g_hash_table_unref(registry->controls_fresh);
     g_object_unref(registry->match_interactive);
 
     g_free(registry);
 }
 
-void registry_watch(Registry *registry, AtspiAccessible *window)
+void registry_reset(Registry *registry)
 {
     // remove all controls
-    GHashTableIter iter;
-    gpointer accessible_ptr, control_ptr;
-    g_hash_table_iter_init(&iter, registry->controls);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
-    {
-        registry->callback_remove(control_ptr, registry->callback_data);
-        g_hash_table_remove(registry->controls, accessible_ptr);
-    }
+    //GHashTableIter iter;
+    //gpointer accessible_ptr, control_ptr;
+    //g_hash_table_iter_init(&iter, registry->controls);
+    //while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
+    //{
+    //    registry->callback_remove(control_ptr, registry->callback_data);
+    //    g_hash_table_remove(registry->controls, accessible_ptr);
+    //}
+    g_hash_table_remove_all(registry->controls);
+    g_hash_table_remove_all(registry->controls_fresh);
 
     // free window
     if (registry->window)
         g_object_unref(registry->window);
+}
+
+void registry_watch(Registry *registry, AtspiAccessible *window)
+{
+    // clean up
+    registry_reset(registry);
 
     // do nothing if no window
     if (!window)
@@ -100,41 +110,22 @@ void registry_watch(Registry *registry, AtspiAccessible *window)
 
 static void registry_refresh(Registry *registry)
 {
-    // mark existing controls
+    g_hash_table_remove_all(registry->controls_fresh);
+
+    // refresh the registry
+    registry_refresh_recurse(registry, registry->window);
+
+    // remove missing controls
     GHashTableIter iter;
     gpointer accessible_ptr, control_ptr;
     g_hash_table_iter_init(&iter, registry->controls);
     while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
     {
-        Control *control = control_ptr;
-        control->state = CONTROL_STATE_REMOVE;
-    }
+        if (g_hash_table_contains(registry->controls_fresh, accessible_ptr))
+            continue;
 
-    // refresh the registry
-    registry_refresh_recurse(registry, registry->window);
-
-    // remove controls first
-    g_hash_table_iter_init(&iter, registry->controls);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
-    {
-        Control *control = control_ptr;
-        if (control->state == CONTROL_STATE_REMOVE)
-        {
-            registry->callback_remove(control, registry->callback_data);
-            g_hash_table_remove(registry->controls, accessible_ptr);
-        }
-    }
-
-    // add controls
-    g_hash_table_iter_init(&iter, registry->controls);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
-    {
-        Control *control = control_ptr;
-        if (control->state == CONTROL_STATE_ADD)
-        {
-            registry->callback_add(control, registry->callback_data);
-            control->state = CONTROL_STATE_EXISTS;
-        }
+        registry->callback_remove(control_ptr, registry->callback_data);
+        g_hash_table_remove(registry->controls, accessible_ptr);
     }
 }
 
@@ -144,14 +135,17 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     ControlType control_type = control_identify_type(accessible);
     if (control_type != CONTROL_TYPE_NONE)
     {
-        // check if exists already
-        Control *existing_control = g_hash_table_lookup(registry->controls, accessible);
-        if (!existing_control)
-            g_hash_table_insert(registry->controls,
-                                g_object_ref(accessible),
-                                control_new(control_type, accessible));
-        else
-            existing_control->state = CONTROL_STATE_EXISTS;
+        // create if new
+        Control *control = g_hash_table_lookup(registry->controls, accessible);
+        if (!control)
+        {
+            control = control_new(control_type, accessible);
+            g_hash_table_insert(registry->controls, g_object_ref(accessible), control);
+            registry->callback_add(control, registry->callback_data);
+        }
+
+        // mark as refreshed
+        g_hash_table_add(registry->controls_fresh, control);
     }
 
     // get collection

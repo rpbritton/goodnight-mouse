@@ -37,10 +37,12 @@ typedef struct Registry
 
     AtspiAccessible *window;
     GHashTable *controls;
+    GHashTable *controls_fresh;
 } Registry;
 
 Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data);
 void registry_destroy(Registry *registry);
+void registry_reset(Registry *registry);
 void registry_watch(Registry *registry, AtspiAccessible *window);
 guint registry_count(Registry *registry);
 
