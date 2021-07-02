@@ -27,7 +27,7 @@ static void set_verbose_logging()
     {
         const gchar *all_domains = g_strdup_printf("%s,%s", current_domains, G_LOG_DOMAIN);
         g_setenv("G_MESSAGES_DEBUG", all_domains, FALSE);
-        g_free((void *)all_domains);
+        g_free((gpointer)all_domains);
     }
     else
         g_setenv("G_MESSAGES_DEBUG", G_LOG_DOMAIN, FALSE);

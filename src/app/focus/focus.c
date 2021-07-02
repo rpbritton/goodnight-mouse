@@ -108,7 +108,7 @@ static void activation_callback(AtspiEvent *event, gpointer focus_ptr)
 
     const gchar *active_name = atspi_accessible_get_name(focus->window, NULL);
     g_debug("focus: Activated window '%s'", active_name);
-    g_free((void *)active_name);
+    g_free((gpointer)active_name);
 
     // notify subscribers
     notify_subscribers(focus);
@@ -195,8 +195,8 @@ static AtspiAccessible *force_window()
                     const gchar *other_name = atspi_accessible_get_name(window, NULL);
                     g_warning("More than one window says they have focus! Using '%s', not '%s'",
                               active_name, other_name);
-                    g_free((void *)active_name);
-                    g_free((void *)other_name);
+                    g_free((gpointer)active_name);
+                    g_free((gpointer)other_name);
                 }
                 else
                 {
