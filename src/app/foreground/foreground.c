@@ -38,7 +38,7 @@ static const InputEvent MOUSE_EVENTS = {
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
-Foreground *foreground_new(Input *input, Focus *focus)
+Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -46,7 +46,7 @@ Foreground *foreground_new(Input *input, Focus *focus)
     foreground->input = input;
     foreground->focus = focus;
 
-    foreground->codes = codes_new();
+    foreground->codes = codes_new(&config->codes);
     foreground->overlay = overlay_new();
     foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
 
@@ -67,11 +67,6 @@ void foreground_destroy(Foreground *foreground)
     g_main_loop_unref(foreground->loop);
 
     g_free(foreground);
-}
-
-void foreground_configure(Foreground *foreground, ForegroundConfig *config)
-{
-    codes_configure(foreground->codes, &config->codes);
 }
 
 void foreground_run(Foreground *foreground)

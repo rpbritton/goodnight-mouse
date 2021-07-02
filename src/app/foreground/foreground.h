@@ -46,9 +46,8 @@ typedef struct Foreground
     Registry *registry;
 } Foreground;
 
-Foreground *foreground_new(Input *input, Focus *focus);
+Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus);
 void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig *config);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
 void foreground_quit(Foreground *foreground);

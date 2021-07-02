@@ -25,7 +25,7 @@
 
 static gboolean signal_quit(gpointer app_ptr);
 
-App *app_new()
+App *app_new(AppConfig *config)
 {
     App *app = g_new(App, 1);
 
@@ -41,8 +41,8 @@ App *app_new()
     // create managers
     app->input = input_new();
     app->focus = focus_new();
-    app->foreground = foreground_new(app->input, app->focus);
-    app->background = background_new(app->input, app->foreground);
+    app->foreground = foreground_new(&config->foreground, app->input, app->focus);
+    app->background = background_new(&config->background, app->input, app->foreground);
 
     return app;
 }
@@ -64,12 +64,6 @@ void app_destroy(App *app)
     atspi_exit();
 
     g_free(app);
-}
-
-void app_configure(App *app, AppConfig *config)
-{
-    foreground_configure(app->foreground, &config->foreground);
-    background_configure(app->background, &config->background);
 }
 
 void app_run(App *app)

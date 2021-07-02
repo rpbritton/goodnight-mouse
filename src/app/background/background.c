@@ -22,12 +22,17 @@
 static InputResponse input_callback(InputEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 
-Background *background_new(Input *input, Foreground *foreground)
+Background *background_new(BackgroundConfig *config, Input *input, Foreground *foreground)
 {
     Background *background = g_new(Background, 1);
 
     background->input = input;
     background->foreground = foreground;
+
+    // add trigger
+    background->trigger_event.type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED;
+    background->trigger_event.id = config->trigger_id;
+    background->trigger_event.modifiers = config->trigger_modifiers;
 
     // create main loop
     background->loop = g_main_loop_new(NULL, FALSE);
@@ -41,13 +46,6 @@ void background_destroy(Background *background)
     g_main_loop_unref(background->loop);
 
     g_free(background);
-}
-
-void background_configure(Background *background, BackgroundConfig *config)
-{
-    background->trigger_event.type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED;
-    background->trigger_event.id = config->trigger_id;
-    background->trigger_event.modifiers = config->trigger_modifiers;
 }
 
 void background_run(Background *background)

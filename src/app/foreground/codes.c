@@ -31,12 +31,12 @@ static gint compare_mapping_to_control(gconstpointer mapping, gconstpointer cont
 static guint key_from_index(GArray *keys, guint index);
 static guint key_to_index(GArray *keys, guint key);
 
-Codes *codes_new()
+Codes *codes_new(CodesConfig *config)
 {
     Codes *codes = g_new(Codes, 1);
 
     // add members
-    codes->keys = g_array_new(FALSE, FALSE, sizeof(guint));
+    codes->keys = g_array_copy(config->keys);
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
     codes->key_index = 0;
 
@@ -63,12 +63,6 @@ void codes_reset(Codes *codes)
 
     g_list_free_full(codes->mappings, mapping_free);
     codes->mappings = NULL;
-}
-
-void codes_configure(Codes *codes, CodesConfig *config)
-{
-    g_array_unref(codes->keys);
-    codes->keys = g_array_copy(config->keys);
 }
 
 void codes_control_add(Codes *codes, Control *control)

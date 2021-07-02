@@ -35,7 +35,7 @@ typedef struct Control
     AtspiAccessible *accessible;
 } Control;
 
-Control *control_new(ControlType type, AtspiAccessible *accessible);
+Control *control_new(ControlType type, AtspiAccessible *accessible); // todo: add argument for config
 void control_free(gpointer control_ptr);
 void control_execute(Control *control);
 //void control_pos(Action *action);

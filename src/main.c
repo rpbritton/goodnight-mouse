@@ -40,8 +40,7 @@ int main(int argc, char **argv)
     if (config->log_verbose)
         set_verbose_logging();
 
-    App *app = app_new();
-    app_configure(app, &config->app);
+    App *app = app_new(&config->app);
 
     if (config->run_once)
         app_run_once(app);
