@@ -33,15 +33,19 @@ typedef struct CodesConfig
 typedef struct Codes
 {
     GArray *keys;
+    GArray *code_prefix;
+    gint key_index;
 
-    GNode *tree;
+    GList *mappings;
 } Codes;
 
-Codes *codes_new(CodesConfig config);
+Codes *codes_new();
 void codes_destroy(Codes *codes);
-void codes_add_control(Codes *codes, Control *control);
-void codes_remove_control(Codes *codes, Control *control);
-void codes_add_key(Codes *codes, guint key);
-void codes_remove_key(Codes *codes);
+void codes_reset(Codes *codes);
+void codes_configure(Codes *codes, CodesConfig *config);
+void codes_control_add(Codes *codes, Control *control);
+void codes_control_remove(Codes *codes, Control *control);
+void codes_key_add(Codes *codes, guint key);
+void codes_key_remove(Codes *codes);
 
 #endif /* B10FD127_9857_4FE9_AF02_AB3EC418F0FF */

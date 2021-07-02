@@ -29,8 +29,8 @@ typedef struct Subscriber
 } Subscriber;
 
 static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
-static void activation_callback(AtspiEvent *event, void *focus_ptr);
-static void deactivation_callback(AtspiEvent *event, void *focus_ptr);
+static void activation_callback(AtspiEvent *event, gpointer focus_ptr);
+static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr);
 static void notify_subscribers(Focus *focus);
 static AtspiAccessible *force_window();
 
@@ -61,7 +61,7 @@ void focus_destroy(Focus *focus)
     atspi_event_listener_deregister(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
     g_object_unref(focus->listener_deactivation);
 
-    // unref window
+    // free window
     if (focus->window)
         g_object_unref(focus->window);
 
@@ -75,10 +75,8 @@ void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data)
 {
     Subscriber *subscriber = g_new(Subscriber, 1);
 
-    *subscriber = (Subscriber){
-        .callback = callback,
-        .data = data,
-    };
+    subscriber->callback = callback;
+    subscriber->data = data;
 
     focus->subscribers = g_slist_prepend(focus->subscribers, subscriber);
 }
@@ -99,9 +97,9 @@ static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer 
     return !(((Subscriber *)subscriber)->callback == callback);
 }
 
-static void activation_callback(AtspiEvent *event, void *focus_ptr)
+static void activation_callback(AtspiEvent *event, gpointer focus_ptr)
 {
-    Focus *focus = (Focus *)focus_ptr;
+    Focus *focus = focus_ptr;
 
     // set focused window
     if (focus->window)
@@ -118,9 +116,9 @@ static void activation_callback(AtspiEvent *event, void *focus_ptr)
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
-static void deactivation_callback(AtspiEvent *event, void *focus_ptr)
+static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr)
 {
-    Focus *focus = (Focus *)focus_ptr;
+    Focus *focus = focus_ptr;
 
     // check to make sure we should be removing the currently focused window
     if (focus->window != event->source)
@@ -147,10 +145,10 @@ static void notify_subscribers(Focus *focus)
 {
     for (GSList *sub = focus->subscribers; sub; sub = sub->next)
     {
+        Subscriber *subscriber = sub->data;
+
         if (focus->window)
             g_object_ref(focus->window);
-
-        Subscriber *subscriber = (Subscriber *)sub->data;
         subscriber->callback(focus->window, subscriber->data);
     }
 }
@@ -159,7 +157,6 @@ AtspiAccessible *focus_window(Focus *focus)
 {
     if (focus->window)
         g_object_ref(focus->window);
-
     return focus->window;
 }
 

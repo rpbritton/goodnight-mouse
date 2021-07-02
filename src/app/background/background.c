@@ -43,13 +43,11 @@ void background_destroy(Background *background)
     g_free(background);
 }
 
-void background_configure(Background *background, BackgroundConfig config)
+void background_configure(Background *background, BackgroundConfig *config)
 {
-    background->trigger_event = (InputEvent){
-        .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
-        .id = config.trigger_id,
-        .modifiers = config.trigger_modifiers,
-    };
+    background->trigger_event.type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED;
+    background->trigger_event.id = config->trigger_id;
+    background->trigger_event.modifiers = config->trigger_modifiers;
 }
 
 void background_run(Background *background)

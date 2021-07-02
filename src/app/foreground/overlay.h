@@ -35,7 +35,8 @@ typedef struct Overlay
 
 Overlay *overlay_new();
 void overlay_destroy(Overlay *overlay);
-void overlay_add_control(Overlay *overlay, Control *control);
-void overlay_remove_control(Overlay *overlay, Control *control);
+void overlay_reset(Overlay *overlay);
+void overlay_control_add(Overlay *overlay, Control *control);
+void overlay_control_remove(Overlay *overlay, Control *control);
 
 #endif /* CD11B90E_5DEF_4A3C_9FA5_7626C9545641 */

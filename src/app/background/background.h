@@ -44,7 +44,7 @@ typedef struct Background
 
 Background *background_new(Input *input, Foreground *foreground);
 void background_destroy(Background *background);
-void background_configure(Background *background, BackgroundConfig config);
+void background_configure(Background *background, BackgroundConfig *config);
 void background_run(Background *background);
 gboolean background_is_running(Background *background);
 void background_quit(Background *background);

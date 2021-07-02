@@ -41,14 +41,14 @@ typedef struct Foreground
     Input *input;
     Focus *focus;
 
-    Registry *registry;
     Codes *codes;
     Overlay *overlay;
+    Registry *registry;
 } Foreground;
 
 Foreground *foreground_new(Input *input, Focus *focus);
 void foreground_destroy(Foreground *foreground);
-void foreground_configure(Foreground *foreground, ForegroundConfig config);
+void foreground_configure(Foreground *foreground, ForegroundConfig *config);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
 void foreground_quit(Foreground *foreground);

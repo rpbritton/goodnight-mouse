@@ -32,6 +32,7 @@ typedef struct Config
     AppConfig app;
 } Config;
 
-Config config_parse(int argc, char **argv);
+Config *config_parse(int argc, char **argv);
+void config_destroy(Config *config);
 
 #endif /* E72C461F_B3E0_4080_8624_9A8F366A3903 */

@@ -19,51 +19,145 @@
 
 #include "codes.h"
 
-static guint key_from_index(Codes *codes, guint index);
-static guint key_to_index(Codes *codes, guint key);
+typedef struct Mapping
+{
+    Control *control;
+    GArray *code;
+} Mapping;
 
-Codes *codes_new(CodesConfig config)
+static void mapping_free(gpointer mapping_ptr);
+
+static guint key_from_index(GArray *keys, guint index);
+static guint key_to_index(GArray *keys, guint key);
+
+Codes *codes_new()
 {
     Codes *codes = g_new(Codes, 1);
 
     // add members
-    codes->keys = g_array_copy(config.keys);
+    codes->keys = g_array_new(FALSE, FALSE, sizeof(guint));
+    codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
+    codes->key_index = 0;
+
+    codes->mappings = NULL;
 
     return codes;
 }
 
 void codes_destroy(Codes *codes)
 {
+    // reset
+    codes_reset(codes);
+
+    g_array_unref(codes->keys);
+    g_array_unref(codes->code_prefix);
+
     g_free(codes);
 }
 
-void codes_add_control(Codes *codes, Control *control)
+void codes_reset(Codes *codes)
 {
+    codes->code_prefix = g_array_remove_range(codes->code_prefix, 0, codes->code_prefix->len);
+    codes->key_index = 0;
+
+    g_list_free_full(codes->mappings, mapping_free);
+    codes->mappings = NULL;
 }
 
-void codes_remove_control(Codes *codes, Control *control)
+void codes_configure(Codes *codes, CodesConfig *config)
 {
+    g_array_unref(codes->keys);
+    codes->keys = g_array_copy(config->keys);
 }
 
-void codes_add_key(Codes *codes, guint keyval)
+void codes_control_add(Codes *codes, Control *control)
 {
+    // check if control already exists
+    for (GList *link = codes->mappings; link; link = link->next)
+        if (((Mapping *)link->data)->control == control)
+            return;
+
+    // check for existing space
+    for (GList *link = codes->mappings; link; link = link->next)
+    {
+        Mapping *mapping = link->data;
+        if (!mapping->control)
+        {
+            mapping->control = control;
+            return;
+        }
+    }
+
+    // update the prefix if out of keys
+    if (codes->key_index >= codes->keys->len)
+    {
+        // remove the first mapping
+        GList *link = codes->mappings;
+        Mapping *mapping = link->data;
+        codes->mappings = g_list_remove_link(codes->mappings, link);
+
+        // use the first control's code as the new prefix
+        g_array_unref(codes->code_prefix);
+        codes->code_prefix = mapping->code;
+
+        // reset the key index
+        codes->key_index = 0;
+
+        // set the new code
+        mapping->code = g_array_append_val(g_array_copy(codes->code_prefix),
+                                           g_array_index(codes->keys, guint, codes->key_index));
+        codes->key_index++;
+
+        // re-add the mapping to the back
+        codes->mappings = g_list_concat(codes->mappings, link);
+    }
+
+    // create the code mapping
+    Mapping *mapping = g_new(Mapping, 1);
+    mapping->control = control;
+    mapping->code = g_array_append_val(g_array_copy(codes->code_prefix),
+                                       g_array_index(codes->keys, guint, codes->key_index));
+    codes->key_index++;
+
+    // add the mapping
+    codes->mappings = g_list_append(codes->mappings, mapping);
 }
 
-void codes_remove_key(Codes *codes)
+void codes_control_remove(Codes *codes, Control *control)
 {
+    g_warning("codes: codes_control_remove not implemented");
 }
 
-static guint key_from_index(Codes *codes, guint index)
+void codes_key_add(Codes *codes, guint keyval)
 {
-    if (index >= codes->keys->len)
+    g_warning("codes: codes_key_add not implemented");
+}
+
+void codes_key_remove(Codes *codes)
+{
+    g_warning("codes: codes_key_remove not implemented");
+}
+
+static void mapping_free(gpointer mapping_ptr)
+{
+    Mapping *mapping = mapping_ptr;
+
+    g_array_unref(mapping->code);
+
+    g_free(mapping);
+}
+
+static guint key_from_index(GArray *keys, guint index)
+{
+    if (index >= keys->len)
         return -1;
-    return g_array_index(codes->keys, guint, index);
+    return g_array_index(keys, guint, index);
 }
 
-static guint key_to_index(Codes *codes, guint key)
+static guint key_to_index(GArray *keys, guint key)
 {
-    for (gint index = 0; index < codes->keys->len; index++)
-        if (key == g_array_index(codes->keys, guint, index))
+    for (gint index = 0; index < keys->len; index++)
+        if (key == g_array_index(keys, guint, index))
             return index;
     return -1;
 }

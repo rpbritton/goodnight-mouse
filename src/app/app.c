@@ -66,10 +66,10 @@ void app_destroy(App *app)
     g_free(app);
 }
 
-void app_configure(App *app, AppConfig config)
+void app_configure(App *app, AppConfig *config)
 {
-    foreground_configure(app->foreground, config.foreground);
-    background_configure(app->background, config.background);
+    foreground_configure(app->foreground, &config->foreground);
+    background_configure(app->background, &config->background);
 }
 
 void app_run(App *app)

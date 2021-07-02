@@ -47,7 +47,7 @@ typedef struct App
 
 App *app_new();
 void app_destroy(App *app);
-void app_configure(App *app, AppConfig config);
+void app_configure(App *app, AppConfig *config);
 void app_run(App *app);
 void app_run_once(App *app);
 gboolean app_is_running(App *app);

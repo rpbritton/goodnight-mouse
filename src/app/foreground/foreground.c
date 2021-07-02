@@ -46,6 +46,8 @@ Foreground *foreground_new(Input *input, Focus *focus)
     foreground->input = input;
     foreground->focus = focus;
 
+    foreground->codes = codes_new();
+    foreground->overlay = overlay_new();
     foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
 
     // create main loop
@@ -57,6 +59,8 @@ Foreground *foreground_new(Input *input, Focus *focus)
 void foreground_destroy(Foreground *foreground)
 {
     // free members
+    codes_destroy(foreground->codes);
+    overlay_destroy(foreground->overlay);
     registry_destroy(foreground->registry);
 
     // free main loop
@@ -65,9 +69,9 @@ void foreground_destroy(Foreground *foreground)
     g_free(foreground);
 }
 
-void foreground_configure(Foreground *foreground, ForegroundConfig config)
+void foreground_configure(Foreground *foreground, ForegroundConfig *config)
 {
-    return;
+    codes_configure(foreground->codes, &config->codes);
 }
 
 void foreground_run(Foreground *foreground)
@@ -82,6 +86,12 @@ void foreground_run(Foreground *foreground)
         g_warning("foreground: No active window, stopping.");
         return;
     }
+
+    // reset members
+    // todo: needed?
+    codes_reset(foreground->codes);
+    overlay_reset(foreground->overlay);
+    registry_reset(foreground->registry);
 
     // let the registry watch the window
     registry_watch(foreground->registry, window);
@@ -100,41 +110,14 @@ void foreground_run(Foreground *foreground)
     input_subscribe(foreground->input, MOUSE_EVENTS, callback_mouse, foreground);
     focus_subscribe(foreground->focus, callback_focus, foreground);
 
-    //g_message("fetching list");
-    //struct timeval tval_before, tval_after, tval_result;
-    //gettimeofday(&tval_before, NULL);
-    //GList *list = registry_list(foreground->registry);
-    //gettimeofday(&tval_after, NULL);
-    //timersub(&tval_after, &tval_before, &tval_result);
-    //gint length = g_list_length(list);
-    //g_message("got list: length: %d, time: %ld.%06ld", length, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
-    //
-    //gettimeofday(&tval_before, NULL);
-    //for (GList *control = list; control; control = control->next)
-    //{
-    //    AtspiAccessible *accessible = (AtspiAccessible *)control->data;
-    //    AtspiRole role = atspi_accessible_get_role(accessible, NULL);
-    //}
-    //gettimeofday(&tval_after, NULL);
-    //timersub(&tval_after, &tval_before, &tval_result);
-    //g_message("time to get roles 1: %ld.%06ld", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
-    //
-    //gettimeofday(&tval_before, NULL);
-    //for (GList *control = list; control; control = control->next)
-    //{
-    //    AtspiAccessible *accessible = (AtspiAccessible *)control->data;
-    //    AtspiRole role = atspi_accessible_get_role(accessible, NULL);
-    //}
-    //gettimeofday(&tval_after, NULL);
-    //timersub(&tval_after, &tval_before, &tval_result);
-    //g_message("time to get roles 2: %ld.%06ld", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
-
     // run loop
     g_debug("foreground: Starting loop");
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
     // reset members
+    codes_reset(foreground->codes);
+    overlay_reset(foreground->overlay);
     registry_reset(foreground->registry);
 
     // unsubscribe events
@@ -160,16 +143,16 @@ static void callback_control_add(Control *control, gpointer foreground_ptr)
 {
     Foreground *foreground = (Foreground *)foreground_ptr;
 
-    codes_add_control(foreground->codes, control);
-    overlay_add_control(foreground->overlay, control);
+    codes_control_add(foreground->codes, control);
+    overlay_control_add(foreground->overlay, control);
 }
 
 static void callback_control_remove(Control *control, gpointer foreground_ptr)
 {
     Foreground *foreground = (Foreground *)foreground_ptr;
 
-    codes_remove_control(foreground->codes, control);
-    overlay_remove_control(foreground->overlay, control);
+    codes_control_remove(foreground->codes, control);
+    overlay_control_remove(foreground->overlay, control);
 }
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
@@ -202,6 +185,5 @@ static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
         g_object_unref(window);
 
     // window focus changed, quit
-    Foreground *foreground = (Foreground *)foreground_ptr;
-    foreground_quit(foreground);
+    foreground_quit(foreground_ptr);
 }

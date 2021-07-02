@@ -22,22 +22,26 @@
 // use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
 // use getopt.h for arguments
 
-static const Config DEFAULT_CONFIG = {
-    .run_once = FALSE,
-    .log_verbose = TRUE,
-
-    .app = {
-        .foreground = {},
-        .background = {
-            .trigger_id = GDK_KEY_v,
-            .trigger_modifiers = GDK_SUPER_MASK,
-        },
-    },
-};
-
-Config config_parse(int argc, char **argv)
+Config *config_parse(int argc, char **argv)
 {
-    Config config = DEFAULT_CONFIG;
+    Config *config = g_new(Config, 1);
+
+    config->run_once = FALSE;
+    config->log_verbose = TRUE;
+
+    config->app.foreground.codes.keys = g_array_new(FALSE, FALSE, sizeof(guint));
+    guint keys[] = {GDK_KEY_a, GDK_KEY_b, GDK_KEY_c};
+    g_array_append_vals(config->app.foreground.codes.keys, keys, 3);
+
+    config->app.background.trigger_id = GDK_KEY_v;
+    config->app.background.trigger_modifiers = GDK_SUPER_MASK;
 
     return config;
+}
+
+void config_destroy(Config *config)
+{
+    g_array_unref(config->app.foreground.codes.keys);
+
+    g_free(config);
 }
