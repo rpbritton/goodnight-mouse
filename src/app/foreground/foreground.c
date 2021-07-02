@@ -79,6 +79,12 @@ void foreground_run(Foreground *foreground)
     if (foreground_is_running(foreground))
         return;
 
+    // reset members
+    // todo: needed?
+    codes_reset(foreground->codes);
+    overlay_reset(foreground->overlay);
+    registry_reset(foreground->registry);
+
     // get active window
     AtspiAccessible *window = focus_window(foreground->focus);
     if (!window)
@@ -86,12 +92,6 @@ void foreground_run(Foreground *foreground)
         g_warning("foreground: No active window, stopping.");
         return;
     }
-
-    // reset members
-    // todo: needed?
-    codes_reset(foreground->codes);
-    overlay_reset(foreground->overlay);
-    registry_reset(foreground->registry);
 
     // let the registry watch the window
     registry_watch(foreground->registry, window);

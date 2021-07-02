@@ -26,6 +26,7 @@ typedef struct Mapping
 } Mapping;
 
 static void mapping_free(gpointer mapping_ptr);
+static gint compare_mapping_to_control(gconstpointer mapping, gconstpointer control);
 
 static guint key_from_index(GArray *keys, guint index);
 static guint key_to_index(GArray *keys, guint key);
@@ -73,19 +74,15 @@ void codes_configure(Codes *codes, CodesConfig *config)
 void codes_control_add(Codes *codes, Control *control)
 {
     // check if control already exists
-    for (GList *link = codes->mappings; link; link = link->next)
-        if (((Mapping *)link->data)->control == control)
-            return;
+    if (g_list_find_custom(codes->mappings, control, compare_mapping_to_control))
+        return;
 
     // check for existing space
-    for (GList *link = codes->mappings; link; link = link->next)
+    GList *empty_link = g_list_find_custom(codes->mappings, NULL, compare_mapping_to_control);
+    if (empty_link)
     {
-        Mapping *mapping = link->data;
-        if (!mapping->control)
-        {
-            mapping->control = control;
-            return;
-        }
+        ((Mapping *)empty_link->data)->control = control;
+        return;
     }
 
     // update the prefix if out of keys
@@ -125,7 +122,9 @@ void codes_control_add(Codes *codes, Control *control)
 
 void codes_control_remove(Codes *codes, Control *control)
 {
-    g_warning("codes: codes_control_remove not implemented");
+    GList *link;
+    while ((link = g_list_find_custom(codes->mappings, control, compare_mapping_to_control)))
+        ((Mapping *)link->data)->control = NULL;
 }
 
 void codes_key_add(Codes *codes, guint keyval)
@@ -145,6 +144,12 @@ static void mapping_free(gpointer mapping_ptr)
     g_array_unref(mapping->code);
 
     g_free(mapping);
+}
+
+static gint compare_mapping_to_control(gconstpointer mapping, gconstpointer control)
+{
+    // return 0 if equal
+    return !(((Mapping *)mapping)->control == control);
 }
 
 static guint key_from_index(GArray *keys, guint index)
