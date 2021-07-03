@@ -24,6 +24,8 @@
 static void registry_refresh(Registry *registry);
 static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible);
 
+static gboolean registry_remove_stale(gpointer accessible_ptr, gpointer control_ptr, gpointer registry_ptr);
+
 Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data)
 {
     Registry *registry = g_new(Registry, 1);
@@ -56,8 +58,8 @@ Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer d
 
 void registry_destroy(Registry *registry)
 {
-    // clean up
-    registry_reset(registry);
+    // unwatch
+    registry_unwatch(registry);
 
     // free members
     g_object_unref(registry->match_interactive);
@@ -68,24 +70,10 @@ void registry_destroy(Registry *registry)
     g_free(registry);
 }
 
-void registry_reset(Registry *registry)
-{
-    // free window
-    if (registry->window)
-    {
-        g_object_unref(registry->window);
-        registry->window = NULL;
-    }
-
-    // remove all controls
-    g_hash_table_remove_all(registry->controls);
-    g_hash_table_remove_all(registry->controls_fresh);
-}
-
 void registry_watch(Registry *registry, AtspiAccessible *window)
 {
-    // clean up
-    registry_reset(registry);
+    // unwatch previous
+    registry_unwatch(registry);
 
     // do nothing if no window
     if (!window)
@@ -99,6 +87,25 @@ void registry_watch(Registry *registry, AtspiAccessible *window)
     registry_refresh(registry);
 }
 
+void registry_unwatch(Registry *registry)
+{
+    // free window
+    if (registry->window)
+    {
+        g_object_unref(registry->window);
+        registry->window = NULL;
+    }
+
+    // remove all controls
+    g_hash_table_remove_all(registry->controls_fresh);
+    g_hash_table_foreach_remove(registry->controls, registry_remove_stale, registry);
+}
+
+guint registry_count(Registry *registry)
+{
+    return g_hash_table_size(registry->controls);
+}
+
 static void registry_refresh(Registry *registry)
 {
     g_hash_table_remove_all(registry->controls_fresh);
@@ -107,17 +114,7 @@ static void registry_refresh(Registry *registry)
     registry_refresh_recurse(registry, registry->window);
 
     // remove missing controls
-    GHashTableIter iter;
-    gpointer accessible_ptr, control_ptr;
-    g_hash_table_iter_init(&iter, registry->controls);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
-    {
-        if (g_hash_table_contains(registry->controls_fresh, accessible_ptr))
-            continue;
-
-        registry->callback_remove(control_ptr, registry->callback_data);
-        g_hash_table_remove(registry->controls, accessible_ptr);
-    }
+    g_hash_table_foreach_remove(registry->controls, registry_remove_stale, registry);
 }
 
 static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible)
@@ -126,7 +123,7 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     ControlType control_type = control_identify_type(accessible);
     if (control_type != CONTROL_TYPE_NONE)
     {
-        // create if new
+        // add if new
         if (!g_hash_table_contains(registry->controls, accessible))
         {
             Control *control = control_new(control_type, accessible);
@@ -154,9 +151,7 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     for (gint index = 0; index < children->len; index++)
     {
         AtspiAccessible *child = g_array_index(children, AtspiAccessible *, index);
-
         registry_refresh_recurse(registry, child);
-
         g_object_unref(child);
     }
     g_array_unref(children);
@@ -165,7 +160,13 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     return;
 }
 
-guint registry_count(Registry *registry)
+static gboolean registry_remove_stale(gpointer accessible_ptr, gpointer control_ptr, gpointer registry_ptr)
 {
-    return g_hash_table_size(registry->controls);
+    Registry *registry = registry_ptr;
+
+    if (g_hash_table_contains(registry->controls_fresh, accessible_ptr))
+        return FALSE;
+
+    registry->callback_remove(control_ptr, registry->callback_data);
+    return TRUE;
 }

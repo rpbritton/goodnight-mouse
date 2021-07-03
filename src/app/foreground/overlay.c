@@ -31,10 +31,6 @@ void overlay_destroy(Overlay *overlay)
     g_free(overlay);
 }
 
-void overlay_reset(Overlay *overlay)
-{
-}
-
 void overlay_control_add(Overlay *overlay, Control *control)
 {
 }

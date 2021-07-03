@@ -74,12 +74,6 @@ void foreground_run(Foreground *foreground)
     if (foreground_is_running(foreground))
         return;
 
-    // reset members
-    // todo: needed?
-    codes_reset(foreground->codes);
-    overlay_reset(foreground->overlay);
-    registry_reset(foreground->registry);
-
     // get active window
     AtspiAccessible *window = focus_window(foreground->focus);
     if (!window)
@@ -96,7 +90,7 @@ void foreground_run(Foreground *foreground)
     if (registry_count(foreground->registry) == 0)
     {
         g_warning("foreground: No controls found on active window, stopping.");
-        registry_reset(foreground->registry);
+        registry_unwatch(foreground->registry);
         return;
     }
 
@@ -110,15 +104,14 @@ void foreground_run(Foreground *foreground)
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
-    // reset members
-    codes_reset(foreground->codes);
-    overlay_reset(foreground->overlay);
-    registry_reset(foreground->registry);
-
     // unsubscribe events
     input_unsubscribe(foreground->input, callback_keyboard);
     input_unsubscribe(foreground->input, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus);
+
+    // clean up members
+    registry_unwatch(foreground->registry);
+    // overlay_hide(foreground->overlay);
 }
 
 gboolean foreground_is_running(Foreground *foreground)

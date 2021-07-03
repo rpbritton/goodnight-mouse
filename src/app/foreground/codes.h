@@ -41,7 +41,7 @@ typedef struct Codes
 
 Codes *codes_new(CodesConfig *config);
 void codes_destroy(Codes *codes);
-void codes_reset(Codes *codes);
+void codes_restart(Codes *codes);
 void codes_control_add(Codes *codes, Control *control);
 void codes_control_remove(Codes *codes, Control *control);
 void codes_key_add(Codes *codes, guint key);

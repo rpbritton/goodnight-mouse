@@ -35,7 +35,6 @@ typedef struct Overlay
 
 Overlay *overlay_new();
 void overlay_destroy(Overlay *overlay);
-void overlay_reset(Overlay *overlay);
 void overlay_control_add(Overlay *overlay, Control *control);
 void overlay_control_remove(Overlay *overlay, Control *control);
 

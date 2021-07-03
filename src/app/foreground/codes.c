@@ -28,6 +28,8 @@ typedef struct Mapping
 static void mapping_free(gpointer mapping_ptr);
 static gint compare_mapping_to_control(gconstpointer mapping, gconstpointer control);
 
+static void reset_generator(Codes *codes);
+
 static guint key_from_index(GArray *keys, guint index);
 static guint key_to_index(GArray *keys, guint key);
 
@@ -47,22 +49,18 @@ Codes *codes_new(CodesConfig *config)
 
 void codes_destroy(Codes *codes)
 {
-    // reset
-    codes_reset(codes);
-
     g_array_unref(codes->keys);
     g_array_unref(codes->code_prefix);
+
+    g_list_free_full(codes->mappings, mapping_free);
 
     g_free(codes);
 }
 
-void codes_reset(Codes *codes)
+static void reset_generator(Codes *codes)
 {
     codes->code_prefix = g_array_remove_range(codes->code_prefix, 0, codes->code_prefix->len);
     codes->key_index = 0;
-
-    g_list_free_full(codes->mappings, mapping_free);
-    codes->mappings = NULL;
 }
 
 void codes_control_add(Codes *codes, Control *control)
@@ -119,6 +117,9 @@ void codes_control_remove(Codes *codes, Control *control)
     GList *link;
     while ((link = g_list_find_custom(codes->mappings, control, compare_mapping_to_control)))
         ((Mapping *)link->data)->control = NULL;
+
+    if (g_list_length(codes->mappings) == 0)
+        reset_generator(codes);
 }
 
 void codes_key_add(Codes *codes, guint keyval)
