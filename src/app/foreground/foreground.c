@@ -75,7 +75,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // get active window
-    AtspiAccessible *window = focus_window(foreground->focus);
+    AtspiAccessible *window = focus_get_window(foreground->focus);
     if (!window)
     {
         g_warning("foreground: No active window, stopping.");

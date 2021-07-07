@@ -37,6 +37,6 @@ Focus *focus_new();
 void focus_destroy(Focus *focus);
 void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
 void focus_unsubscribe(Focus *focus, FocusCallback callback);
-AtspiAccessible *focus_window(Focus *focus);
+AtspiAccessible *focus_get_window(Focus *focus);
 
 #endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */

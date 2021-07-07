@@ -153,7 +153,7 @@ static void notify_subscribers(Focus *focus)
     }
 }
 
-AtspiAccessible *focus_window(Focus *focus)
+AtspiAccessible *focus_get_window(Focus *focus)
 {
     if (focus->window)
         g_object_ref(focus->window);
