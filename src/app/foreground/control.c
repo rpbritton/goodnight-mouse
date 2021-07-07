@@ -29,10 +29,12 @@ Control *control_new(ControlType type, AtspiAccessible *accessible)
     control->type = type;
     control->accessible = g_object_ref(accessible);
 
+    control->tag = NULL;
+
     return control;
 }
 
-void control_free(gpointer control_ptr)
+void control_destroy(gpointer control_ptr)
 {
     Control *control = (Control *)control_ptr;
 
@@ -54,4 +56,9 @@ void control_execute(Control *control)
     default:
         break;
     }
+}
+
+void control_set_tag(Control *control, Tag *tag)
+{
+    control->tag = tag;
 }

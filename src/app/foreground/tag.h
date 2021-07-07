@@ -17,20 +17,21 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "overlay.h"
+#ifndef CB504225_79CB_4844_9848_73E9861C2CE1
+#define CB504225_79CB_4844_9848_73E9861C2CE1
 
-Overlay *overlay_new()
+#include <glib.h>
+
+typedef struct Tag
 {
-    Overlay *overlay = g_new(Overlay, 1);
+    GArray *code;
+    // x y pos
+} Tag;
 
-    return overlay;
-}
+Tag *tag_new();
+void tag_destroy(gpointer tag);
+GArray *tag_get_code(Tag *tag);
+void tag_set_code(Tag *tag, GArray *code);
+//void tag_set_window(Tag *tag, GTKWINDOW);
 
-void overlay_destroy(Overlay *overlay)
-{
-    g_free(overlay);
-}
-
-void overlay_add_tag(Overlay *overlay, Tag *tag)
-{
-}
+#endif /* CB504225_79CB_4844_9848_73E9861C2CE1 */

@@ -23,7 +23,7 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 
-#include "control.h"
+#include "tag.h"
 
 typedef struct OverlayConfig
 {
@@ -35,7 +35,6 @@ typedef struct Overlay
 
 Overlay *overlay_new();
 void overlay_destroy(Overlay *overlay);
-void overlay_control_add(Overlay *overlay, Control *control);
-void overlay_control_remove(Overlay *overlay, Control *control);
+void overlay_add_tag(Overlay *overlay, Tag *tag);
 
 #endif /* CD11B90E_5DEF_4A3C_9FA5_7626C9545641 */

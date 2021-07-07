@@ -22,9 +22,7 @@
 #include "identify.h"
 
 static void registry_refresh(Registry *registry);
-static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible);
-
-static gboolean registry_remove_stale(gpointer accessible_ptr, gpointer control_ptr, gpointer registry_ptr);
+static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed);
 
 Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data)
 {
@@ -50,8 +48,7 @@ Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer d
 
     // intitialize members
     registry->window = NULL;
-    registry->controls = g_hash_table_new_full(NULL, NULL, g_object_unref, control_free);
-    registry->controls_fresh = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+    registry->controls = g_hash_table_new_full(NULL, NULL, g_object_unref, control_destroy);
 
     return registry;
 }
@@ -65,7 +62,6 @@ void registry_destroy(Registry *registry)
     g_object_unref(registry->match_interactive);
 
     g_hash_table_unref(registry->controls);
-    g_hash_table_unref(registry->controls_fresh);
 
     g_free(registry);
 }
@@ -79,11 +75,11 @@ void registry_watch(Registry *registry, AtspiAccessible *window)
     if (!window)
         return;
 
-    // set up
+    // set new window
     registry->window = g_object_ref(window);
     // todo: add idle interval to refresh
 
-    // fetch new controls
+    // refresh
     registry_refresh(registry);
 }
 
@@ -97,8 +93,14 @@ void registry_unwatch(Registry *registry)
     }
 
     // remove all controls
-    g_hash_table_remove_all(registry->controls_fresh);
-    g_hash_table_foreach_remove(registry->controls, registry_remove_stale, registry);
+    GHashTableIter iter;
+    gpointer accessible_ptr, control_ptr;
+    g_hash_table_iter_init(&iter, registry->controls);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
+    {
+        registry->callback_remove(control_ptr, registry->callback_data);
+        g_hash_table_iter_remove(&iter);
+    }
 }
 
 guint registry_count(Registry *registry)
@@ -108,32 +110,42 @@ guint registry_count(Registry *registry)
 
 static void registry_refresh(Registry *registry)
 {
-    g_hash_table_remove_all(registry->controls_fresh);
+    GHashTable *refreshed = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
 
     // refresh the registry
-    registry_refresh_recurse(registry, registry->window);
+    registry_refresh_recurse(registry, registry->window, refreshed);
 
-    // remove missing controls
-    g_hash_table_foreach_remove(registry->controls, registry_remove_stale, registry);
+    // remove non refreshed controls
+    GHashTableIter iter;
+    gpointer accessible_ptr, control_ptr;
+    g_hash_table_iter_init(&iter, registry->controls);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
+    {
+        if (!g_hash_table_contains(refreshed, accessible_ptr))
+        {
+            registry->callback_remove(control_ptr, registry->callback_data);
+            g_hash_table_iter_remove(&iter);
+        }
+    }
+    g_hash_table_unref(refreshed);
 }
 
-static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible)
+static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed)
 {
-    // add accessible
-    ControlType control_type = control_identify_type(accessible);
-    if (control_type != CONTROL_TYPE_NONE)
+    // add if new
+    if (!g_hash_table_contains(registry->controls, accessible))
     {
-        // add if new
-        if (!g_hash_table_contains(registry->controls, accessible))
+        ControlType control_type = control_identify_type(accessible);
+        if (control_type != CONTROL_TYPE_NONE)
         {
             Control *control = control_new(control_type, accessible);
             g_hash_table_insert(registry->controls, g_object_ref(accessible), control);
             registry->callback_add(control, registry->callback_data);
         }
-
-        // mark as refreshed
-        g_hash_table_add(registry->controls_fresh, g_object_ref(accessible));
     }
+
+    // mark as refreshed
+    g_hash_table_add(refreshed, g_object_ref(accessible));
 
     // get collection
     AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
@@ -151,22 +163,11 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     for (gint index = 0; index < children->len; index++)
     {
         AtspiAccessible *child = g_array_index(children, AtspiAccessible *, index);
-        registry_refresh_recurse(registry, child);
+        registry_refresh_recurse(registry, child, refreshed);
         g_object_unref(child);
     }
     g_array_unref(children);
     g_object_unref(collection);
 
     return;
-}
-
-static gboolean registry_remove_stale(gpointer accessible_ptr, gpointer control_ptr, gpointer registry_ptr)
-{
-    Registry *registry = registry_ptr;
-
-    if (g_hash_table_contains(registry->controls_fresh, accessible_ptr))
-        return FALSE;
-
-    registry->callback_remove(control_ptr, registry->callback_data);
-    return TRUE;
 }

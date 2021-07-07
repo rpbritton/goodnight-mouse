@@ -86,7 +86,7 @@ void foreground_run(Foreground *foreground)
     registry_watch(foreground->registry, window);
     g_object_unref(window);
 
-    // check if there are no controls
+    // check if there are any controls
     if (registry_count(foreground->registry) == 0)
     {
         g_warning("foreground: No controls found on active window, stopping.");
@@ -131,16 +131,19 @@ static void callback_control_add(Control *control, gpointer foreground_ptr)
 {
     Foreground *foreground = (Foreground *)foreground_ptr;
 
-    codes_control_add(foreground->codes, control);
-    overlay_control_add(foreground->overlay, control);
+    // set up the tag
+    Tag *tag = codes_allocate(foreground->codes);
+    control_set_tag(control, tag);
+    overlay_add_tag(foreground->overlay, tag);
+
+    g_message("control added");
 }
 
 static void callback_control_remove(Control *control, gpointer foreground_ptr)
 {
     Foreground *foreground = (Foreground *)foreground_ptr;
 
-    codes_control_remove(foreground->codes, control);
-    overlay_control_remove(foreground->overlay, control);
+    g_message("control removed");
 }
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
