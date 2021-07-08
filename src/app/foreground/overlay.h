@@ -21,20 +21,41 @@
 #define CD11B90E_5DEF_4A3C_9FA5_7626C9545641
 
 #include <glib.h>
-#include <gdk/gdk.h>
+#include <gtk/gtk.h>
+#include <atspi/atspi.h>
 
 #include "tag.h"
 
+#define OVERLAY_WINDOW_TITLE "goodnight_mouse"
+#define OVERLAY_CSS_CLASS "overlay_window"
+
 typedef struct OverlayConfig
 {
+    //guchar color_r;
+    //guchar color_g;
+    //guchar color_b;
+    //guchar color_a;
+    //
+    //gchar *font;
+    //guint font_size;
+    //gboolean font_italic;
+    //gboolean font_bold;
+    GtkStyleProvider *css;
 } OverlayConfig;
 
 typedef struct Overlay
 {
+    AtspiAccessible *window;
+    GSList *tags;
+
+    GtkWidget *overlay;
+    GtkWidget *container;
 } Overlay;
 
 Overlay *overlay_new();
 void overlay_destroy(Overlay *overlay);
 void overlay_add_tag(Overlay *overlay, Tag *tag);
+void overlay_show(Overlay *overlay, AtspiAccessible *window);
+void overlay_hide(Overlay *overlay);
 
 #endif /* CD11B90E_5DEF_4A3C_9FA5_7626C9545641 */

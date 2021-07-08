@@ -83,7 +83,10 @@ void background_quit(Background *background)
 static InputResponse input_callback(InputEvent event, gpointer background_ptr)
 {
     if (event.type == INPUT_KEY_PRESSED)
+    {
+        g_debug("background: Input hotkey triggered!");
         g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
+    }
 
     return INPUT_CONSUME_EVENT;
 }

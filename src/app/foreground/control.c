@@ -61,4 +61,6 @@ void control_execute(Control *control)
 void control_set_tag(Control *control, Tag *tag)
 {
     control->tag = tag;
+
+    // todo: tag set position
 }
