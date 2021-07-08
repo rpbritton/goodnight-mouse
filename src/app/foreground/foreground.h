@@ -31,7 +31,7 @@
 
 typedef struct ForegroundConfig
 {
-    CodesConfig codes;
+    GArray *keys;
 } ForegroundConfig;
 
 typedef struct Foreground

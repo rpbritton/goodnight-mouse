@@ -19,32 +19,39 @@
 
 #include "codes.h"
 
+static void array_destroy(gpointer array_ptr)
+{
+    g_array_unref(array_ptr);
+}
+
 static void codes_reset(Codes *codes);
 
 //static guint key_from_index(GArray *keys, guint index);
 //static guint key_to_index(GArray *keys, guint key);
 
-Codes *codes_new(CodesConfig *config)
+Codes *codes_new(GArray *keys)
 {
     Codes *codes = g_new(Codes, 1);
 
     // set up code generator
-    codes->keys = g_array_copy(config->keys);
+    codes->keys = g_array_copy(keys);
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
     codes->key_index = 0;
 
-    // init tag list
-    codes->tags = NULL;
-    codes->tags_unused = NULL;
-    codes->tags_use = 0;
+    // init codes
+    codes->codes = NULL;
+    codes->codes_unused = NULL;
+    codes->codes_to_controls = g_hash_table_new(NULL, NULL);
 
     return codes;
 }
 
 void codes_destroy(Codes *codes)
 {
-    // reset codes
-    codes_reset(codes);
+    // free codes
+    g_list_free_full(codes->codes, array_destroy);
+    g_list_free(codes->codes_unused);
+    g_hash_table_unref(codes->codes_to_controls);
 
     // free code generator
     g_array_unref(codes->keys);
@@ -59,71 +66,95 @@ static void codes_reset(Codes *codes)
     codes->code_prefix = g_array_remove_range(codes->code_prefix, 0, codes->code_prefix->len);
     codes->key_index = 0;
 
-    // clear tag list
-    g_list_free_full(codes->tags, tag_destroy);
-    codes->tags = NULL;
-    g_list_free(codes->tags_unused);
-    codes->tags_unused = NULL;
-    codes->tags_use = 0;
+    // clear codes
+    g_list_free_full(codes->codes, array_destroy);
+    codes->codes = NULL;
+    g_list_free(codes->codes_unused);
+    codes->codes_unused = NULL;
+    g_hash_table_remove_all(codes->codes_to_controls);
 }
 
-Tag *codes_allocate(Codes *codes)
+void codes_add(Codes *codes, Control *control)
 {
-    codes->tags_use++;
-
-    // check for unused tag
-    if (codes->tags_unused)
+    // check for unused mapping
+    if (codes->codes_unused)
     {
-        Tag *tag = codes->tags_unused->data;
-        codes->tags_unused = g_list_delete_link(codes->tags_unused, codes->tags_unused);
-        return tag;
+        // get the unused mapping
+        GArray *code = codes->codes_unused->data;
+        codes->codes_unused = g_list_delete_link(codes->codes_unused, codes->codes_unused);
+
+        // set the code
+        g_hash_table_insert(codes->codes_to_controls, code, control);
+        control_set_code(control, code);
     }
 
     // update the prefix if out of keys
     if (codes->key_index == codes->keys->len)
     {
         // remove the first tag
-        GList *link = codes->tags;
-        Tag *tag = link->data;
-        codes->tags = g_list_remove_link(codes->tags, link);
+        GArray *code = codes->codes->data;
+        codes->codes = g_list_delete_link(codes->codes, codes->codes);
 
         // use the first code as the new prefix
         g_array_unref(codes->code_prefix);
-        codes->code_prefix = g_array_ref(tag_get_code(tag));
+        codes->code_prefix = g_array_copy(code);
 
         // reset the key index
         codes->key_index = 0;
 
-        // set the new code
-        tag_set_code(tag, g_array_append_val(g_array_copy(codes->code_prefix),
-                                             g_array_index(codes->keys, guint, codes->key_index)));
-        codes->key_index++;
+        // append a new key to the code
+        code = g_array_append_val(code, g_array_index(codes->keys, guint, codes->key_index++));
 
-        // re-add the tag to the back
-        codes->tags = g_list_concat(codes->tags, link);
+        // set the new code
+        control_set_code(g_hash_table_lookup(codes->codes_to_controls, code), code);
+
+        // add code to the back
+        codes->codes = g_list_append(codes->codes, code);
     }
 
-    // create the new tag
-    Tag *tag = tag_new();
-    tag_set_code(tag, g_array_append_val(g_array_copy(codes->code_prefix),
-                                         g_array_index(codes->keys, guint, codes->key_index)));
-    codes->key_index++;
+    // create the new code
+    GArray *code = g_array_append_val(g_array_copy(codes->code_prefix),
+                                      g_array_index(codes->keys, guint, codes->key_index++));
 
-    // add the mapping
-    codes->tags = g_list_append(codes->tags, tag);
+    // set the new code
+    g_hash_table_insert(codes->codes_to_controls, code, control);
+    control_set_code(control, code);
 
-    return tag;
+    // add code to the back
+    codes->codes = g_list_append(codes->codes, code);
 }
 
-void codes_deallocate(Codes *codes, Tag *tag)
+void codes_remove(Codes *codes, Control *control)
 {
-    codes->tags_use--;
+    gboolean reset = TRUE;
 
-    // mark the tag as unused
-    codes->tags_unused = g_list_append(codes->tags_unused, tag);
+    // search for the control
+    GHashTableIter iter;
+    gpointer code_ptr, control_ptr;
+    g_hash_table_iter_init(&iter, codes->codes_to_controls);
+    while (g_hash_table_iter_next(&iter, &code_ptr, &control_ptr))
+    {
+        // check if control matches
+        if (control_ptr == control)
+        {
+            // unset the control code
+            control_unset_code(control);
 
-    // if no tags are used then reset
-    if (codes->tags_use == 0)
+            // mark the code as unused
+            codes->codes_unused = g_list_append(codes->codes_unused, code_ptr);
+
+            // remove the code data link
+            g_hash_table_iter_remove(&iter);
+        }
+        else
+        {
+            // do not reset if other controls exist
+            reset = FALSE;
+        }
+    }
+
+    // if no codes are used then reset
+    if (reset)
         codes_reset(codes);
 }
 

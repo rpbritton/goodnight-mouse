@@ -46,7 +46,7 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     foreground->input = input;
     foreground->focus = focus;
 
-    foreground->codes = codes_new(&config->codes);
+    foreground->codes = codes_new(config->keys);
     foreground->overlay = overlay_new();
     foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
 
@@ -129,19 +129,26 @@ void foreground_quit(Foreground *foreground)
 
 static void callback_control_add(Control *control, gpointer foreground_ptr)
 {
-    Foreground *foreground = (Foreground *)foreground_ptr;
+    Foreground *foreground = foreground_ptr;
 
-    // set up the tag
-    Tag *tag = codes_allocate(foreground->codes);
-    control_set_tag(control, tag);
-    overlay_add_tag(foreground->overlay, tag);
+    // add the code
+    codes_add(foreground->codes, control);
 
-    g_message("control added");
+    // add to overlay
+    //overlay_add(foreground->overlay, control);
+
+    g_message("control added (code=%d)", g_array_index(control->code, guint, 0));
 }
 
 static void callback_control_remove(Control *control, gpointer foreground_ptr)
 {
-    Foreground *foreground = (Foreground *)foreground_ptr;
+    Foreground *foreground = foreground_ptr;
+
+    // remove the code
+    codes_remove(foreground->codes, control);
+
+    // remove from overlay
+    //overlay_remove(foreground->overlay, control);
 
     g_message("control removed");
 }

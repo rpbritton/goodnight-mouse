@@ -23,12 +23,7 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 
-#include "tag.h"
-
-typedef struct CodesConfig
-{
-    GArray *keys;
-} CodesConfig;
+#include "control.h"
 
 typedef struct Codes
 {
@@ -36,14 +31,14 @@ typedef struct Codes
     GArray *code_prefix;
     gint key_index;
 
-    GList *tags;
-    GList *tags_unused;
-    gint tags_use;
+    GList *codes;
+    GList *codes_unused;
+    GHashTable *codes_to_controls;
 } Codes;
 
-Codes *codes_new(CodesConfig *config);
+Codes *codes_new(GArray *keys);
 void codes_destroy(Codes *codes);
-Tag *codes_allocate(Codes *codes);
-void codes_deallocate(Codes *codes, Tag *tag);
+void codes_add(Codes *codes, Control *control);
+void codes_remove(Codes *codes, Control *control);
 
 #endif /* B10FD127_9857_4FE9_AF02_AB3EC418F0FF */

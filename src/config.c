@@ -29,9 +29,9 @@ Config *config_parse(int argc, char **argv)
     config->run_once = FALSE;
     config->log_verbose = TRUE;
 
-    config->app.foreground.codes.keys = g_array_new(FALSE, FALSE, sizeof(guint));
+    config->app.foreground.keys = g_array_new(FALSE, FALSE, sizeof(guint));
     guint keys[] = {GDK_KEY_a, GDK_KEY_b, GDK_KEY_c};
-    g_array_append_vals(config->app.foreground.codes.keys, keys, 3);
+    g_array_append_vals(config->app.foreground.keys, keys, 3);
 
     config->app.background.trigger_id = GDK_KEY_v;
     config->app.background.trigger_modifiers = GDK_SUPER_MASK;
@@ -41,7 +41,7 @@ Config *config_parse(int argc, char **argv)
 
 void config_destroy(Config *config)
 {
-    g_array_unref(config->app.foreground.codes.keys);
+    g_array_unref(config->app.foreground.keys);
 
     g_free(config);
 }

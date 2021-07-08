@@ -24,7 +24,7 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
-#include "tag.h"
+//#include "tag.h"
 
 #define OVERLAY_WINDOW_TITLE "goodnight_mouse"
 #define OVERLAY_CSS_CLASS "overlay_window"
@@ -46,7 +46,7 @@ typedef struct OverlayConfig
 typedef struct Overlay
 {
     AtspiAccessible *window;
-    GSList *tags;
+    //   GSList *tags;
 
     GtkWidget *overlay;
     GtkWidget *container;
@@ -54,7 +54,7 @@ typedef struct Overlay
 
 Overlay *overlay_new();
 void overlay_destroy(Overlay *overlay);
-void overlay_add_tag(Overlay *overlay, Tag *tag);
+//void overlay_add_tag(Overlay *overlay, Tag *tag);
 void overlay_show(Overlay *overlay, AtspiAccessible *window);
 void overlay_hide(Overlay *overlay);
 

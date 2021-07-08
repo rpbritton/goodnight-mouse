@@ -34,26 +34,26 @@ Overlay *overlay_new(OverlayConfig *config)
     Overlay *overlay = g_new(Overlay, 1);
 
     overlay->window = NULL;
-    overlay->tags = NULL;
+    //overlay->tags = NULL;
 
-    // create overlay
-    overlay->overlay = gtk_window_new(GTK_WINDOW_POPUP);
-    gtk_window_set_title(overlay->overlay, OVERLAY_WINDOW_TITLE);
-
-    // set css styling
-    GtkStyleContext *style_context = gtk_widget_get_style_context(overlay->overlay);
-    gtk_style_context_add_class(style_context, OVERLAY_CSS_CLASS);
-    gtk_style_context_add_provider(style_context, config->css, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
-    gtk_widget_set_visual(overlay->overlay, gdk_screen_get_rgba_visual(gtk_widget_get_screen(overlay->overlay)));
-
-    // remove overlay interactivity
-    gtk_window_set_accept_focus(overlay->overlay, FALSE);
-    gtk_widget_set_sensitive(overlay->overlay, FALSE);
-    g_signal_connect(overlay->overlay, "draw", G_CALLBACK(remove_input), NULL);
-
-    // create container
-    overlay->container = gtk_fixed_new();
-    gtk_container_add(overlay->overlay, overlay->container);
+    //// create overlay
+    //overlay->overlay = gtk_window_new(GTK_WINDOW_POPUP);
+    //gtk_window_set_title(overlay->overlay, OVERLAY_WINDOW_TITLE);
+    //
+    //// set css styling
+    //GtkStyleContext *style_context = gtk_widget_get_style_context(overlay->overlay);
+    //gtk_style_context_add_class(style_context, OVERLAY_CSS_CLASS);
+    ////gtk_style_context_add_provider(style_context, config->css, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
+    //gtk_widget_set_visual(overlay->overlay, gdk_screen_get_rgba_visual(gtk_widget_get_screen(overlay->overlay)));
+    //
+    //// remove overlay interactivity
+    //gtk_window_set_accept_focus(overlay->overlay, FALSE);
+    //gtk_widget_set_sensitive(overlay->overlay, FALSE);
+    //g_signal_connect(overlay->overlay, "draw", G_CALLBACK(remove_input), NULL);
+    //
+    //// create container
+    //overlay->container = gtk_fixed_new();
+    //gtk_container_add(overlay->overlay, overlay->container);
 
     //SimpleCSS simple_css = simple_css_start(WINDOW_CLASS);
     //simple_css_add(simple_css, WINDOW_CSS_COLOR, config->color_r, config->color_g, config->color_b, config->color_a);
@@ -99,10 +99,10 @@ void overlay_destroy(Overlay *overlay)
     g_free(overlay);
 }
 
-void overlay_add_tag(Overlay *overlay, Tag *tag)
-{
-    overlay->tags = g_list_append(overlay->tags, tag);
-}
+//void overlay_add_tag(Overlay *overlay, Tag *tag)
+//{
+//    overlay->tags = g_list_append(overlay->tags, tag);
+//}
 
 void overlay_show(Overlay *overlay, AtspiAccessible *window)
 {

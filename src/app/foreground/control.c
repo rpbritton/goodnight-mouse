@@ -28,17 +28,16 @@ Control *control_new(ControlType type, AtspiAccessible *accessible)
 
     control->type = type;
     control->accessible = g_object_ref(accessible);
-
-    control->tag = NULL;
+    control->code = NULL;
 
     return control;
 }
 
-void control_destroy(gpointer control_ptr)
+void control_destroy(Control *control)
 {
-    Control *control = (Control *)control_ptr;
-
     g_object_unref(control->accessible);
+
+    control_unset_code(control);
 
     g_free(control);
 }
@@ -58,9 +57,17 @@ void control_execute(Control *control)
     }
 }
 
-void control_set_tag(Control *control, Tag *tag)
+void control_set_code(Control *control, GArray *code)
 {
-    control->tag = tag;
+    control_unset_code(control);
+    control->code = g_array_ref(code);
+}
 
-    // todo: tag set position
+void control_unset_code(Control *control)
+{
+    if (!control->code)
+        return;
+
+    g_array_unref(control->code);
+    control->code = NULL;
 }

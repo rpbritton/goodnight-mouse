@@ -22,8 +22,6 @@
 
 #include <atspi/atspi.h>
 
-#include "tag.h"
-
 typedef enum ControlType
 {
     CONTROL_TYPE_NONE,
@@ -35,13 +33,13 @@ typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
-
-    Tag *tag;
+    GArray *code;
 } Control;
 
 Control *control_new(ControlType type, AtspiAccessible *accessible); // todo: add argument for config
-void control_destroy(gpointer control_ptr);
+void control_destroy(Control *control);
 void control_execute(Control *control);
-void control_set_tag(Control *control, Tag *tag);
+void control_set_code(Control *control, GArray *code);
+void control_unset_code(Control *control);
 
 #endif /* E6235E1E_3D35_4FBB_8900_4B67D274702D */
