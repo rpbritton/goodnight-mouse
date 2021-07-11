@@ -85,7 +85,7 @@ void codes_add(Codes *codes, Control *control)
 
         // set the code
         g_hash_table_insert(codes->codes_to_controls, code, control);
-        control_set_code(control, code);
+        control_label(control, code);
     }
 
     // update the prefix if out of keys
@@ -106,7 +106,7 @@ void codes_add(Codes *codes, Control *control)
         code = g_array_append_val(code, g_array_index(codes->keys, guint, codes->key_index++));
 
         // set the new code
-        control_set_code(g_hash_table_lookup(codes->codes_to_controls, code), code);
+        control_label(g_hash_table_lookup(codes->codes_to_controls, code), code);
 
         // add code to the back
         codes->codes = g_list_append(codes->codes, code);
@@ -118,7 +118,7 @@ void codes_add(Codes *codes, Control *control)
 
     // set the new code
     g_hash_table_insert(codes->codes_to_controls, code, control);
-    control_set_code(control, code);
+    control_label(control, code);
 
     // add code to the back
     codes->codes = g_list_append(codes->codes, code);
@@ -138,7 +138,8 @@ void codes_remove(Codes *codes, Control *control)
         if (control_ptr == control)
         {
             // unset the control code
-            control_unset_code(control);
+            // todo: is this necessary?
+            //control_unlabel(control);
 
             // mark the code as unused
             codes->codes_unused = g_list_append(codes->codes_unused, code_ptr);

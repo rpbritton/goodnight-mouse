@@ -21,6 +21,11 @@
 
 #include "identify.h"
 
+static void wrap_control_destroy(gpointer control_ptr)
+{
+    control_destroy(control_ptr);
+}
+
 static void registry_refresh(Registry *registry);
 static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed);
 
@@ -48,7 +53,7 @@ Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer d
 
     // intitialize members
     registry->window = NULL;
-    registry->controls = g_hash_table_new_full(NULL, NULL, g_object_unref, control_destroy);
+    registry->controls = g_hash_table_new_full(NULL, NULL, g_object_unref, wrap_control_destroy);
 
     return registry;
 }

@@ -19,97 +19,78 @@
 
 #include "overlay.h"
 
-#include "simplecss.h"
+static void remove_input(GtkWidget *overlay, gpointer data);
 
-//#define WINDOW_CSS_COLOR "background-color: rgba(%d, %d, %d, %d)"
-//#define WINDOW_CSS_FONT "font-family: %s"
-//#define WINDOW_CSS_FONT_SIZE "font-size: %dpx"
-//#define WINDOW_CSS_FONT_STYLE "font-style: %s"
-//#define WINDOW_CSS_FONT_WEIGHT "font-weight: %s"
-
-static void *remove_input(GtkWidget *overlay, gpointer data);
+static void overlay_refresh(Overlay *overlay);
+static void overlay_reposition(Overlay *overlay);
 
 Overlay *overlay_new(OverlayConfig *config)
 {
     Overlay *overlay = g_new(Overlay, 1);
 
     overlay->window = NULL;
-    //overlay->tags = NULL;
+    overlay->controls = g_hash_table_new(NULL, NULL);
 
-    //// create overlay
-    //overlay->overlay = gtk_window_new(GTK_WINDOW_POPUP);
-    //gtk_window_set_title(overlay->overlay, OVERLAY_WINDOW_TITLE);
-    //
-    //// set css styling
-    //GtkStyleContext *style_context = gtk_widget_get_style_context(overlay->overlay);
-    //gtk_style_context_add_class(style_context, OVERLAY_CSS_CLASS);
-    ////gtk_style_context_add_provider(style_context, config->css, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
-    //gtk_widget_set_visual(overlay->overlay, gdk_screen_get_rgba_visual(gtk_widget_get_screen(overlay->overlay)));
-    //
-    //// remove overlay interactivity
-    //gtk_window_set_accept_focus(overlay->overlay, FALSE);
-    //gtk_widget_set_sensitive(overlay->overlay, FALSE);
-    //g_signal_connect(overlay->overlay, "draw", G_CALLBACK(remove_input), NULL);
-    //
-    //// create container
-    //overlay->container = gtk_fixed_new();
-    //gtk_container_add(overlay->overlay, overlay->container);
+    // create overlay
+    overlay->overlay = gtk_window_new(GTK_WINDOW_POPUP);
+    gtk_window_set_title(GTK_WINDOW(overlay->overlay), OVERLAY_WINDOW_TITLE);
 
-    //SimpleCSS simple_css = simple_css_start(WINDOW_CLASS);
-    //simple_css_add(simple_css, WINDOW_CSS_COLOR, config->color_r, config->color_g, config->color_b, config->color_a);
-    //simple_css_add(simple_css, WINDOW_CSS_FONT, config->font);
-    //simple_css_add(simple_css, WINDOW_CSS_FONT_SIZE, config->font_size);
-    //simple_css_add(simple_css, WINDOW_CSS_FONT_STYLE, (config->font_italic) ? "italic" : "normal");
-    //simple_css_add(simple_css, WINDOW_CSS_FONT_WEIGHT, (config->font_bold) ? "bold" : "normal");
-    //gchar *css = simple_css_finish(simple_css, style_context);
+    // set css styling
+    GtkStyleContext *style_context = gtk_widget_get_style_context(overlay->overlay);
+    gtk_style_context_add_class(style_context, OVERLAY_CSS_CLASS);
+    gtk_style_context_add_provider(style_context, config->styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
+    // allow window transparency
+    gtk_widget_set_visual(overlay->overlay, gdk_screen_get_rgba_visual(gtk_widget_get_screen(overlay->overlay)));
 
-    //self.window = Gtk.Window(type=Gtk.WindowType.POPUP)
-    //self.window.get_style_context().add_class("overlay_window")
-    //self.window.set_title("goodnight_mouse")
-    //self.window.set_visual(self.window.get_screen().get_rgba_visual())
-    //self.window.set_accept_focus(False)
-    //self.window.set_sensitive(False)
-    //# self.window.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
-    //
-    //self.container = Gtk.Fixed()
-    //self.container.get_style_context().add_class("action_container")
-    //self.window.add(self.container)
-    //
-    //def remove_input(*args):
-    //    self.window.input_shape_combine_region(
-    //        cairo.Region(cairo.RectangleInt()))
-    //self.window.connect("draw", remove_input)
-    //
-    //self.x = self.y = self.width = self.height = 0
-    //
-    //self._css_provider = None
-    //self.visible = False
+    // remove overlay interactivity
+    gtk_window_set_accept_focus(GTK_WINDOW(overlay->overlay), FALSE);
+    gtk_widget_set_sensitive(overlay->overlay, FALSE);
+    g_signal_connect(G_OBJECT(overlay->overlay), "draw", G_CALLBACK(remove_input), NULL);
+
+    // create container
+    overlay->container = gtk_fixed_new();
+    gtk_container_add(GTK_CONTAINER(overlay->overlay), overlay->container);
 
     return overlay;
 }
 
 void overlay_destroy(Overlay *overlay)
 {
-    //if (!overlay->window)
-    //    g_object_unref(overlay->window);
-    //g_list_free(overlay->tags);
-    //
-    //gtk_widget_destroy(overlay->window);
+    // hide if showing
+    if (!overlay->window)
+        overlay_hide(overlay);
+
+    // remove control references
+    g_hash_table_unref(overlay->controls);
+
+    // free overlay window
+    gtk_widget_destroy(overlay->overlay);
 
     g_free(overlay);
 }
 
-//void overlay_add_tag(Overlay *overlay, Tag *tag)
-//{
-//    overlay->tags = g_list_append(overlay->tags, tag);
-//}
-
 void overlay_show(Overlay *overlay, AtspiAccessible *window)
 {
-    if (overlay->window)
-        overlay_hide(overlay);
+    if (!window)
+        return;
 
+    // set the new window
+    if (overlay->window)
+        g_object_unref(overlay->window);
     overlay->window = g_object_ref(window);
+
+    // show all controls
+    GHashTableIter iter;
+    gpointer control_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->controls);
+    while (g_hash_table_iter_next(&iter, &control_ptr, &null_ptr))
+        control_show(control_ptr, GTK_FIXED(overlay->container));
+
+    // reposition and show the window
+    overlay_reposition(overlay);
+    gtk_widget_show_all(overlay->overlay);
+
+    // todo: add time interval call to overlay_refresh();
 }
 
 void overlay_hide(Overlay *overlay)
@@ -117,11 +98,46 @@ void overlay_hide(Overlay *overlay)
     if (!overlay->window)
         return;
 
+    // remove the old window
     g_object_unref(overlay->window);
     overlay->window = NULL;
+
+    // hide all controls
+    GHashTableIter iter;
+    gpointer control_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->controls);
+    while (g_hash_table_iter_next(&iter, &control_ptr, &null_ptr))
+        control_hide(control_ptr);
+
+    // hide the overlay
+    gtk_widget_hide(overlay->overlay);
 }
 
-static void *remove_input(GtkWidget *overlay, gpointer data)
+void overlay_add(Overlay *overlay, Control *control)
+{
+    // add control reference
+    gboolean added = g_hash_table_add(overlay->controls, control);
+    if (!added)
+        return;
+
+    // show control if overlay is shown
+    if (overlay->window)
+        control_show(control, GTK_FIXED(overlay->container));
+}
+
+void overlay_remove(Overlay *overlay, Control *control)
+{
+    // remove control reference
+    gboolean removed = g_hash_table_remove(overlay->controls, control);
+    if (!removed)
+        return;
+
+    // hide control if overlay is shown
+    if (overlay->window)
+        control_hide(control);
+}
+
+static void remove_input(GtkWidget *overlay, gpointer data)
 {
     cairo_rectangle_int_t rectangle = {
         .x = 0,
@@ -130,6 +146,35 @@ static void *remove_input(GtkWidget *overlay, gpointer data)
         .height = 0,
     };
     cairo_region_t *region = cairo_region_create_rectangle(&rectangle);
-    gdk_window_input_shape_combine_region(overlay, region, 0, 0);
+    gdk_window_input_shape_combine_region(gtk_widget_get_window(overlay), region, 0, 0);
     cairo_region_destroy(region);
+}
+
+static void overlay_refresh(Overlay *overlay)
+{
+    // do nothing if not shown
+    if (!overlay->window)
+        return;
+
+    // reposition the overlay
+    overlay_reposition(overlay);
+
+    // reposition the controls
+    GHashTableIter iter;
+    gpointer control_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->controls);
+    while (g_hash_table_iter_next(&iter, &control_ptr, &null_ptr))
+        control_reposition(control_ptr);
+}
+
+static void overlay_reposition(Overlay *overlay)
+{
+    AtspiComponent *component = atspi_accessible_get_component_iface(overlay->window);
+    AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
+
+    gtk_window_move(GTK_WINDOW(overlay->overlay), rect->x, rect->y);
+    gtk_window_resize(GTK_WINDOW(overlay->overlay), rect->width, rect->height);
+
+    g_object_unref(component);
+    g_free(rect);
 }

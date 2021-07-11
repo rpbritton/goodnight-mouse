@@ -47,7 +47,7 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     foreground->focus = focus;
 
     foreground->codes = codes_new(config->keys);
-    foreground->overlay = overlay_new();
+    foreground->overlay = overlay_new(&config->overlay);
     foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
 
     // create main loop
@@ -84,15 +84,18 @@ void foreground_run(Foreground *foreground)
 
     // let the registry watch the window
     registry_watch(foreground->registry, window);
-    g_object_unref(window);
 
     // check if there are any controls
     if (registry_count(foreground->registry) == 0)
     {
         g_warning("foreground: No controls found on active window, stopping.");
         registry_unwatch(foreground->registry);
+        g_object_unref(window);
         return;
     }
+
+    // show the overlay
+    overlay_show(foreground->overlay, window);
 
     // subscribe events
     input_subscribe(foreground->input, KEYBOARD_EVENTS, callback_keyboard, foreground);
@@ -111,7 +114,8 @@ void foreground_run(Foreground *foreground)
 
     // clean up members
     registry_unwatch(foreground->registry);
-    // overlay_hide(foreground->overlay);
+    overlay_hide(foreground->overlay);
+    g_object_unref(window);
 }
 
 gboolean foreground_is_running(Foreground *foreground)
@@ -135,9 +139,9 @@ static void callback_control_add(Control *control, gpointer foreground_ptr)
     codes_add(foreground->codes, control);
 
     // add to overlay
-    //overlay_add(foreground->overlay, control);
+    overlay_add(foreground->overlay, control);
 
-    g_message("control added (code=%d)", g_array_index(control->code, guint, 0));
+    //g_message("control added (code=%d)", g_array_index(control->code, guint, 0));
 }
 
 static void callback_control_remove(Control *control, gpointer foreground_ptr)
@@ -148,9 +152,9 @@ static void callback_control_remove(Control *control, gpointer foreground_ptr)
     codes_remove(foreground->codes, control);
 
     // remove from overlay
-    //overlay_remove(foreground->overlay, control);
+    overlay_remove(foreground->overlay, control);
 
-    g_message("control removed");
+    //g_message("control removed");
 }
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
@@ -164,7 +168,7 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
         foreground_quit(foreground_ptr);
         break;
     default:
-        // todo: notify registry
+        // todo: check controls for matches
         break;
     }
 

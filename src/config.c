@@ -22,6 +22,24 @@
 // use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
 // use getopt.h for arguments
 
+static const gchar *css = ".overlay_window {"
+                          "    background-color: rgba(100%, 0%, 0%, 0.05);"
+                          "    font-family: 'IBM Plex Mono', monospace;"
+                          "    font-weight: bold;"
+                          "    font-size: 14px;"
+                          "}"
+                          ""
+                          ".control_tag {"
+                          "    background-color: #000;"
+                          "    border: 1px solid #FFF;"
+                          "    padding: 1px 3px;"
+                          "    border-radius: 3px;"
+                          "}"
+                          ""
+                          ".control_label {"
+                          "    color: #0F0;"
+                          "}";
+
 Config *config_parse(int argc, char **argv)
 {
     Config *config = g_new(Config, 1);
@@ -33,6 +51,10 @@ Config *config_parse(int argc, char **argv)
     guint keys[] = {GDK_KEY_a, GDK_KEY_b, GDK_KEY_c};
     g_array_append_vals(config->app.foreground.keys, keys, 3);
 
+    GtkCssProvider *css_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css_provider, css, -1, NULL);
+    config->app.foreground.overlay.styling = GTK_STYLE_PROVIDER(css_provider);
+
     config->app.background.trigger_id = GDK_KEY_v;
     config->app.background.trigger_modifiers = GDK_SUPER_MASK;
 
@@ -42,6 +64,8 @@ Config *config_parse(int argc, char **argv)
 void config_destroy(Config *config)
 {
     g_array_unref(config->app.foreground.keys);
+
+    //g_object_unref(G_OBJECT(config->app.foreground.overlay.styling));
 
     g_free(config);
 }
