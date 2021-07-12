@@ -42,16 +42,20 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
+    // create main loop
+    foreground->loop = g_main_loop_new(NULL, FALSE);
+
+    // create controls list
+    foreground->controls_to_tags = g_hash_table_new(NULL, NULL);
+
     // add members
     foreground->input = input;
     foreground->focus = focus;
 
+    // create members
     foreground->codes = codes_new(config->keys);
     foreground->overlay = overlay_new(&config->overlay);
     foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
-
-    // create main loop
-    foreground->loop = g_main_loop_new(NULL, FALSE);
 
     return foreground;
 }
@@ -62,6 +66,9 @@ void foreground_destroy(Foreground *foreground)
     codes_destroy(foreground->codes);
     overlay_destroy(foreground->overlay);
     registry_destroy(foreground->registry);
+
+    // free controls list
+    g_hash_table_unref(foreground->controls_to_tags);
 
     // free main loop
     g_main_loop_unref(foreground->loop);
@@ -86,7 +93,7 @@ void foreground_run(Foreground *foreground)
     registry_watch(foreground->registry, window);
 
     // check if there are any controls
-    if (registry_count(foreground->registry) == 0)
+    if (g_hash_table_size(foreground->controls_to_tags) == 0)
     {
         g_warning("foreground: No controls found on active window, stopping.");
         registry_unwatch(foreground->registry);
@@ -135,11 +142,15 @@ static void callback_control_add(Control *control, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
-    // add the code
-    codes_add(foreground->codes, control);
+    // create the tag
+    Tag *tag = codes_allocate(foreground->codes);
+    g_hash_table_insert(foreground->controls_to_tags, control, tag);
 
-    // add to overlay
-    overlay_add(foreground->overlay, control);
+    // configure the tag
+    tag_set_accessible(tag, control_get_accessible(control));
+
+    // add to the overlay
+    overlay_add(foreground->overlay, tag);
 
     //g_message("control added (code=%d)", g_array_index(control->code, guint, 0));
 }
@@ -148,11 +159,17 @@ static void callback_control_remove(Control *control, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
-    // remove the code
-    codes_remove(foreground->codes, control);
+    // get the tag
+    Tag *tag = g_hash_table_lookup(foreground->controls_to_tags, control);
 
     // remove from overlay
-    overlay_remove(foreground->overlay, control);
+    overlay_remove(foreground->overlay, tag);
+
+    // remove reference
+    g_hash_table_remove(foreground->controls_to_tags, control);
+
+    // deallocate tag
+    codes_deallocate(foreground->codes, tag);
 
     //g_message("control removed");
 }

@@ -39,6 +39,8 @@ typedef struct Foreground
 {
     GMainLoop *loop;
 
+    GHashTable *controls_to_tags;
+
     Input *input;
     Focus *focus;
 

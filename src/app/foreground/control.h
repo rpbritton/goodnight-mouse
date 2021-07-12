@@ -23,10 +23,6 @@
 #include <atspi/atspi.h>
 #include <gtk/gtk.h>
 
-#define CONTROL_CSS_CLASS_TAG "control_tag"
-#define CONTROL_CSS_CLASS_LABEL "control_label"
-#define CONTROL_CSS_CLASS_LABEL_ACTIVE "control_label_active"
-
 typedef enum ControlType
 {
     CONTROL_TYPE_NONE,
@@ -38,23 +34,12 @@ typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
-
-    GArray *code;
-
-    GtkFixed *parent;
-    GtkWidget *container;
-    GtkWidget *tag;
-    GArray *labels;
 } Control;
 
 Control *control_new(ControlType type, AtspiAccessible *accessible);
 void control_destroy(Control *control);
 void control_execute(Control *control);
-void control_label(Control *control, GArray *code);
-void control_unlabel(Control *control);
-gboolean control_match(Control *control, GArray *code);
-void control_show(Control *control, GtkFixed *container);
-void control_hide(Control *control);
-void control_reposition(Control *control);
+AtspiAccessible *control_get_accessible(Control *control);
+GtkStyleProvider *control_get_styling(Control *control);
 
 #endif /* E6235E1E_3D35_4FBB_8900_4B67D274702D */

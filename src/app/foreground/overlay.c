@@ -29,7 +29,7 @@ Overlay *overlay_new(OverlayConfig *config)
     Overlay *overlay = g_new(Overlay, 1);
 
     overlay->window = NULL;
-    overlay->controls = g_hash_table_new(NULL, NULL);
+    overlay->tags = g_hash_table_new(NULL, NULL);
 
     // create overlay
     overlay->overlay = gtk_window_new(GTK_WINDOW_POPUP);
@@ -60,8 +60,8 @@ void overlay_destroy(Overlay *overlay)
     if (!overlay->window)
         overlay_hide(overlay);
 
-    // remove control references
-    g_hash_table_unref(overlay->controls);
+    // remove tag references
+    g_hash_table_unref(overlay->tags);
 
     // free overlay window
     gtk_widget_destroy(overlay->overlay);
@@ -79,12 +79,12 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
         g_object_unref(overlay->window);
     overlay->window = g_object_ref(window);
 
-    // show all controls
+    // show all tags
     GHashTableIter iter;
-    gpointer control_ptr, null_ptr;
-    g_hash_table_iter_init(&iter, overlay->controls);
-    while (g_hash_table_iter_next(&iter, &control_ptr, &null_ptr))
-        control_show(control_ptr, GTK_FIXED(overlay->container));
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->tags);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+        tag_show(tag_ptr, GTK_FIXED(overlay->container));
 
     // reposition and show the window
     overlay_reposition(overlay);
@@ -102,39 +102,39 @@ void overlay_hide(Overlay *overlay)
     g_object_unref(overlay->window);
     overlay->window = NULL;
 
-    // hide all controls
+    // hide all tags
     GHashTableIter iter;
-    gpointer control_ptr, null_ptr;
-    g_hash_table_iter_init(&iter, overlay->controls);
-    while (g_hash_table_iter_next(&iter, &control_ptr, &null_ptr))
-        control_hide(control_ptr);
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->tags);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+        tag_hide(tag_ptr);
 
     // hide the overlay
     gtk_widget_hide(overlay->overlay);
 }
 
-void overlay_add(Overlay *overlay, Control *control)
+void overlay_add(Overlay *overlay, Tag *tag)
 {
-    // add control reference
-    gboolean added = g_hash_table_add(overlay->controls, control);
+    // add tag reference
+    gboolean added = g_hash_table_add(overlay->tags, tag);
     if (!added)
         return;
 
-    // show control if overlay is shown
+    // show tag if overlay is shown
     if (overlay->window)
-        control_show(control, GTK_FIXED(overlay->container));
+        tag_show(tag, GTK_FIXED(overlay->container));
 }
 
-void overlay_remove(Overlay *overlay, Control *control)
+void overlay_remove(Overlay *overlay, Tag *tag)
 {
-    // remove control reference
-    gboolean removed = g_hash_table_remove(overlay->controls, control);
+    // remove tag reference
+    gboolean removed = g_hash_table_remove(overlay->tags, tag);
     if (!removed)
         return;
 
-    // hide control if overlay is shown
+    // hide tag if overlay is shown
     if (overlay->window)
-        control_hide(control);
+        tag_hide(tag);
 }
 
 static void remove_input(GtkWidget *overlay, gpointer data)
@@ -159,12 +159,12 @@ static void overlay_refresh(Overlay *overlay)
     // reposition the overlay
     overlay_reposition(overlay);
 
-    // reposition the controls
+    // reposition the tags
     GHashTableIter iter;
-    gpointer control_ptr, null_ptr;
-    g_hash_table_iter_init(&iter, overlay->controls);
-    while (g_hash_table_iter_next(&iter, &control_ptr, &null_ptr))
-        control_reposition(control_ptr);
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->tags);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+        tag_reposition(tag_ptr);
 }
 
 static void overlay_reposition(Overlay *overlay)

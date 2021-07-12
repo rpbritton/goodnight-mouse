@@ -108,11 +108,6 @@ void registry_unwatch(Registry *registry)
     }
 }
 
-guint registry_count(Registry *registry)
-{
-    return g_hash_table_size(registry->controls);
-}
-
 static void registry_refresh(Registry *registry)
 {
     GHashTable *refreshed = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
