@@ -22,12 +22,13 @@
 #include "identify.h"
 #include "execution.h"
 
-Control *control_new(ControlType type, AtspiAccessible *accessible)
+Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfig *config)
 {
     Control *control = g_new(Control, 1);
 
     control->type = type;
     control->accessible = g_object_ref(accessible);
+    control->styling = g_object_ref(config->styling);
 
     return control;
 }
@@ -35,6 +36,7 @@ Control *control_new(ControlType type, AtspiAccessible *accessible)
 void control_destroy(Control *control)
 {
     g_object_unref(control->accessible);
+    g_object_unref(control->styling);
 
     g_free(control);
 }
@@ -62,5 +64,16 @@ AtspiAccessible *control_get_accessible(Control *control)
 
 GtkStyleProvider *control_get_styling(Control *control)
 {
-    return NULL; // todo
+    return control->styling;
+}
+
+TagConfig control_get_tag_config(Control *control)
+{
+    // todo: make more dynamic
+    return (TagConfig){
+        .accessible = control->accessible,
+        .styling = control->styling,
+        .alignment_horizontal = GTK_ALIGN_START,
+        .alignment_vertical = GTK_ALIGN_CENTER,
+    };
 }

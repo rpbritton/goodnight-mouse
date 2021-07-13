@@ -23,6 +23,8 @@
 #include <atspi/atspi.h>
 #include <gtk/gtk.h>
 
+#include "tag.h"
+
 typedef enum ControlType
 {
     CONTROL_TYPE_NONE,
@@ -30,16 +32,21 @@ typedef enum ControlType
     CONTROL_TYPE_FOCUS,
 } ControlType;
 
+typedef struct ControlConfig
+{
+    GtkStyleProvider *styling;
+} ControlConfig;
+
 typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
+    GtkStyleProvider *styling;
 } Control;
 
-Control *control_new(ControlType type, AtspiAccessible *accessible);
+Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfig *config);
 void control_destroy(Control *control);
 void control_execute(Control *control);
-AtspiAccessible *control_get_accessible(Control *control);
-GtkStyleProvider *control_get_styling(Control *control);
+TagConfig control_get_tag_config(Control *control);
 
 #endif /* E6235E1E_3D35_4FBB_8900_4B67D274702D */

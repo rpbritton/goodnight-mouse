@@ -23,9 +23,18 @@
 #include <atspi/atspi.h>
 #include <gtk/gtk.h>
 
-#define TAG_CSS_CLASS "code_tag"
-#define TAG_LABEL_CSS_CLASS "code_tag_label"
-#define TAG_LABEL_ACTIVE_CSS_CLASS "code_tag_label_active"
+#define TAG_CONTAINER_CSS_CLASS "tag_container"
+#define TAG_LABEL_CSS_CLASS "tag_label"
+#define TAG_CHARACTER_CSS_CLASS "tag_character"
+#define TAG_CHARACTER_ACTIVE_CSS_CLASS "tag_character_active"
+
+typedef struct TagConfig
+{
+    AtspiAccessible *accessible;
+    GtkStyleProvider *styling;
+    GtkAlign alignment_horizontal;
+    GtkAlign alignment_vertical;
+} TagConfig;
 
 typedef struct Tag
 {
@@ -44,6 +53,9 @@ typedef struct Tag
 Tag *tag_new();
 void tag_destroy(Tag *tag);
 
+void tag_set_config(Tag *tag, TagConfig config);
+void tag_unset_config(Tag *tag);
+
 void tag_show(Tag *tag, GtkFixed *parent);
 void tag_hide(Tag *tag);
 void tag_reposition(Tag *tag);
@@ -52,10 +64,5 @@ void tag_set_code(Tag *tag, GArray *code);
 GArray *tag_get_code(Tag *tag);
 void tag_unset_code(Tag *tag);
 gboolean tag_match_code(Tag *tag, GArray *code);
-
-void tag_set_accessible(Tag *tag, AtspiAccessible *accessible);
-void tag_unset_accessible(Tag *tag);
-void tag_set_styling(Tag *tag, GtkStyleProvider *styling);
-void tag_unset_styling(Tag *tag);
 
 #endif /* D8EAD49E_03F6_46EE_9DA3_3605763E815D */

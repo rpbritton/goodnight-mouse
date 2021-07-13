@@ -29,14 +29,12 @@ static void wrap_control_destroy(gpointer control_ptr)
 static void registry_refresh(Registry *registry);
 static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed);
 
-Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data)
+Registry *registry_new(ControlConfig *control_config)
 {
     Registry *registry = g_new(Registry, 1);
 
-    // add callbacks
-    registry->callback_add = add;
-    registry->callback_remove = remove;
-    registry->callback_data = data;
+    // add control config
+    registry->control_config = control_config;
 
     // create match rule
     AtspiStateSet *interactive_states = atspi_state_set_new(NULL);
@@ -71,10 +69,11 @@ void registry_destroy(Registry *registry)
     g_free(registry);
 }
 
-void registry_watch(Registry *registry, AtspiAccessible *window)
+void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscriber subscriber)
 {
-    // unwatch previous
-    registry_unwatch(registry);
+    // unwatch if watching
+    if (registry->window)
+        registry_unwatch(registry);
 
     // do nothing if no window
     if (!window)
@@ -82,20 +81,24 @@ void registry_watch(Registry *registry, AtspiAccessible *window)
 
     // set new window
     registry->window = g_object_ref(window);
-    // todo: add idle interval to refresh
+
+    // set subscriber
+    registry->subscriber = subscriber;
 
     // refresh
     registry_refresh(registry);
+    // todo: add idle interval to refresh
 }
 
 void registry_unwatch(Registry *registry)
 {
-    // free window
-    if (registry->window)
-    {
-        g_object_unref(registry->window);
-        registry->window = NULL;
-    }
+    // skip if not watching
+    if (!registry->window)
+        return;
+
+    // dereference window
+    g_object_unref(registry->window);
+    registry->window = NULL;
 
     // remove all controls
     GHashTableIter iter;
@@ -103,7 +106,8 @@ void registry_unwatch(Registry *registry)
     g_hash_table_iter_init(&iter, registry->controls);
     while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
     {
-        registry->callback_remove(control_ptr, registry->callback_data);
+        if (registry->subscriber.remove)
+            registry->subscriber.remove(control_ptr, registry->subscriber.data);
         g_hash_table_iter_remove(&iter);
     }
 }
@@ -123,7 +127,8 @@ static void registry_refresh(Registry *registry)
     {
         if (!g_hash_table_contains(refreshed, accessible_ptr))
         {
-            registry->callback_remove(control_ptr, registry->callback_data);
+            if (registry->subscriber.remove)
+                registry->subscriber.remove(control_ptr, registry->subscriber.data);
             g_hash_table_iter_remove(&iter);
         }
     }
@@ -138,9 +143,10 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
         ControlType control_type = control_identify_type(accessible);
         if (control_type != CONTROL_TYPE_NONE)
         {
-            Control *control = control_new(control_type, accessible);
+            Control *control = control_new(control_type, accessible, registry->control_config);
             g_hash_table_insert(registry->controls, g_object_ref(accessible), control);
-            registry->callback_add(control, registry->callback_data);
+            if (registry->subscriber.add)
+                registry->subscriber.add(control, registry->subscriber.data);
         }
     }
 

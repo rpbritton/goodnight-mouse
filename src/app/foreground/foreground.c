@@ -55,7 +55,7 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     // create members
     foreground->codes = codes_new(config->keys);
     foreground->overlay = overlay_new(&config->overlay);
-    foreground->registry = registry_new(callback_control_add, callback_control_remove, foreground);
+    foreground->registry = registry_new(&config->control);
 
     return foreground;
 }
@@ -90,7 +90,11 @@ void foreground_run(Foreground *foreground)
     }
 
     // let the registry watch the window
-    registry_watch(foreground->registry, window);
+    registry_watch(foreground->registry, window, (RegistrySubscriber){
+                                                     .add = callback_control_add,
+                                                     .remove = callback_control_remove,
+                                                     .data = foreground,
+                                                 });
 
     // check if there are any controls
     if (g_hash_table_size(foreground->controls_to_tags) == 0)
@@ -147,7 +151,7 @@ static void callback_control_add(Control *control, gpointer foreground_ptr)
     g_hash_table_insert(foreground->controls_to_tags, control, tag);
 
     // configure the tag
-    tag_set_accessible(tag, control_get_accessible(control));
+    tag_set_config(tag, control_get_tag_config(control));
 
     // add to the overlay
     overlay_add(foreground->overlay, tag);

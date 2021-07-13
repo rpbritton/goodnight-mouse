@@ -32,6 +32,7 @@
 typedef struct ForegroundConfig
 {
     GArray *keys;
+    ControlConfig control;
     OverlayConfig overlay;
 } ForegroundConfig;
 

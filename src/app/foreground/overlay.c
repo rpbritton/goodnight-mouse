@@ -36,9 +36,9 @@ Overlay *overlay_new(OverlayConfig *config)
     gtk_window_set_title(GTK_WINDOW(overlay->overlay), OVERLAY_WINDOW_TITLE);
 
     // set css styling
-    GtkStyleContext *style_context = gtk_widget_get_style_context(overlay->overlay);
-    gtk_style_context_add_class(style_context, OVERLAY_CSS_CLASS);
-    gtk_style_context_add_provider(style_context, config->styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
+    gtk_style_context_add_class(gtk_widget_get_style_context(overlay->overlay), OVERLAY_CSS_CLASS);
+    gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(overlay->overlay),
+                                              config->styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
     // allow window transparency
     gtk_widget_set_visual(overlay->overlay, gdk_screen_get_rgba_visual(gtk_widget_get_screen(overlay->overlay)));
 

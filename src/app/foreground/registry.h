@@ -27,11 +27,18 @@
 
 typedef void (*RegistryCallback)(Control *control, gpointer data);
 
+typedef struct RegistrySubscri
+{
+    RegistryCallback add;
+    RegistryCallback remove;
+    gpointer data;
+} RegistrySubscriber;
+
 typedef struct Registry
 {
-    RegistryCallback callback_add;
-    RegistryCallback callback_remove;
-    gpointer callback_data;
+    ControlConfig *control_config;
+
+    RegistrySubscriber subscriber;
 
     AtspiMatchRule *match_interactive;
 
@@ -39,9 +46,9 @@ typedef struct Registry
     GHashTable *controls;
 } Registry;
 
-Registry *registry_new(RegistryCallback add, RegistryCallback remove, gpointer data);
+Registry *registry_new(ControlConfig *control_config);
 void registry_destroy(Registry *registry);
-void registry_watch(Registry *registry, AtspiAccessible *window);
+void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscriber subscriber);
 void registry_unwatch(Registry *registry);
 
 #endif /* FE2ED0B7_0D51_459D_933A_9C5B78C8E618 */

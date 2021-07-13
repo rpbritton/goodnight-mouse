@@ -36,11 +36,14 @@ Tag *tag_new()
 
     // create the gtk container
     tag->container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_style_context_add_class(gtk_widget_get_style_context(tag->container), TAG_CONTAINER_CSS_CLASS);
 
     // create the gtk box
     tag->label = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_style_context_add_class(gtk_widget_get_style_context(tag->label), TAG_CSS_CLASS);
-    gtk_widget_set_halign(tag->label, GTK_ALIGN_CENTER);
+    gtk_style_context_add_class(gtk_widget_get_style_context(tag->label), TAG_LABEL_CSS_CLASS);
+    gtk_widget_set_hexpand(tag->label, FALSE);
+    gtk_widget_set_vexpand(tag->label, FALSE);
+
     gtk_container_add(GTK_CONTAINER(tag->container), tag->label);
 
     // init the gtk labels
@@ -58,8 +61,7 @@ void tag_destroy(Tag *tag)
     tag_unset_code(tag);
 
     // unset configuration
-    tag_unset_accessible(tag);
-    tag_unset_styling(tag);
+    tag_unset_config(tag);
 
     // destroy the label
     tag_destroy_label(tag);
@@ -68,6 +70,50 @@ void tag_destroy(Tag *tag)
     gtk_widget_destroy(tag->container);
 
     g_free(tag);
+}
+
+void tag_set_config(Tag *tag, TagConfig config)
+{
+    // unsef old config
+    tag_unset_config(tag);
+
+    // set accessible
+    tag->accessible = g_object_ref(config.accessible);
+    // reposition if shown
+    if (tag->parent)
+        tag_reposition(tag);
+
+    // set styling
+    tag->styling = g_object_ref(config.styling);
+    gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(tag->container),
+                                              tag->styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
+
+    // set alignment
+    gtk_widget_set_halign(tag->label, config.alignment_horizontal);
+    gtk_widget_set_valign(tag->label, config.alignment_vertical);
+}
+
+void tag_unset_config(Tag *tag)
+{
+    // unset accessible
+    if (tag->accessible)
+    {
+        g_object_unref(tag->accessible);
+        tag->accessible = NULL;
+    }
+
+    // unset styling
+    if (tag->styling)
+    {
+        gtk_style_context_remove_provider_for_screen(gtk_widget_get_screen(tag->container),
+                                                     tag->styling);
+        g_object_unref(tag->styling);
+        tag->styling = NULL;
+    }
+
+    // set default alignment
+    gtk_widget_set_halign(tag->label, GTK_ALIGN_START);
+    gtk_widget_set_valign(tag->label, GTK_ALIGN_START);
 }
 
 void tag_show(Tag *tag, GtkFixed *parent)
@@ -110,6 +156,8 @@ void tag_reposition(Tag *tag)
     // stop if no accessible
     if (!tag->accessible)
         return;
+
+    // todo: check if accessible is visible
 
     // get accessible position
     AtspiComponent *component = atspi_accessible_get_component_iface(tag->accessible);
@@ -161,57 +209,10 @@ gboolean tag_match_code(Tag *tag, GArray *code)
     return FALSE;
 }
 
-void tag_set_accessible(Tag *tag, AtspiAccessible *accessible)
-{
-    // set accessible
-    tag_unset_accessible(tag);
-    tag->accessible = g_object_ref(accessible);
-
-    // reposition if shown
-    if (tag->parent)
-        tag_reposition(tag);
-}
-
-void tag_unset_accessible(Tag *tag)
-{
-    if (!tag->accessible)
-        return;
-
-    // remove reference
-    g_object_unref(tag->accessible);
-    tag->accessible = NULL;
-}
-
-void tag_set_styling(Tag *tag, GtkStyleProvider *styling)
-{
-    // set styling
-    tag_unset_styling(tag);
-    tag->styling = g_object_ref(styling);
-
-    // add as provider
-    gtk_style_context_add_provider(gtk_widget_get_style_context(tag->container),
-                                   styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
-}
-
-void tag_unset_styling(Tag *tag)
-{
-    if (!tag->styling)
-        return;
-
-    // remove provider
-    gtk_style_context_remove_provider(gtk_widget_get_style_context(tag->container),
-                                      tag->styling);
-
-    // remove reference
-    g_object_unref(tag->styling);
-    tag->styling = NULL;
-}
-
 static void tag_generate_label(Tag *tag)
 {
     // remove old label
-    if (tag->characters)
-        tag_destroy_label(tag);
+    tag_destroy_label(tag);
 
     // create space to hold label references
     tag->characters = g_array_sized_new(FALSE, FALSE, sizeof(GtkWidget *), tag->code->len);
@@ -225,7 +226,7 @@ static void tag_generate_label(Tag *tag)
         GtkWidget *character = gtk_label_new(unicode_str);
         g_free(unicode_str);
 
-        gtk_style_context_add_class(gtk_widget_get_style_context(character), TAG_LABEL_CSS_CLASS);
+        gtk_style_context_add_class(gtk_widget_get_style_context(character), TAG_CHARACTER_CSS_CLASS);
 
         gtk_container_add(GTK_CONTAINER(tag->label), character);
         g_array_append_val(tag->characters, character);
