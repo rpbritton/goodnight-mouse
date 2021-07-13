@@ -45,7 +45,7 @@ typedef struct Tag
 
     GtkFixed *parent;
 
-    GtkWidget *container;
+    GtkWidget *wrapper;
     GtkWidget *label;
     GArray *characters;
 } Tag;
@@ -53,7 +53,7 @@ typedef struct Tag
 Tag *tag_new();
 void tag_destroy(Tag *tag);
 
-void tag_set_config(Tag *tag, TagConfig config);
+void tag_set_config(Tag *tag, TagConfig *config);
 void tag_unset_config(Tag *tag);
 
 void tag_show(Tag *tag, GtkFixed *parent);

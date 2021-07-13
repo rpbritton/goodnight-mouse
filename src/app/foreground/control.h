@@ -41,12 +41,12 @@ typedef struct Control
 {
     ControlType type;
     AtspiAccessible *accessible;
-    GtkStyleProvider *styling;
+    TagConfig tag_config;
 } Control;
 
 Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfig *config);
 void control_destroy(Control *control);
 void control_execute(Control *control);
-TagConfig control_get_tag_config(Control *control);
+TagConfig *control_tag_config(Control *control);
 
 #endif /* E6235E1E_3D35_4FBB_8900_4B67D274702D */

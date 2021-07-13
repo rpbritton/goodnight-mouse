@@ -151,7 +151,7 @@ static void callback_control_add(Control *control, gpointer foreground_ptr)
     g_hash_table_insert(foreground->controls_to_tags, control, tag);
 
     // configure the tag
-    tag_set_config(tag, control_get_tag_config(control));
+    tag_set_config(tag, control_tag_config(control));
 
     // add to the overlay
     overlay_add(foreground->overlay, tag);

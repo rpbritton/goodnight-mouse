@@ -28,7 +28,13 @@ Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfi
 
     control->type = type;
     control->accessible = g_object_ref(accessible);
-    control->styling = g_object_ref(config->styling);
+
+    // set tag config
+    // todo: pick on type
+    control->tag_config.accessible = g_object_ref(accessible);
+    control->tag_config.styling = g_object_ref(config->styling);
+    control->tag_config.alignment_horizontal = GTK_ALIGN_START;
+    control->tag_config.alignment_vertical = GTK_ALIGN_CENTER;
 
     return control;
 }
@@ -36,7 +42,10 @@ Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfi
 void control_destroy(Control *control)
 {
     g_object_unref(control->accessible);
-    g_object_unref(control->styling);
+
+    // unref tag config
+    g_object_unref(control->tag_config.accessible);
+    g_object_unref(control->tag_config.styling);
 
     g_free(control);
 }
@@ -56,24 +65,7 @@ void control_execute(Control *control)
     }
 }
 
-AtspiAccessible *control_get_accessible(Control *control)
-
+TagConfig *control_tag_config(Control *control)
 {
-    return control->accessible;
-}
-
-GtkStyleProvider *control_get_styling(Control *control)
-{
-    return control->styling;
-}
-
-TagConfig control_get_tag_config(Control *control)
-{
-    // todo: make more dynamic
-    return (TagConfig){
-        .accessible = control->accessible,
-        .styling = control->styling,
-        .alignment_horizontal = GTK_ALIGN_START,
-        .alignment_vertical = GTK_ALIGN_CENTER,
-    };
+    return &control->tag_config;
 }

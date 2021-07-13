@@ -29,25 +29,27 @@ Tag *tag_new()
     // init members
     tag->code = NULL;
 
-    tag->accessible = NULL;
-    tag->styling = NULL;
-
     tag->parent = NULL;
 
-    // create the gtk container
-    tag->container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_style_context_add_class(gtk_widget_get_style_context(tag->container), TAG_CONTAINER_CSS_CLASS);
-
-    // create the gtk box
+    // create the label
     tag->label = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_style_context_add_class(gtk_widget_get_style_context(tag->label), TAG_LABEL_CSS_CLASS);
     gtk_widget_set_hexpand(tag->label, FALSE);
     gtk_widget_set_vexpand(tag->label, FALSE);
 
-    gtk_container_add(GTK_CONTAINER(tag->container), tag->label);
+    // create the label wrapper
+    tag->wrapper = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_style_context_add_class(gtk_widget_get_style_context(tag->wrapper), TAG_CONTAINER_CSS_CLASS);
+
+    gtk_container_add(GTK_CONTAINER(tag->wrapper), tag->label);
 
     // init the gtk labels
     tag->characters = NULL;
+
+    // set default config
+    tag->accessible = NULL;
+    tag->styling = NULL;
+    tag_unset_config(tag);
 
     return tag;
 }
@@ -67,30 +69,30 @@ void tag_destroy(Tag *tag)
     tag_destroy_label(tag);
 
     // destroy all gtk elements
-    gtk_widget_destroy(tag->container);
+    gtk_widget_destroy(tag->wrapper);
 
     g_free(tag);
 }
 
-void tag_set_config(Tag *tag, TagConfig config)
+void tag_set_config(Tag *tag, TagConfig *config)
 {
     // unsef old config
     tag_unset_config(tag);
 
     // set accessible
-    tag->accessible = g_object_ref(config.accessible);
+    tag->accessible = g_object_ref(config->accessible);
     // reposition if shown
     if (tag->parent)
         tag_reposition(tag);
 
     // set styling
-    tag->styling = g_object_ref(config.styling);
-    gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(tag->container),
+    tag->styling = g_object_ref(config->styling);
+    gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(tag->wrapper),
                                               tag->styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
 
     // set alignment
-    gtk_widget_set_halign(tag->label, config.alignment_horizontal);
-    gtk_widget_set_valign(tag->label, config.alignment_vertical);
+    gtk_widget_set_halign(tag->label, config->alignment_horizontal);
+    gtk_widget_set_valign(tag->label, config->alignment_vertical);
 }
 
 void tag_unset_config(Tag *tag)
@@ -105,7 +107,7 @@ void tag_unset_config(Tag *tag)
     // unset styling
     if (tag->styling)
     {
-        gtk_style_context_remove_provider_for_screen(gtk_widget_get_screen(tag->container),
+        gtk_style_context_remove_provider_for_screen(gtk_widget_get_screen(tag->wrapper),
                                                      tag->styling);
         g_object_unref(tag->styling);
         tag->styling = NULL;
@@ -133,8 +135,8 @@ void tag_show(Tag *tag, GtkFixed *parent)
     // generate the label
     tag_generate_label(tag);
 
-    // show the container
-    gtk_widget_show_all(tag->container);
+    // show the wrapper
+    gtk_widget_show_all(tag->wrapper);
 }
 
 void tag_hide(Tag *tag)
@@ -144,7 +146,7 @@ void tag_hide(Tag *tag)
         return;
 
     // remove the tag from the parent
-    gtk_container_remove(GTK_CONTAINER(tag->parent), tag->container);
+    gtk_container_remove(GTK_CONTAINER(tag->parent), tag->wrapper);
 
     // remove parent reference
     g_object_unref(tag->parent);
@@ -164,13 +166,13 @@ void tag_reposition(Tag *tag)
     AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_WINDOW, NULL);
 
     // put/move accessible in parent
-    if (gtk_widget_get_parent(tag->container) == GTK_WIDGET(tag->parent))
-        gtk_fixed_move(tag->parent, tag->container, rect->x, rect->y);
+    if (gtk_widget_get_parent(tag->wrapper) == GTK_WIDGET(tag->parent))
+        gtk_fixed_move(tag->parent, tag->wrapper, rect->x, rect->y);
     else
-        gtk_fixed_put(tag->parent, tag->container, rect->x, rect->y);
+        gtk_fixed_put(tag->parent, tag->wrapper, rect->x, rect->y);
 
-    // set container to cover accessible
-    gtk_widget_set_size_request(tag->container, rect->width, rect->height);
+    // set wrapper to cover accessible
+    gtk_widget_set_size_request(tag->wrapper, rect->width, rect->height);
 
     // free
     g_object_unref(component);
@@ -234,7 +236,7 @@ static void tag_generate_label(Tag *tag)
 
     // show new label if shown
     if (tag->parent)
-        gtk_widget_show_all(tag->container);
+        gtk_widget_show_all(tag->wrapper);
 }
 
 static void tag_destroy_label(Tag *tag)
