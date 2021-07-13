@@ -25,7 +25,7 @@
 
 typedef struct Focus
 {
-    GSList *subscribers;
+    GList *subscribers;
     AtspiEventListener *listener_activation;
     AtspiEventListener *listener_deactivation;
     AtspiAccessible *window;

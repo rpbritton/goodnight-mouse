@@ -61,12 +61,12 @@ void focus_destroy(Focus *focus)
     atspi_event_listener_deregister(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
     g_object_unref(focus->listener_deactivation);
 
-    // free window
+    // unref window
     if (focus->window)
         g_object_unref(focus->window);
 
     // free subscriber lists
-    g_slist_free_full(focus->subscribers, g_free);
+    g_list_free_full(focus->subscribers, g_free);
 
     g_free(focus);
 }
@@ -78,16 +78,16 @@ void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data)
     subscriber->callback = callback;
     subscriber->data = data;
 
-    focus->subscribers = g_slist_prepend(focus->subscribers, subscriber);
+    focus->subscribers = g_list_prepend(focus->subscribers, subscriber);
 }
 
 void focus_unsubscribe(Focus *focus, FocusCallback callback)
 {
-    GSList *subscriber_node;
-    while ((subscriber_node = g_slist_find_custom(focus->subscribers, callback, subscriber_matches_callback)))
+    GList *subscriber_node;
+    while ((subscriber_node = g_list_find_custom(focus->subscribers, callback, subscriber_matches_callback)))
     {
         g_free(subscriber_node->data);
-        focus->subscribers = g_slist_remove_all(focus->subscribers, subscriber_node->data);
+        focus->subscribers = g_list_remove_all(focus->subscribers, subscriber_node->data);
     }
 }
 
@@ -113,6 +113,7 @@ static void activation_callback(AtspiEvent *event, gpointer focus_ptr)
     // notify subscribers
     notify_subscribers(focus);
 
+    // free event
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
@@ -138,14 +139,15 @@ static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr)
     // notify subscribers
     notify_subscribers(focus);
 
+    // free event
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
 static void notify_subscribers(Focus *focus)
 {
-    for (GSList *sub = focus->subscribers; sub; sub = sub->next)
+    for (GList *link = focus->subscribers; link; link = link->next)
     {
-        Subscriber *subscriber = sub->data;
+        Subscriber *subscriber = link->data;
 
         if (focus->window)
             g_object_ref(focus->window);
