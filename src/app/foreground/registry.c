@@ -124,6 +124,7 @@ static void registry_refresh(Registry *registry)
     registry_refresh_recurse(registry, registry->window, refreshed);
 
     // remove non refreshed controls
+    // todo: callback remove before callback add to better utilize codes
     GHashTableIter iter;
     gpointer accessible_ptr, control_ptr;
     g_hash_table_iter_init(&iter, registry->controls);
@@ -144,6 +145,8 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     // add if new
     if (!g_hash_table_contains(registry->controls, accessible))
     {
+        // todo: make a control creator that can return multiple controls as well
+        // feedback like "don't check children"
         ControlType control_type = control_identify_type(accessible);
         if (control_type != CONTROL_TYPE_NONE)
         {

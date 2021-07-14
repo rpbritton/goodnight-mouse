@@ -169,7 +169,9 @@ static AtspiAccessible *force_window()
     // get the (only) desktop
     AtspiAccessible *desktop = atspi_get_desktop(0);
 
-    // todo: consider alternative approach (e.g. X11 libraries; it's faster)
+    // todo: consider alternative approach (e.g. X11 libraries; it's faster and more reliable)
+    // one way: find application id through X11, use atspi_accessible_get_process_id on
+    // applications to avoid checking every window.
 
     // loop through all applications
     gint num_applications = atspi_accessible_get_child_count(desktop, NULL);

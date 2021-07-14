@@ -19,6 +19,7 @@
 
 #include "config.h"
 
+// todo: overhaul, make configurable at runtime.
 // use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
 // use getopt.h for arguments
 

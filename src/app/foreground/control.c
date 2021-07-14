@@ -30,7 +30,7 @@ Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfi
     control->accessible = g_object_ref(accessible);
 
     // set tag config
-    // todo: pick on type
+    // todo: be more dynamic based on control->type
     control->tag_config.accessible = g_object_ref(accessible);
     control->tag_config.styling = g_object_ref(config->styling);
     control->tag_config.alignment_horizontal = config->alignment_horizontal;
