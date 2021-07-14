@@ -125,8 +125,7 @@ void tag_show(Tag *tag, GtkFixed *parent)
         return;
 
     // hide if already showing
-    if (tag->parent)
-        tag_hide(tag);
+    tag_hide(tag);
 
     // add the new parent
     tag->parent = g_object_ref(parent);
@@ -135,7 +134,7 @@ void tag_show(Tag *tag, GtkFixed *parent)
     // generate the label
     tag_generate_label(tag);
 
-    // show the wrapper
+    // show the label
     gtk_widget_show_all(tag->wrapper);
 }
 

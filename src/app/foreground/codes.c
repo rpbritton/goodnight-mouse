@@ -71,7 +71,12 @@ Tag *codes_allocate(Codes *codes)
     {
         // get the unused mapping
         Tag *tag = codes->tags_unused->data;
+
+        // mark tag as used
         codes->tags_unused = g_list_delete_link(codes->tags_unused, codes->tags_unused);
+        g_hash_table_add(codes->tags_used, tag);
+
+        // return reused tag
         return tag;
     }
 
@@ -112,6 +117,7 @@ Tag *codes_allocate(Codes *codes)
     codes->tags = g_list_append(codes->tags, tag);
     g_hash_table_add(codes->tags_used, tag);
 
+    // return new tag
     return tag;
 }
 

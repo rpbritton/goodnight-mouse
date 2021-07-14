@@ -158,12 +158,10 @@ static void callback_control_remove(Control *control, gpointer foreground_ptr)
 
     // get the tag
     Tag *tag = g_hash_table_lookup(foreground->controls_to_tags, control);
+    g_hash_table_remove(foreground->controls_to_tags, control);
 
     // remove from overlay
     overlay_remove(foreground->overlay, tag);
-
-    // remove reference
-    g_hash_table_remove(foreground->controls_to_tags, control);
 
     // deallocate tag
     codes_deallocate(foreground->codes, tag);

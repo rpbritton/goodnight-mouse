@@ -73,12 +73,12 @@ void overlay_destroy(Overlay *overlay)
 
 void overlay_show(Overlay *overlay, AtspiAccessible *window)
 {
+    // do nothing if invalid winow
+    if (!window || overlay->window == window)
+        return;
+
     // hide first
     overlay_hide(overlay);
-
-    // do nothing if no winow
-    if (!window)
-        return;
 
     // set the new window
     overlay->window = g_object_ref(window);
@@ -90,12 +90,11 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
     while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
         tag_show(tag_ptr, GTK_FIXED(overlay->container));
 
-    // reposition and show the window
-    overlay_reposition(overlay);
-    gtk_widget_show_all(overlay->overlay);
-
     // start the refresh loop
     overlay_refresh_loop(overlay);
+
+    // show the window
+    gtk_widget_show_all(overlay->overlay);
 }
 
 void overlay_hide(Overlay *overlay)
@@ -141,7 +140,7 @@ void overlay_remove(Overlay *overlay, Tag *tag)
     if (!removed)
         return;
 
-    // hide tag if overlay is shown
+    // hide tag from overlay if shown
     if (overlay->window)
         tag_hide(tag);
 }
