@@ -159,13 +159,13 @@ void tag_reposition(Tag *tag)
     if (!tag->accessible)
         return;
 
-    // todo: check if accessible is visible
+    // todo: check if accessible is visible/in the window
 
     // get accessible position
     AtspiComponent *component = atspi_accessible_get_component_iface(tag->accessible);
     AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_WINDOW, NULL);
 
-    // put/move accessible in parent
+    // put/move location in parent
     if (gtk_widget_get_parent(tag->wrapper) == GTK_WIDGET(tag->parent))
         gtk_fixed_move(tag->parent, tag->wrapper, rect->x, rect->y);
     else
@@ -205,10 +205,62 @@ void tag_unset_code(Tag *tag)
     tag->code = NULL;
 }
 
-gboolean tag_match_code(Tag *tag, GArray *code)
+TagMatch tag_match_code(Tag *tag, GArray *code)
 {
-    // todo
-    return FALSE;
+    gboolean match = TRUE;
+    gint match_index = -1;
+
+    // compare code
+    for (gint index = 0; index < code->len; index++)
+    {
+        // code is too long; invalid
+        if (index == tag->code->len)
+        {
+            match = FALSE;
+            break;
+        }
+
+        // break if character doesn't match
+        if (g_array_index(code, guint, index) != g_array_index(tag->code, guint, index))
+        {
+            match = FALSE;
+            break;
+        }
+
+        // so far so good
+        match_index = index;
+    }
+
+    // hide and return if not matching
+    if (!match)
+    {
+        gtk_widget_hide(tag->label);
+        return TAG_NO_MATCH;
+    }
+
+    // update label character css classes
+    if (tag->characters)
+    {
+        for (gint index = 0; index < tag->characters->len; index++)
+        {
+            GtkStyleContext *context = gtk_widget_get_style_context(g_array_index(tag->characters,
+                                                                                  GtkWidget *,
+                                                                                  index));
+
+            if (index <= match_index)
+                gtk_style_context_add_class(context, TAG_CHARACTER_ACTIVE_CSS_CLASS);
+            else
+                gtk_style_context_remove_class(context, TAG_CHARACTER_ACTIVE_CSS_CLASS);
+        }
+    }
+
+    // ensure label is showing
+    gtk_widget_show(tag->label);
+
+    // return whether matches full code
+    if (match_index + 1 != tag->code->len)
+        return TAG_PARTIAL_MATCH;
+    return TAG_MATCH;
 }
 
 static void tag_generate_label(Tag *tag)

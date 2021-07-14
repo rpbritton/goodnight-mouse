@@ -25,6 +25,10 @@
 
 #include "tag.h"
 
+typedef struct CodesConfig
+{
+    GArray *keys;
+} CodesConfig;
 typedef struct Codes
 {
     GArray *keys;
@@ -35,7 +39,7 @@ typedef struct Codes
     GList *tags_unused;
 } Codes;
 
-Codes *codes_new(GArray *keys);
+Codes *codes_new(CodesConfig *config);
 void codes_destroy(Codes *codes);
 Tag *codes_allocate(Codes *codes);
 void codes_deallocate(Codes *codes, Tag *tag);

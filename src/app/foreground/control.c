@@ -33,8 +33,8 @@ Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfi
     // todo: pick on type
     control->tag_config.accessible = g_object_ref(accessible);
     control->tag_config.styling = g_object_ref(config->styling);
-    control->tag_config.alignment_horizontal = GTK_ALIGN_START;
-    control->tag_config.alignment_vertical = GTK_ALIGN_CENTER;
+    control->tag_config.alignment_horizontal = config->alignment_horizontal;
+    control->tag_config.alignment_vertical = config->alignment_vertical;
 
     return control;
 }

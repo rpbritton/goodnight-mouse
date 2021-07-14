@@ -29,12 +29,12 @@ static void codes_reset(Codes *codes);
 //static guint key_from_index(GArray *keys, guint index);
 //static guint key_to_index(GArray *keys, guint key);
 
-Codes *codes_new(GArray *keys)
+Codes *codes_new(CodesConfig *config)
 {
     Codes *codes = g_new(Codes, 1);
 
     // set up code generator
-    codes->keys = g_array_copy(keys);
+    codes->keys = g_array_ref(config->keys);
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
     codes->key_index = 0;
 

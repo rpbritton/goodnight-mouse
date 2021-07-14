@@ -35,6 +35,8 @@ typedef enum ControlType
 typedef struct ControlConfig
 {
     GtkStyleProvider *styling;
+    GtkAlign alignment_horizontal;
+    GtkAlign alignment_vertical;
 } ControlConfig;
 
 typedef struct Control

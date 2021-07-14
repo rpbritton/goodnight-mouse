@@ -28,6 +28,13 @@
 #define TAG_CHARACTER_CSS_CLASS "tag_character"
 #define TAG_CHARACTER_ACTIVE_CSS_CLASS "tag_character_active"
 
+typedef enum TagMatch
+{
+    TAG_NO_MATCH,
+    TAG_PARTIAL_MATCH,
+    TAG_MATCH,
+} TagMatch;
+
 typedef struct TagConfig
 {
     AtspiAccessible *accessible;
@@ -63,6 +70,6 @@ void tag_reposition(Tag *tag);
 void tag_set_code(Tag *tag, GArray *code);
 GArray *tag_get_code(Tag *tag);
 void tag_unset_code(Tag *tag);
-gboolean tag_match_code(Tag *tag, GArray *code);
+TagMatch tag_match_code(Tag *tag, GArray *code);
 
 #endif /* D8EAD49E_03F6_46EE_9DA3_3605763E815D */

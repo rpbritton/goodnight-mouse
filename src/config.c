@@ -22,11 +22,11 @@
 // use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
 // use getopt.h for arguments
 
-static const gchar *css = ".overlay_window {"
-                          "    background-color: rgba(100%, 0%, 0%, 0.05);"
-                          "}";
+static const gchar *css1 = ".overlay_window {"
+                           "    background-color: rgba(100%, 0%, 0%, 0.05);"
+                           "}";
 
-static const gchar *css1 = ".tag_label {"
+static const gchar *css2 = ".tag_label {"
                            "    background-color: #000;"
                            "    font-family: 'IBM Plex Mono', monospace;"
                            "    font-weight: bold;"
@@ -38,6 +38,10 @@ static const gchar *css1 = ".tag_label {"
                            ""
                            ".tag_character {"
                            "    color: #0F0;"
+                           "}"
+                           ""
+                           ".tag_character_active {"
+                           "    color: #00F;"
                            "}";
 
 Config *config_parse(int argc, char **argv)
@@ -47,17 +51,19 @@ Config *config_parse(int argc, char **argv)
     config->run_once = FALSE;
     config->log_verbose = TRUE;
 
-    config->app.foreground.keys = g_array_new(FALSE, FALSE, sizeof(guint));
+    config->app.foreground.codes.keys = g_array_new(FALSE, FALSE, sizeof(guint));
     guint keys[] = {GDK_KEY_a, GDK_KEY_b, GDK_KEY_c};
-    g_array_append_vals(config->app.foreground.keys, keys, 3);
-
-    GtkCssProvider *css_provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css_provider, css, -1, NULL);
-    config->app.foreground.overlay.styling = GTK_STYLE_PROVIDER(css_provider);
+    g_array_append_vals(config->app.foreground.codes.keys, keys, 3);
 
     GtkCssProvider *css_provider1 = gtk_css_provider_new();
     gtk_css_provider_load_from_data(css_provider1, css1, -1, NULL);
-    config->app.foreground.control.styling = GTK_STYLE_PROVIDER(css_provider1);
+    config->app.foreground.overlay.styling = GTK_STYLE_PROVIDER(css_provider1);
+
+    GtkCssProvider *css_provider2 = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css_provider2, css2, -1, NULL);
+    config->app.foreground.control.styling = GTK_STYLE_PROVIDER(css_provider2);
+    config->app.foreground.control.alignment_horizontal = GTK_ALIGN_START;
+    config->app.foreground.control.alignment_vertical = GTK_ALIGN_CENTER;
 
     config->app.background.trigger_id = GDK_KEY_v;
     config->app.background.trigger_modifiers = GDK_SUPER_MASK;
@@ -67,9 +73,10 @@ Config *config_parse(int argc, char **argv)
 
 void config_destroy(Config *config)
 {
-    g_array_unref(config->app.foreground.keys);
+    g_array_unref(config->app.foreground.codes.keys);
 
-    //g_object_unref(G_OBJECT(config->app.foreground.overlay.styling));
+    g_object_unref(config->app.foreground.overlay.styling);
+    g_object_unref(config->app.foreground.control.styling);
 
     g_free(config);
 }

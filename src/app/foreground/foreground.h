@@ -31,9 +31,9 @@
 
 typedef struct ForegroundConfig
 {
-    GArray *keys;
     ControlConfig control;
     OverlayConfig overlay;
+    CodesConfig codes;
 } ForegroundConfig;
 
 typedef struct Foreground
@@ -41,6 +41,8 @@ typedef struct Foreground
     GMainLoop *loop;
 
     GHashTable *controls_to_tags;
+    GArray *code;
+    GArray *keys;
 
     Input *input;
     Focus *focus;
