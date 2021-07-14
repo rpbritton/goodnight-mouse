@@ -38,9 +38,8 @@ Tag *tag_new()
     gtk_widget_set_vexpand(tag->label, FALSE);
 
     // create the label wrapper
-    tag->wrapper = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    tag->wrapper = g_object_ref(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
     gtk_style_context_add_class(gtk_widget_get_style_context(tag->wrapper), TAG_CONTAINER_CSS_CLASS);
-
     gtk_container_add(GTK_CONTAINER(tag->wrapper), tag->label);
 
     // init the gtk labels
@@ -70,6 +69,7 @@ void tag_destroy(Tag *tag)
 
     // destroy all gtk elements
     gtk_widget_destroy(tag->wrapper);
+    g_object_unref(tag->wrapper);
 
     g_free(tag);
 }

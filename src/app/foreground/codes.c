@@ -58,19 +58,6 @@ void codes_destroy(Codes *codes)
     g_free(codes);
 }
 
-static void codes_reset(Codes *codes)
-{
-    // reset code generator
-    codes->code_prefix = g_array_remove_range(codes->code_prefix, 0, codes->code_prefix->len);
-    codes->key_index = 0;
-
-    // clear tags
-    g_list_free_full(codes->tags, wrap_tag_destroy);
-    codes->tags = NULL;
-    g_list_free(codes->tags_unused);
-    codes->tags_unused = NULL;
-}
-
 Tag *codes_allocate(Codes *codes)
 {
     // check for unused mapping
@@ -124,11 +111,24 @@ Tag *codes_allocate(Codes *codes)
 void codes_deallocate(Codes *codes, Tag *tag)
 {
     // add tag to unused
-    codes->tags = g_list_append(codes->tags, tag);
+    codes->tags_unused = g_list_append(codes->tags_unused, tag);
 
     // if no codes are used then reset
     if (g_list_length(codes->tags) == g_list_length(codes->tags_unused))
         codes_reset(codes);
+}
+
+static void codes_reset(Codes *codes)
+{
+    // reset code generator
+    codes->code_prefix = g_array_remove_range(codes->code_prefix, 0, codes->code_prefix->len);
+    codes->key_index = 0;
+
+    // clear tags
+    g_list_free_full(codes->tags, wrap_tag_destroy);
+    codes->tags = NULL;
+    g_list_free(codes->tags_unused);
+    codes->tags_unused = NULL;
 }
 
 //static guint key_from_index(GArray *keys, guint index)
