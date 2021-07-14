@@ -163,6 +163,9 @@ GArray *control_identify_list_roles()
 
 ControlType control_identify_type(AtspiAccessible *accessible)
 {
+    // todo: find way to convey to registry that some
+    // accessibles children should not be checked
+
     if (!accessible)
         return CONTROL_TYPE_NONE;
 

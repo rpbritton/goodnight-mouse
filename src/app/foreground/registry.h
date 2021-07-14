@@ -25,6 +25,7 @@
 
 #include "control.h"
 
+// todo: possible call with a list of controls so they can be shuffled
 typedef void (*RegistryCallback)(Control *control, gpointer data);
 
 typedef struct RegistrySubscri
