@@ -41,6 +41,8 @@ typedef struct Overlay
 
     GtkWidget *overlay;
     GtkWidget *container;
+
+    guint refresh_source_id;
 } Overlay;
 
 Overlay *overlay_new(OverlayConfig *config);

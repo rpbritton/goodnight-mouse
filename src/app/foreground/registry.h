@@ -44,6 +44,8 @@ typedef struct Registry
 
     AtspiAccessible *window;
     GHashTable *controls;
+
+    guint refresh_source_id;
 } Registry;
 
 Registry *registry_new(ControlConfig *control_config);

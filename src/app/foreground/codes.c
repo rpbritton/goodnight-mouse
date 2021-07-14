@@ -211,10 +211,6 @@ static void codes_validate_code(Codes *codes)
 
 Tag *codes_matching_tag(Codes *codes)
 {
-    // do nothing if no tags are used
-    if (g_hash_table_size(codes->tags_used) == 0)
-        return NULL;
-
     // search for a tag that fully matches the code
     GHashTableIter iter;
     gpointer tag_ptr, null_ptr;

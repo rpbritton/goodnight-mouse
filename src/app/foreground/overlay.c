@@ -19,10 +19,13 @@
 
 #include "overlay.h"
 
+#define OVERLAY_REFRESH_INTERVAL 250
+
 static void remove_input(GtkWidget *overlay, gpointer data);
 
 static void overlay_refresh(Overlay *overlay);
 static void overlay_reposition(Overlay *overlay);
+static gboolean overlay_refresh_loop(gpointer overlay_ptr);
 
 Overlay *overlay_new(OverlayConfig *config)
 {
@@ -56,9 +59,8 @@ Overlay *overlay_new(OverlayConfig *config)
 
 void overlay_destroy(Overlay *overlay)
 {
-    // hide if showing
-    if (!overlay->window)
-        overlay_hide(overlay);
+    // hide overlay
+    overlay_hide(overlay);
 
     // remove tag references
     g_hash_table_unref(overlay->tags);
@@ -71,12 +73,14 @@ void overlay_destroy(Overlay *overlay)
 
 void overlay_show(Overlay *overlay, AtspiAccessible *window)
 {
+    // hide first
+    overlay_hide(overlay);
+
+    // do nothing if no winow
     if (!window)
         return;
 
     // set the new window
-    if (overlay->window)
-        g_object_unref(overlay->window);
     overlay->window = g_object_ref(window);
 
     // show all tags
@@ -90,11 +94,13 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
     overlay_reposition(overlay);
     gtk_widget_show_all(overlay->overlay);
 
-    // todo: add time interval call to overlay_refresh();
+    // start the refresh loop
+    overlay_refresh_loop(overlay);
 }
 
 void overlay_hide(Overlay *overlay)
 {
+    // do nothing if no window
     if (!overlay->window)
         return;
 
@@ -111,6 +117,9 @@ void overlay_hide(Overlay *overlay)
 
     // hide the overlay
     gtk_widget_hide(overlay->overlay);
+
+    // remove idle refresh
+    g_source_remove(overlay->refresh_source_id);
 }
 
 void overlay_add(Overlay *overlay, Tag *tag)
@@ -177,4 +186,20 @@ static void overlay_reposition(Overlay *overlay)
 
     g_object_unref(component);
     g_free(rect);
+}
+
+static gboolean overlay_refresh_loop(gpointer overlay_ptr)
+{
+    Overlay *overlay = overlay_ptr;
+
+    // refresh the overlay
+    overlay_refresh(overlay);
+
+    // add a source to call in a bit
+    overlay->refresh_source_id = g_timeout_add(OVERLAY_REFRESH_INTERVAL,
+                                               overlay_refresh_loop,
+                                               overlay);
+
+    // remove this source
+    return G_SOURCE_REMOVE;
 }

@@ -21,13 +21,16 @@
 
 #include "identify.h"
 
+#define REGISTRY_REFRESH_INTERVAL 500
+
+static void registry_refresh(Registry *registry);
+static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed);
+static gboolean registry_refresh_loop(gpointer registry_ptr);
+
 static void wrap_control_destroy(gpointer control_ptr)
 {
     control_destroy(control_ptr);
 }
-
-static void registry_refresh(Registry *registry);
-static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed);
 
 Registry *registry_new(ControlConfig *control_config)
 {
@@ -71,9 +74,8 @@ void registry_destroy(Registry *registry)
 
 void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscriber subscriber)
 {
-    // unwatch if watching
-    if (registry->window)
-        registry_unwatch(registry);
+    // unwatch first
+    registry_unwatch(registry);
 
     // do nothing if no window
     if (!window)
@@ -85,9 +87,8 @@ void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscri
     // set subscriber
     registry->subscriber = subscriber;
 
-    // refresh
-    registry_refresh(registry);
-    // todo: add idle interval to refresh
+    // start the refresh loop
+    registry_refresh_loop(registry);
 }
 
 void registry_unwatch(Registry *registry)
@@ -110,6 +111,9 @@ void registry_unwatch(Registry *registry)
             registry->subscriber.remove(control_ptr, registry->subscriber.data);
         g_hash_table_iter_remove(&iter);
     }
+
+    // stop the refresh loop
+    g_source_remove(registry->refresh_source_id);
 }
 
 static void registry_refresh(Registry *registry)
@@ -176,4 +180,20 @@ static void registry_refresh_recurse(Registry *registry, AtspiAccessible *access
     g_object_unref(collection);
 
     return;
+}
+
+static gboolean registry_refresh_loop(gpointer registry_ptr)
+{
+    Registry *registry = registry_ptr;
+
+    // refresh the registry
+    registry_refresh(registry);
+
+    // add a source to call in a bit
+    registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
+                                                registry_refresh_loop,
+                                                registry);
+
+    // remove this source
+    return G_SOURCE_REMOVE;
 }
