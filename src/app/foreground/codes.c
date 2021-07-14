@@ -25,13 +25,14 @@ static void wrap_tag_destroy(gpointer tag_ptr)
 }
 
 static void codes_reset(Codes *codes);
-
-//static guint key_from_index(GArray *keys, guint index);
-//static guint key_to_index(GArray *keys, guint key);
+static void codes_validate_code(Codes *codes);
 
 Codes *codes_new(CodesConfig *config)
 {
     Codes *codes = g_new(Codes, 1);
+
+    // init current code
+    codes->code = g_array_new(FALSE, FALSE, sizeof(guint));
 
     // set up code generator
     codes->keys = g_array_ref(config->keys);
@@ -40,6 +41,7 @@ Codes *codes_new(CodesConfig *config)
 
     // init tags
     codes->tags = NULL;
+    codes->tags_used = g_hash_table_new(NULL, NULL);
     codes->tags_unused = NULL;
 
     return codes;
@@ -49,11 +51,15 @@ void codes_destroy(Codes *codes)
 {
     // free tags
     g_list_free_full(codes->tags, wrap_tag_destroy);
+    g_hash_table_unref(codes->tags_used);
     g_list_free(codes->tags_unused);
 
     // free code generator
     g_array_unref(codes->keys);
     g_array_unref(codes->code_prefix);
+
+    // free current code
+    g_array_unref(codes->code);
 
     g_free(codes);
 }
@@ -89,7 +95,7 @@ Tag *codes_allocate(Codes *codes)
         tag_set_code(tag, code);
         g_array_unref(code);
 
-        // add tag to the back
+        // readd tag to the list
         codes->tags = g_list_append(codes->tags, tag);
     }
 
@@ -102,19 +108,25 @@ Tag *codes_allocate(Codes *codes)
     tag_set_code(tag, code);
     g_array_unref(code);
 
-    // add tag to the back
+    // add tag to the list
     codes->tags = g_list_append(codes->tags, tag);
+    g_hash_table_add(codes->tags_used, tag);
 
     return tag;
 }
 
 void codes_deallocate(Codes *codes, Tag *tag)
 {
+    // remove tag from used
+    gboolean found = g_hash_table_remove(codes->tags_used, tag);
+    if (!found)
+        return;
+
     // add tag to unused
     codes->tags_unused = g_list_append(codes->tags_unused, tag);
 
     // if no codes are used then reset
-    if (g_list_length(codes->tags) == g_list_length(codes->tags_unused))
+    if (g_hash_table_size(codes->tags_used) == 0)
         codes_reset(codes);
 }
 
@@ -127,21 +139,89 @@ static void codes_reset(Codes *codes)
     // clear tags
     g_list_free_full(codes->tags, wrap_tag_destroy);
     codes->tags = NULL;
+    g_hash_table_remove_all(codes->tags_used);
     g_list_free(codes->tags_unused);
     codes->tags_unused = NULL;
+
+    // reset current code
+    codes->code = g_array_remove_range(codes->code, 0, codes->code->len);
 }
 
-//static guint key_from_index(GArray *keys, guint index)
-//{
-//    if (index >= keys->len)
-//        return -1;
-//    return g_array_index(keys, guint, index);
-//}
-//
-//static guint key_to_index(GArray *keys, guint key)
-//{
-//    for (gint index = 0; index < keys->len; index++)
-//        if (key == g_array_index(keys, guint, index))
-//            return index;
-//    return -1;
-//}
+void codes_add_key(Codes *codes, guint key)
+{
+    // make sure key is valid
+    gboolean key_exists = FALSE;
+    for (gint index = 0; index < codes->keys->len; index++)
+        if (key == g_array_index(codes->keys, guint, index))
+            key_exists = TRUE;
+    if (!key_exists)
+        return;
+
+    // add key
+    g_array_append_val(codes->code, key);
+
+    // validate code
+    codes_validate_code(codes);
+}
+
+void codes_pop_key(Codes *codes)
+{
+    // make sure a key can be popped
+    if (codes->code->len == 0)
+        return;
+
+    // remove last key
+    codes->code = g_array_remove_index(codes->code, codes->code->len - 1);
+
+    // validate code
+    codes_validate_code(codes);
+}
+
+static void codes_validate_code(Codes *codes)
+{
+    // do nothing if no tags are used
+    if (g_hash_table_size(codes->tags_used) == 0)
+        return;
+
+    // check each tag against the code
+    gboolean matches = FALSE;
+    GHashTableIter iter;
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, codes->tags_used);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+    {
+        switch (tag_match_code(tag_ptr, codes->code))
+        {
+        case TAG_MATCH:
+        case TAG_PARTIAL_MATCH:
+            matches = TRUE;
+            break;
+        case TAG_NO_MATCH:
+            continue;
+        }
+    }
+
+    // reset the code if no matches
+    if (!matches)
+    {
+        codes->code = g_array_remove_range(codes->code, 0, codes->code->len);
+        codes_validate_code(codes);
+    }
+}
+
+Tag *codes_matching_tag(Codes *codes)
+{
+    // do nothing if no tags are used
+    if (g_hash_table_size(codes->tags_used) == 0)
+        return NULL;
+
+    // search for a tag that fully matches the code
+    GHashTableIter iter;
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, codes->tags_used);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+        if (tag_match_code(tag_ptr, codes->code) == TAG_MATCH)
+            return tag_ptr;
+
+    return NULL;
+}

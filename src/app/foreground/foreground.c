@@ -26,9 +26,7 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
-static void foreground_code_add(Foreground *foreground, guint key);
-static void foreground_code_pop(Foreground *foreground);
-static void foreground_code_check(Foreground *foreground);
+static void check_tag_matched(Foreground *foreground);
 
 static const InputEvent KEYBOARD_EVENTS = {
     .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
@@ -51,8 +49,6 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
 
     // create control management
     foreground->controls_to_tags = g_hash_table_new(NULL, NULL);
-    foreground->code = g_array_new(FALSE, FALSE, sizeof(guint));
-    foreground->keys = g_array_ref(config->codes.keys);
 
     // add members
     foreground->input = input;
@@ -75,8 +71,6 @@ void foreground_destroy(Foreground *foreground)
 
     // free control management
     g_hash_table_unref(foreground->controls_to_tags);
-    g_array_unref(foreground->code);
-    g_array_unref(foreground->keys);
 
     // free main loop
     g_main_loop_unref(foreground->loop);
@@ -103,9 +97,6 @@ void foreground_run(Foreground *foreground)
                                                      .remove = callback_control_remove,
                                                      .data = foreground,
                                                  });
-
-    // clear the current code
-    g_array_remove_range(foreground->code, 0, foreground->code->len);
 
     // show the overlay
     overlay_show(foreground->overlay, window);
@@ -182,19 +173,25 @@ static void callback_control_remove(Control *control, gpointer foreground_ptr)
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
 {
+    Foreground *foreground = foreground_ptr;
+
+    // only bother with press events
     if (event.type != INPUT_KEY_PRESSED)
         return INPUT_CONSUME_EVENT;
 
+    // process key type
     switch (event.id)
     {
     case GDK_KEY_Escape:
-        foreground_quit(foreground_ptr);
+        foreground_quit(foreground);
         break;
     case GDK_KEY_BackSpace:
-        foreground_code_pop(foreground_ptr);
+        codes_pop_key(foreground->codes);
+        check_tag_matched(foreground);
         break;
     default:
-        foreground_code_add(foreground_ptr, event.id);
+        codes_add_key(foreground->codes, event.id);
+        check_tag_matched(foreground);
         break;
     }
 
@@ -216,69 +213,27 @@ static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
     foreground_quit(foreground_ptr);
 }
 
-static void foreground_code_add(Foreground *foreground, guint key)
+static void check_tag_matched(Foreground *foreground)
 {
-    // make sure key is valid
-    gboolean key_exists = FALSE;
-    for (gint index = 0; index < foreground->keys->len; index++)
-        if (key == g_array_index(foreground->keys, guint, index))
-            key_exists = TRUE;
-    if (!key_exists)
+    // check to see if a tag was matched
+    Tag *tag = codes_matching_tag(foreground->codes);
+    if (!tag)
         return;
 
-    // add key
-    foreground->code = g_array_append_val(foreground->code, key);
-
-    // update tags
-    foreground_code_check(foreground);
-}
-
-static void foreground_code_pop(Foreground *foreground)
-{
-    // make sure a key can be popped
-    if (foreground->code->len == 0)
-        return;
-
-    // remove last key
-    foreground->code = g_array_remove_index(foreground->code, foreground->code->len - 1);
-
-    // update tags
-    foreground_code_check(foreground);
-}
-
-static void foreground_code_check(Foreground *foreground)
-{
-    // do nothing if no controls exist
-    if (g_hash_table_size(foreground->controls_to_tags) == 0)
-        return;
-
-    // check each tag for matching
-    gboolean partial_matches = 0;
+    // find the paired control
+    Control *control = NULL;
     GHashTableIter iter;
     gpointer control_ptr, tag_ptr;
     g_hash_table_iter_init(&iter, foreground->controls_to_tags);
     while (g_hash_table_iter_next(&iter, &control_ptr, &tag_ptr))
-    {
-        switch (tag_match_code(tag_ptr, foreground->code))
-        {
-        case TAG_MATCH:
-            // tag matched; execute and exit
-            control_execute(control_ptr);
-            foreground_quit(foreground);
-            return;
-        case TAG_PARTIAL_MATCH:
-            partial_matches = TRUE;
-            break;
-        case TAG_NO_MATCH:
-            continue;
-        }
-    }
-
-    // do nothing if partial matches exist
-    if (partial_matches)
+        if (tag_ptr == tag)
+            control = control_ptr;
+    if (!control)
         return;
 
-    // reset code if no matches
-    foreground->code = g_array_remove_range(foreground->code, 0, foreground->code->len);
-    foreground_code_check(foreground);
+    // execute the matched control
+    control_execute(control);
+
+    // quit
+    foreground_quit(foreground);
 }
