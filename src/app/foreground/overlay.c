@@ -51,7 +51,7 @@ Overlay *overlay_new(OverlayConfig *config)
     g_signal_connect(G_OBJECT(overlay->overlay), "draw", G_CALLBACK(remove_input), NULL);
 
     // create container
-    overlay->container = gtk_fixed_new();
+    overlay->container = gtk_layout_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(overlay->overlay), overlay->container);
 
     return overlay;
@@ -88,7 +88,7 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
     gpointer tag_ptr, null_ptr;
     g_hash_table_iter_init(&iter, overlay->tags);
     while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
-        tag_show(tag_ptr, GTK_FIXED(overlay->container));
+        tag_show(tag_ptr, GTK_LAYOUT(overlay->container));
 
     // start the refresh loop
     overlay_refresh_loop(overlay);
@@ -130,7 +130,7 @@ void overlay_add(Overlay *overlay, Tag *tag)
 
     // show tag if overlay is shown
     if (overlay->window)
-        tag_show(tag, GTK_FIXED(overlay->container));
+        tag_show(tag, GTK_LAYOUT(overlay->container));
 }
 
 void overlay_remove(Overlay *overlay, Tag *tag)

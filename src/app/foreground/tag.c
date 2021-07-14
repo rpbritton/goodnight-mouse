@@ -118,7 +118,7 @@ void tag_unset_config(Tag *tag)
     gtk_widget_set_valign(tag->label, GTK_ALIGN_START);
 }
 
-void tag_show(Tag *tag, GtkFixed *parent)
+void tag_show(Tag *tag, GtkLayout *parent)
 {
     // return if invalid parent
     if (!parent || tag->parent == parent)
@@ -166,9 +166,9 @@ void tag_reposition(Tag *tag)
 
     // put/move location in parent
     if (gtk_widget_get_parent(tag->wrapper) == GTK_WIDGET(tag->parent))
-        gtk_fixed_move(tag->parent, tag->wrapper, rect->x, rect->y);
+        gtk_layout_move(tag->parent, tag->wrapper, rect->x, rect->y);
     else
-        gtk_fixed_put(tag->parent, tag->wrapper, rect->x, rect->y);
+        gtk_layout_put(tag->parent, tag->wrapper, rect->x, rect->y);
 
     // set wrapper to cover accessible
     gtk_widget_set_size_request(tag->wrapper, rect->width, rect->height);

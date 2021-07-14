@@ -50,7 +50,7 @@ typedef struct Tag
     AtspiAccessible *accessible;
     GtkStyleProvider *styling;
 
-    GtkFixed *parent;
+    GtkLayout *parent;
 
     GtkWidget *wrapper;
     GtkWidget *label;
@@ -63,7 +63,7 @@ void tag_destroy(Tag *tag);
 void tag_set_config(Tag *tag, TagConfig *config);
 void tag_unset_config(Tag *tag);
 
-void tag_show(Tag *tag, GtkFixed *parent);
+void tag_show(Tag *tag, GtkLayout *parent);
 void tag_hide(Tag *tag);
 void tag_reposition(Tag *tag);
 
