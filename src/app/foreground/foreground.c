@@ -28,9 +28,6 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
-static void foreground_check_shifted(Foreground *foreground);
-static void foreground_check_tags(Foreground *foreground);
-
 static const InputEvent KEYBOARD_EVENTS = {
     .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
     .id = INPUT_ALL_IDS,
@@ -87,7 +84,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground_check_shifted(foreground);
+    foreground->shifted = !!(input_modifiers(foreground->input) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
 
     // get active window
     AtspiAccessible *window = focus_get_window(foreground->focus);
@@ -121,6 +118,11 @@ void foreground_run(Foreground *foreground)
     input_unsubscribe(foreground->input, callback_keyboard);
     input_unsubscribe(foreground->input, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus);
+
+    // execute control
+    Tag *tag = codes_matched_tag(foreground->codes);
+    if (tag)
+        execute_control(tag->accessible, foreground->shifted);
 
     // clean up members
     registry_unwatch(foreground->registry);
@@ -183,8 +185,20 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
 {
     Foreground *foreground = foreground_ptr;
 
-    // check if shift is active
-    foreground_check_shifted(foreground);
+    // get shifted, note modifiers are set after the event
+    gboolean shifted = !!(input_modifiers(foreground->input) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    // check if shift state changed
+    if (shifted != foreground->shifted)
+    {
+        foreground->shifted = shifted;
+
+        // update tags
+        GHashTableIter iter;
+        gpointer accessible_ptr, tag_ptr;
+        g_hash_table_iter_init(&iter, foreground->accessible_to_tag);
+        while (g_hash_table_iter_next(&iter, &accessible_ptr, &tag_ptr))
+            tag_set_shifted(tag_ptr, foreground->shifted);
+    }
 
     // only check presses
     if (event.type != INPUT_KEY_PRESSED)
@@ -198,11 +212,12 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
         break;
     case GDK_KEY_BackSpace:
         codes_pop_key(foreground->codes);
-        foreground_check_tags(foreground);
         break;
     default:
         codes_add_key(foreground->codes, event.id);
-        foreground_check_tags(foreground);
+        // quit if matched
+        if (codes_matched_tag(foreground->codes))
+            foreground_quit(foreground);
         break;
     }
 
@@ -222,40 +237,4 @@ static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
 
     // window focus changed, quit
     foreground_quit(foreground_ptr);
-}
-
-static void foreground_check_shifted(Foreground *foreground)
-{
-    // get shift state
-    GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
-    guint modifiers = gdk_keymap_get_modifier_state(keymap);
-    gboolean shifted = !!(modifiers & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
-
-    // do nothing if unchanged
-    if (shifted == foreground->shifted)
-        return;
-
-    // set member
-    foreground->shifted = shifted;
-
-    // set tags
-    GHashTableIter iter;
-    gpointer accessible_ptr, tag_ptr;
-    g_hash_table_iter_init(&iter, foreground->accessible_to_tag);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &tag_ptr))
-        tag_set_shifted(tag_ptr, foreground->shifted);
-}
-
-static void foreground_check_tags(Foreground *foreground)
-{
-    // check for matched tag
-    Tag *tag = codes_matched_tag(foreground->codes);
-    if (!tag)
-        return;
-
-    // execute the accessible
-    execute_control(tag->accessible, foreground->shifted);
-
-    // quit
-    foreground_quit(foreground);
 }

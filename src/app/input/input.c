@@ -75,6 +75,13 @@ void input_unsubscribe(Input *input, InputCallback callback)
     }
 }
 
+GdkModifierType input_modifiers(Input *input)
+{
+    GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
+    guint modifiers = gdk_keymap_get_modifier_state(keymap);
+    return modifiers_map(modifiers);
+}
+
 static void register_listeners(Input *input)
 {
     // disable timeout to prevent long blocking on pending key events

@@ -25,7 +25,7 @@
 
 // todo: use regex matching on action name?
 static gboolean execute_action(AtspiAccessible *accessible, guint index);
-static gboolean execute_modifiers(guint modifiers, gboolean set);
+static gboolean execute_modifiers(GdkModifierType modifiers, gboolean set);
 static gboolean execute_key(guint key);
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button);
 static gboolean execute_focus(AtspiAccessible *accessible);
@@ -142,7 +142,7 @@ static gboolean execute_action(AtspiAccessible *accessible, guint index)
     return TRUE;
 }
 
-static gboolean execute_modifiers(guint modifiers, gboolean activate)
+static gboolean execute_modifiers(GdkModifierType modifiers, gboolean activate)
 {
     if (activate)
         g_debug("execute_modifiers: Locking modifiers '%d'", modifiers);
