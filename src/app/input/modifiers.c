@@ -19,14 +19,9 @@
 
 #include "modifiers.h"
 
-static GdkKeymap *default_keymap = NULL;
-
 GdkModifierType modifiers_map(GdkModifierType modifiers)
 {
-    if (!default_keymap)
-        default_keymap = gdk_keymap_get_for_display(gdk_display_get_default());
-
-    gdk_keymap_map_virtual_modifiers(default_keymap, &modifiers);
-
+    GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
+    gdk_keymap_map_virtual_modifiers(keymap, &modifiers);
     return modifiers & 0xFF;
 }
