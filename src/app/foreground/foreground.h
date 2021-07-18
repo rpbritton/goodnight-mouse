@@ -41,6 +41,8 @@ typedef struct Foreground
 
     GHashTable *accessible_to_tag;
 
+    gboolean shifted;
+
     Input *input;
     Focus *focus;
 

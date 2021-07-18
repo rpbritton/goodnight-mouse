@@ -38,9 +38,11 @@ typedef struct TagConfig
 typedef struct Tag
 {
     GArray *code;
-    gboolean matches_code;
+    gint match_index;
 
     AtspiAccessible *accessible;
+
+    gboolean shifted;
 
     GtkLayout *parent;
 
@@ -54,6 +56,8 @@ void tag_destroy(Tag *tag);
 
 void tag_set_accessible(Tag *tag, AtspiAccessible *accessible);
 void tag_unset_accessible(Tag *tag);
+
+void tag_set_shifted(Tag *tag, gboolean shifted);
 
 void tag_show(Tag *tag, GtkLayout *parent);
 void tag_hide(Tag *tag);

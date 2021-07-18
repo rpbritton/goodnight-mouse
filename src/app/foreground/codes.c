@@ -38,7 +38,12 @@ Codes *codes_new(CodesConfig *config)
     codes->tag_config = config->tag;
 
     // set up code generator
-    codes->keys = g_array_ref(config->keys);
+    codes->keys = g_array_sized_new(FALSE, FALSE, sizeof(guint), config->keys->len);
+    for (gint index = 0; index < config->keys->len; index++)
+    {
+        guint key = gdk_keyval_to_lower(g_array_index(config->keys, guint, index));
+        g_array_append_val(codes->keys, key);
+    }
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
     codes->key_index = 0;
 
@@ -158,6 +163,9 @@ static void codes_reset(Codes *codes)
 
 void codes_add_key(Codes *codes, guint key)
 {
+    // convert to lower
+    key = gdk_keyval_to_lower(key);
+
     // make sure key is valid
     gboolean key_exists = FALSE;
     for (gint index = 0; index < codes->keys->len; index++)
@@ -207,4 +215,18 @@ static void codes_apply_code(Codes *codes)
         codes->code = g_array_remove_range(codes->code, 0, codes->code->len);
         codes_apply_code(codes);
     }
+}
+
+Tag *codes_matched_tag(Codes *codes)
+{
+    // search the tags
+    GHashTableIter iter;
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, codes->tags_used);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+        if (tag_matches_code(tag_ptr))
+            return tag_ptr;
+
+    // no tag found
+    return NULL;
 }
