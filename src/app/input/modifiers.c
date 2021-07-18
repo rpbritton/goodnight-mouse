@@ -19,7 +19,7 @@
 
 #include "modifiers.h"
 
-GdkModifierType modifiers_map(GdkModifierType modifiers)
+guint modifiers_map(guint modifiers)
 {
     GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
     gdk_keymap_map_virtual_modifiers(keymap, &modifiers);

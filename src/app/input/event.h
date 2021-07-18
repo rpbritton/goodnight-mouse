@@ -39,7 +39,7 @@ typedef struct InputEvent
 {
     InputEventType type;
     guint id;
-    GdkModifierType modifiers;
+    guint modifiers;
 } InputEvent;
 
 typedef enum InputResponse

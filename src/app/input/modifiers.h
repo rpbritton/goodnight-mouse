@@ -22,6 +22,6 @@
 
 #include <gdk/gdk.h>
 
-GdkModifierType modifiers_map(GdkModifierType modifiers);
+guint modifiers_map(guint modifiers);
 
 #endif /* CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84 */

@@ -29,7 +29,7 @@
 typedef struct BackgroundConfig
 {
     guint trigger_id;
-    GdkModifierType trigger_modifiers;
+    guint trigger_modifiers;
 } BackgroundConfig;
 
 typedef struct Background

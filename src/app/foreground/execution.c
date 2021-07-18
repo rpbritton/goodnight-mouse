@@ -25,17 +25,16 @@
 
 // todo: use regex matching on action name?
 static gboolean execute_action(AtspiAccessible *accessible, guint index);
-static gboolean execute_modifiers(GdkModifierType modifiers, gboolean set);
+static gboolean execute_modifiers(guint modifiers, gboolean lock);
 static gboolean execute_key(guint key);
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button);
 static gboolean execute_focus(AtspiAccessible *accessible);
 
-//static gboolean press_using_gdk_keyboard(AtspiAccessible *accessible);
-//static gboolean press_using_gdk_mouse(AtspiAccessible *accessible);
-
 void execute_control(AtspiAccessible *accessible, gboolean shifted)
 {
     ControlType control_type = identify_control(accessible);
+
+    // todo: unset modifiers
 
     if (!shifted)
     {
@@ -86,17 +85,21 @@ void execute_control(AtspiAccessible *accessible, gboolean shifted)
         switch (control_type)
         {
         case CONTROL_TYPE_PRESS:
+            // todo: doesn't do exactly what I want since shift is active
+
+            // todo: check if execute_modifiers is actually unsetting control
+
             // attempt using ctrl + return key
-            if (execute_modifiers(ATSPI_MODIFIER_CONTROL, TRUE) &&
+            if (execute_modifiers(GDK_CONTROL_MASK, TRUE) &&
                 execute_focus(accessible) &&
                 execute_key(GDK_KEY_Return) &&
-                execute_modifiers(ATSPI_MODIFIER_CONTROL, FALSE))
+                execute_modifiers(GDK_CONTROL_MASK, FALSE))
                 break;
 
             // attempt using ctrl + mouse click
-            if (execute_modifiers(ATSPI_MODIFIER_CONTROL, TRUE) &&
+            if (execute_modifiers(GDK_CONTROL_MASK, TRUE) &&
                 execute_mouse(accessible, 1) &&
-                execute_modifiers(ATSPI_MODIFIER_CONTROL, FALSE))
+                execute_modifiers(GDK_CONTROL_MASK, FALSE))
                 break;
 
             break;
@@ -142,15 +145,15 @@ static gboolean execute_action(AtspiAccessible *accessible, guint index)
     return TRUE;
 }
 
-static gboolean execute_modifiers(GdkModifierType modifiers, gboolean activate)
+static gboolean execute_modifiers(guint modifiers, gboolean lock)
 {
-    if (activate)
+    if (lock)
         g_debug("execute_modifiers: Locking modifiers '%d'", modifiers);
     else
         g_debug("execute_modifiers: Unlocking modifiers '%d'", modifiers);
 
     // set modifiers
-    AtspiKeySynthType synth_type = activate ? ATSPI_KEY_LOCKMODIFIERS : ATSPI_KEY_UNLOCKMODIFIERS;
+    AtspiKeySynthType synth_type = lock ? ATSPI_KEY_LOCKMODIFIERS : ATSPI_KEY_UNLOCKMODIFIERS;
     if (!atspi_generate_keyboard_event(modifiers, NULL, synth_type, NULL))
         return FALSE;
 
@@ -208,6 +211,15 @@ static gboolean execute_mouse(AtspiAccessible *accessible, guint button)
 
 static gboolean execute_focus(AtspiAccessible *accessible)
 {
+    g_debug("execute_focus: Focusing accessible");
+
+    // check for focusable state
+    AtspiStateSet *states = atspi_accessible_get_state_set(accessible);
+    gboolean focusable = atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE);
+    g_object_unref(states);
+    if (!focusable)
+        return FALSE;
+
     // get component
     AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
     if (!component)
@@ -222,25 +234,3 @@ static gboolean execute_focus(AtspiAccessible *accessible)
     // success
     return TRUE;
 }
-
-//static gboolean press_using_gdk_keyboard(AtspiAccessible *accessible)
-//{
-//    g_debug("foreground: press_using_gdk_keyboard: Attempting");
-//
-//    g_warning("foreground: press_using_gdk_keyboard: Not implemented");
-//
-//    // todo: try to implement with https://developer.gnome.org/gdk3/stable/GdkDevice.html
-//
-//    return FALSE;
-//}
-//
-//static gboolean press_using_gdk_mouse(AtspiAccessible *accessible)
-//{
-//    g_debug("foreground: press_using_gdk_mouse: Attempting");
-//
-//    g_warning("foreground: press_using_gdk_mouse: Not implemented");
-//
-//    // todo: try to implement with https://developer.gnome.org/gdk3/stable/GdkDevice.html
-//
-//    return FALSE;
-//}

@@ -37,6 +37,6 @@ Input *input_new();
 void input_destroy(Input *input);
 void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer data);
 void input_unsubscribe(Input *input, InputCallback callback);
-GdkModifierType input_modifiers(Input *input);
+guint input_modifiers();
 
 #endif /* F9726048_1986_47DC_B2EB_3C6D9C3101FE */

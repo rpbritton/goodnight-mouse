@@ -84,7 +84,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground->shifted = !!(input_modifiers(foreground->input) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    foreground->shifted = !!(input_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
 
     // get active window
     AtspiAccessible *window = focus_get_window(foreground->focus);
@@ -186,7 +186,7 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     Foreground *foreground = foreground_ptr;
 
     // get shifted, note modifiers are set after the event
-    gboolean shifted = !!(input_modifiers(foreground->input) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    gboolean shifted = !!(input_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
     // check if shift state changed
     if (shifted != foreground->shifted)
     {
