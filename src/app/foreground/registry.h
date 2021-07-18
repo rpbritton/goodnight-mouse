@@ -26,9 +26,9 @@
 #include "control.h"
 
 // todo: possible call with a list of controls so they can be shuffled/processed better
-typedef void (*RegistryCallback)(Control *control, gpointer data);
+typedef void (*RegistryCallback)(AtspiAccessible *, gpointer data);
 
-typedef struct RegistrySubscri
+typedef struct RegistrySubscriber
 {
     RegistryCallback add;
     RegistryCallback remove;
@@ -37,19 +37,15 @@ typedef struct RegistrySubscri
 
 typedef struct Registry
 {
-    ControlConfig *control_config;
-
-    RegistrySubscriber subscriber;
-
+    GHashTable *accessibles;
     AtspiMatchRule *match_interactive;
 
     AtspiAccessible *window;
-    GHashTable *controls;
-
+    RegistrySubscriber subscriber;
     guint refresh_source_id;
 } Registry;
 
-Registry *registry_new(ControlConfig *control_config);
+Registry *registry_new();
 void registry_destroy(Registry *registry);
 void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscriber subscriber);
 void registry_unwatch(Registry *registry);

@@ -21,34 +21,13 @@
 #define E6235E1E_3D35_4FBB_8900_4B67D274702D
 
 #include <atspi/atspi.h>
-#include <gtk/gtk.h>
-
-#include "tag.h"
 
 typedef enum ControlType
 {
     CONTROL_TYPE_NONE,
     CONTROL_TYPE_PRESS,
     CONTROL_TYPE_FOCUS,
+    CONTROL_TYPE_TAB,
 } ControlType;
-
-typedef struct ControlConfig
-{
-    GtkStyleProvider *styling;
-    GtkAlign alignment_horizontal;
-    GtkAlign alignment_vertical;
-} ControlConfig;
-
-typedef struct Control
-{
-    ControlType type;
-    AtspiAccessible *accessible;
-    TagConfig tag_config;
-} Control;
-
-Control *control_new(ControlType type, AtspiAccessible *accessible, ControlConfig *config);
-void control_destroy(Control *control);
-void control_execute(Control *control);
-TagConfig *control_tag_config(Control *control);
 
 #endif /* E6235E1E_3D35_4FBB_8900_4B67D274702D */

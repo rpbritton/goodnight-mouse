@@ -31,7 +31,6 @@
 
 typedef struct ForegroundConfig
 {
-    ControlConfig control;
     OverlayConfig overlay;
     CodesConfig codes;
 } ForegroundConfig;
@@ -40,7 +39,7 @@ typedef struct Foreground
 {
     GMainLoop *loop;
 
-    GHashTable *controls_to_tags;
+    GHashTable *accessible_to_tag;
 
     Input *input;
     Focus *focus;

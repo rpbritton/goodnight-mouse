@@ -19,8 +19,10 @@
 
 #include "foreground.h"
 
-static void callback_control_add(Control *control, gpointer foreground_ptr);
-static void callback_control_remove(Control *control, gpointer foreground_ptr);
+#include "execution.h"
+
+static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
+static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr);
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
@@ -47,8 +49,8 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);
 
-    // create control management
-    foreground->controls_to_tags = g_hash_table_new(NULL, NULL);
+    // create tag management
+    foreground->accessible_to_tag = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
 
     // add members
     foreground->input = input;
@@ -57,7 +59,7 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     // create members
     foreground->codes = codes_new(&config->codes);
     foreground->overlay = overlay_new(&config->overlay);
-    foreground->registry = registry_new(&config->control);
+    foreground->registry = registry_new();
 
     return foreground;
 }
@@ -69,8 +71,8 @@ void foreground_destroy(Foreground *foreground)
     overlay_destroy(foreground->overlay);
     registry_destroy(foreground->registry);
 
-    // free control management
-    g_hash_table_unref(foreground->controls_to_tags);
+    // free tag management
+    g_hash_table_unref(foreground->accessible_to_tag);
 
     // free main loop
     g_main_loop_unref(foreground->loop);
@@ -93,8 +95,8 @@ void foreground_run(Foreground *foreground)
 
     // let the registry watch the window
     registry_watch(foreground->registry, window, (RegistrySubscriber){
-                                                     .add = callback_control_add,
-                                                     .remove = callback_control_remove,
+                                                     .add = callback_accessible_add,
+                                                     .remove = callback_accessible_remove,
                                                      .data = foreground,
                                                  });
 
@@ -135,38 +137,41 @@ void foreground_quit(Foreground *foreground)
     g_main_loop_quit(foreground->loop);
 }
 
-static void callback_control_add(Control *control, gpointer foreground_ptr)
+static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
-    // create the tag
+    // create tag
     Tag *tag = codes_allocate(foreground->codes);
-    g_hash_table_insert(foreground->controls_to_tags, control, tag);
 
-    // configure the tag
-    tag_set_config(tag, control_tag_config(control));
+    // set accessible
+    tag_set_accessible(tag, accessible);
 
     // add to the overlay
     overlay_add(foreground->overlay, tag);
 
-    //g_message("control added (code=%d)", g_array_index(control->code, guint, 0));
+    // add tag record
+    g_hash_table_insert(foreground->accessible_to_tag, g_object_ref(accessible), tag);
 }
 
-static void callback_control_remove(Control *control, gpointer foreground_ptr)
+static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
     // get the tag
-    Tag *tag = g_hash_table_lookup(foreground->controls_to_tags, control);
-    g_hash_table_remove(foreground->controls_to_tags, control);
+    Tag *tag = g_hash_table_lookup(foreground->accessible_to_tag, accessible);
 
-    // remove from overlay
+    // unset the accessible
+    tag_unset_accessible(tag);
+
+    // remove tag from overlay
     overlay_remove(foreground->overlay, tag);
 
     // deallocate tag
     codes_deallocate(foreground->codes, tag);
 
-    //g_message("control removed");
+    // remove tag record
+    g_hash_table_remove(foreground->accessible_to_tag, accessible);
 }
 
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
@@ -211,6 +216,7 @@ static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
     foreground_quit(foreground_ptr);
 }
 
+// todo: move more of this into codes?
 static void check_tag_matched(Foreground *foreground)
 {
     // check to see if a tag was matched
@@ -218,19 +224,8 @@ static void check_tag_matched(Foreground *foreground)
     if (!tag)
         return;
 
-    // find the paired control
-    Control *control = NULL;
-    GHashTableIter iter;
-    gpointer control_ptr, tag_ptr;
-    g_hash_table_iter_init(&iter, foreground->controls_to_tags);
-    while (g_hash_table_iter_next(&iter, &control_ptr, &tag_ptr))
-        if (tag_ptr == tag)
-            control = control_ptr;
-    if (!control)
-        return;
-
-    // execute the matched control
-    control_execute(control);
+    // execute the accessible
+    execute_control(tag_get_accessible(tag), FALSE);
 
     // quit
     foreground_quit(foreground);

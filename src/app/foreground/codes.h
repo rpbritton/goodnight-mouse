@@ -27,11 +27,14 @@
 
 typedef struct CodesConfig
 {
+    TagConfig tag;
     GArray *keys;
 } CodesConfig;
 typedef struct Codes
 {
     GArray *code;
+
+    TagConfig tag_config;
 
     GArray *keys;
     GArray *code_prefix;

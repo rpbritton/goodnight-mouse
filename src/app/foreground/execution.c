@@ -19,45 +19,48 @@
 
 #include "execution.h"
 
-static gboolean press_using_atspi_action(Control *control);
-static gboolean press_using_atspi_keyboard(Control *control);
-static gboolean press_using_atspi_mouse(Control *control);
+#include <gdk/gdk.h>
 
-static gboolean press_using_gtk_keyboard(Control *control);
-static gboolean press_using_gtk_mouse(Control *control);
+#include "identify.h"
 
-static gboolean focus_using_atspi(Control *control);
+static gboolean press_using_atspi_action(AtspiAccessible *accessible);
+static gboolean press_using_atspi_keyboard(AtspiAccessible *accessible);
+static gboolean press_using_atspi_mouse(AtspiAccessible *accessible);
 
-void control_execution_press(Control *control)
+static gboolean press_using_gdk_keyboard(AtspiAccessible *accessible);
+static gboolean press_using_gdk_mouse(AtspiAccessible *accessible);
+
+static gboolean focus_using_atspi(AtspiAccessible *accessible);
+
+void execute_control(AtspiAccessible *accessible, gboolean alternative)
 {
-    g_debug("foreground: control_execution_press: Attempting");
+    ControlType control_type = identify_control(accessible);
 
-    if (press_using_atspi_action(control))
-        return;
-    if (press_using_atspi_keyboard(control))
-        return;
-    if (press_using_atspi_mouse(control))
-        return;
-
-    g_warning("foreground: control_execution_press: Failed");
+    switch (control_type)
+    {
+    case CONTROL_TYPE_PRESS:
+        if (press_using_atspi_action(accessible))
+            break;
+        if (press_using_atspi_keyboard(accessible))
+            break;
+        if (press_using_atspi_mouse(accessible))
+            break;
+        break;
+    case CONTROL_TYPE_FOCUS:
+        if (focus_using_atspi(accessible))
+            break;
+        break;
+    default:
+        break;
+    }
 }
 
-void control_execution_focus(Control *control)
-{
-    g_debug("foreground: control_execution_focus: Attempting");
-
-    if (press_using_atspi_mouse(control))
-        return;
-
-    g_warning("foreground: control_execution_focus: Failed");
-}
-
-static gboolean press_using_atspi_action(Control *control)
+static gboolean press_using_atspi_action(AtspiAccessible *accessible)
 {
     g_debug("foreground: press_using_atspi_action: Attempting");
 
     // get action
-    AtspiAction *action = atspi_accessible_get_action_iface(control->accessible);
+    AtspiAction *action = atspi_accessible_get_action_iface(accessible);
     if (!action)
         return FALSE;
 
@@ -72,12 +75,12 @@ static gboolean press_using_atspi_action(Control *control)
     return TRUE;
 }
 
-static gboolean press_using_atspi_keyboard(Control *control)
+static gboolean press_using_atspi_keyboard(AtspiAccessible *accessible)
 {
     g_debug("foreground: press_using_atspi_keyboard: Attempting");
 
     // grab focus
-    if (!focus_using_atspi(control))
+    if (!focus_using_atspi(accessible))
         return FALSE;
 
     // send return key
@@ -85,7 +88,7 @@ static gboolean press_using_atspi_keyboard(Control *control)
     return success;
 }
 
-static gboolean press_using_atspi_mouse(Control *control)
+static gboolean press_using_atspi_mouse(AtspiAccessible *accessible)
 {
     g_debug("foreground: press_using_atspi_mouse: Attempting");
 
@@ -97,7 +100,7 @@ static gboolean press_using_atspi_mouse(Control *control)
     gdk_window_get_device_position(window, mouse, &original_x, &original_y, NULL);
 
     // get position of the center of the accessible
-    AtspiComponent *component = atspi_accessible_get_component_iface(control->accessible);
+    AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
     if (!component)
         return FALSE;
     AtspiRect *bounds = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
@@ -118,34 +121,34 @@ static gboolean press_using_atspi_mouse(Control *control)
     return TRUE;
 }
 
-static gboolean press_using_gtk_keyboard(Control *control)
+static gboolean press_using_gdk_keyboard(AtspiAccessible *accessible)
 {
-    g_debug("foreground: press_using_gtk_keyboard: Attempting");
+    g_debug("foreground: press_using_gdk_keyboard: Attempting");
 
-    g_warning("foreground: press_using_gtk_keyboard: Not implemented");
+    g_warning("foreground: press_using_gdk_keyboard: Not implemented");
 
     // todo: try to implement with https://developer.gnome.org/gdk3/stable/GdkDevice.html
 
     return FALSE;
 }
 
-static gboolean press_using_gtk_mouse(Control *control)
+static gboolean press_using_gdk_mouse(AtspiAccessible *accessible)
 {
-    g_debug("foreground: press_using_gtk_mouse: Attempting");
+    g_debug("foreground: press_using_gdk_mouse: Attempting");
 
-    g_warning("foreground: press_using_gtk_mouse: Not implemented");
+    g_warning("foreground: press_using_gdk_mouse: Not implemented");
 
     // todo: try to implement with https://developer.gnome.org/gdk3/stable/GdkDevice.html
 
     return FALSE;
 }
 
-static gboolean focus_using_atspi(Control *control)
+static gboolean focus_using_atspi(AtspiAccessible *accessible)
 {
     g_debug("foreground: focus_using_atspi: Attempting");
 
     // get component
-    AtspiComponent *component = atspi_accessible_get_component_iface(control->accessible);
+    AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
     if (!component)
         return FALSE;
 

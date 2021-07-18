@@ -34,6 +34,9 @@ Codes *codes_new(CodesConfig *config)
     // init current code
     codes->code = g_array_new(FALSE, FALSE, sizeof(guint));
 
+    // save tag config
+    codes->tag_config = config->tag;
+
     // set up code generator
     codes->keys = g_array_ref(config->keys);
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
@@ -105,7 +108,7 @@ Tag *codes_allocate(Codes *codes)
     }
 
     // create a new tag
-    Tag *tag = tag_new();
+    Tag *tag = tag_new(&codes->tag_config);
 
     // create and set the new code
     GArray *code = g_array_append_val(g_array_copy(codes->code_prefix),

@@ -22,12 +22,14 @@
 static void tag_generate_label(Tag *tag);
 static void tag_destroy_label(Tag *tag);
 
-Tag *tag_new()
+Tag *tag_new(TagConfig *config)
 {
     Tag *tag = g_new(Tag, 1);
 
     // init members
     tag->code = NULL;
+
+    tag->accessible = NULL;
 
     tag->parent = NULL;
 
@@ -45,10 +47,14 @@ Tag *tag_new()
     // init the gtk labels
     tag->characters = NULL;
 
-    // set default config
-    tag->accessible = NULL;
-    tag->styling = NULL;
-    tag_unset_config(tag);
+    // set styling
+    gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(tag->wrapper),
+                                              config->styling,
+                                              GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
+
+    // set alignment
+    gtk_widget_set_halign(tag->label, config->alignment_horizontal);
+    gtk_widget_set_valign(tag->label, config->alignment_vertical);
 
     return tag;
 }
@@ -62,7 +68,7 @@ void tag_destroy(Tag *tag)
     tag_unset_code(tag);
 
     // unset configuration
-    tag_unset_config(tag);
+    tag_unset_accessible(tag);
 
     // destroy the label
     tag_destroy_label(tag);
@@ -74,48 +80,33 @@ void tag_destroy(Tag *tag)
     g_free(tag);
 }
 
-void tag_set_config(Tag *tag, TagConfig *config)
+AtspiAccessible *tag_get_accessible(Tag *tag)
 {
-    // unsef old config
-    tag_unset_config(tag);
+    return tag->accessible;
+}
+
+void tag_set_accessible(Tag *tag, AtspiAccessible *accessible)
+{
+    // unset last accessible
+    tag_unset_accessible(tag);
 
     // set accessible
-    tag->accessible = g_object_ref(config->accessible);
+    tag->accessible = g_object_ref(accessible);
+
     // reposition if shown
     if (tag->parent)
         tag_reposition(tag);
-
-    // set styling
-    tag->styling = g_object_ref(config->styling);
-    gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(tag->wrapper),
-                                              tag->styling, GTK_STYLE_PROVIDER_PRIORITY_SETTINGS);
-
-    // set alignment
-    gtk_widget_set_halign(tag->label, config->alignment_horizontal);
-    gtk_widget_set_valign(tag->label, config->alignment_vertical);
 }
 
-void tag_unset_config(Tag *tag)
+void tag_unset_accessible(Tag *tag)
 {
+    // do nothing if not set
+    if (!tag->accessible)
+        return;
+
     // unset accessible
-    if (tag->accessible)
-    {
-        g_object_unref(tag->accessible);
-        tag->accessible = NULL;
-    }
-
-    // unset styling
-    if (tag->styling)
-    {
-        gtk_style_context_remove_provider_for_screen(gtk_widget_get_screen(tag->wrapper),
-                                                     tag->styling);
-        g_object_unref(tag->styling);
-        tag->styling = NULL;
-    }
-
-    // set default alignment
-    gtk_widget_set_halign(tag->label, GTK_ALIGN_START);
-    gtk_widget_set_valign(tag->label, GTK_ALIGN_START);
+    g_object_unref(tag->accessible);
+    tag->accessible = NULL;
 }
 
 void tag_show(Tag *tag, GtkLayout *parent)

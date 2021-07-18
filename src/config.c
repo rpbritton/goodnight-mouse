@@ -62,9 +62,9 @@ Config *config_parse(int argc, char **argv)
 
     GtkCssProvider *css_provider2 = gtk_css_provider_new();
     gtk_css_provider_load_from_data(css_provider2, css2, -1, NULL);
-    config->app.foreground.control.styling = GTK_STYLE_PROVIDER(css_provider2);
-    config->app.foreground.control.alignment_horizontal = GTK_ALIGN_START;
-    config->app.foreground.control.alignment_vertical = GTK_ALIGN_CENTER;
+    config->app.foreground.codes.tag.styling = GTK_STYLE_PROVIDER(css_provider2);
+    config->app.foreground.codes.tag.alignment_horizontal = GTK_ALIGN_START;
+    config->app.foreground.codes.tag.alignment_vertical = GTK_ALIGN_CENTER;
 
     config->app.background.trigger_id = GDK_KEY_v;
     config->app.background.trigger_modifiers = GDK_SUPER_MASK;
@@ -77,7 +77,7 @@ void config_destroy(Config *config)
     g_array_unref(config->app.foreground.codes.keys);
 
     g_object_unref(config->app.foreground.overlay.styling);
-    g_object_unref(config->app.foreground.control.styling);
+    g_object_unref(config->app.foreground.codes.tag.styling);
 
     g_free(config);
 }

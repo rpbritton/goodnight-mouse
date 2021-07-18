@@ -37,7 +37,6 @@ typedef enum TagMatch
 
 typedef struct TagConfig
 {
-    AtspiAccessible *accessible;
     GtkStyleProvider *styling;
     GtkAlign alignment_horizontal;
     GtkAlign alignment_vertical;
@@ -48,7 +47,6 @@ typedef struct Tag
     GArray *code;
 
     AtspiAccessible *accessible;
-    GtkStyleProvider *styling;
 
     GtkLayout *parent;
 
@@ -57,11 +55,12 @@ typedef struct Tag
     GArray *characters;
 } Tag;
 
-Tag *tag_new();
+Tag *tag_new(TagConfig *config);
 void tag_destroy(Tag *tag);
 
-void tag_set_config(Tag *tag, TagConfig *config);
-void tag_unset_config(Tag *tag);
+void tag_set_accessible(Tag *tag, AtspiAccessible *accessible);
+AtspiAccessible *tag_get_accessible(Tag *tag);
+void tag_unset_accessible(Tag *tag);
 
 void tag_show(Tag *tag, GtkLayout *parent);
 void tag_hide(Tag *tag);

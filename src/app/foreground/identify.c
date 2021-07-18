@@ -152,20 +152,8 @@ static const ControlType role_to_type[ATSPI_ROLE_COUNT] = {
     CONTROL_TYPE_NONE,  // ATSPI_ROLE_LAST_DEFINED
 };
 
-GArray *control_identify_list_roles()
+ControlType identify_control(AtspiAccessible *accessible)
 {
-    GArray *roles_list = g_array_new(FALSE, FALSE, sizeof(AtspiRole));
-    for (AtspiRole role = 0; role < ATSPI_ROLE_COUNT; role++)
-        if (role_to_type[role] != CONTROL_TYPE_NONE)
-            g_array_append_val(roles_list, role);
-    return roles_list;
-}
-
-ControlType control_identify_type(AtspiAccessible *accessible)
-{
-    // todo: find way to convey to registry that some
-    // accessibles children should not be checked
-
     if (!accessible)
         return CONTROL_TYPE_NONE;
 

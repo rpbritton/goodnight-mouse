@@ -20,9 +20,8 @@
 #ifndef DC8D1073_8C84_4BB1_9DF3_49B95D76178D
 #define DC8D1073_8C84_4BB1_9DF3_49B95D76178D
 
-#include "control.h"
+#include <atspi/atspi.h>
 
-void control_execution_press(Control *control);
-void control_execution_focus(Control *control);
+void execute_control(AtspiAccessible *accessible, gboolean alternative);
 
 #endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */

@@ -24,20 +24,17 @@
 #define REGISTRY_REFRESH_INTERVAL 500
 
 static void registry_refresh(Registry *registry);
-static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed);
 static gboolean registry_refresh_loop(gpointer registry_ptr);
 
-static void wrap_control_destroy(gpointer control_ptr)
-{
-    control_destroy(control_ptr);
-}
+static gboolean registry_check_children(Registry *registry, ControlType control_type);
+static GList *registry_get_children(Registry *registry, AtspiAccessible *accessible);
 
-Registry *registry_new(ControlConfig *control_config)
+Registry *registry_new()
 {
     Registry *registry = g_new(Registry, 1);
 
-    // add control config
-    registry->control_config = control_config;
+    // init members
+    registry->accessibles = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
 
     // create match rule
     AtspiStateSet *interactive_states = atspi_state_set_new(NULL);
@@ -52,9 +49,8 @@ Registry *registry_new(ControlConfig *control_config)
                                                        FALSE);
     g_object_unref(interactive_states);
 
-    // intitialize members
+    // set not watching
     registry->window = NULL;
-    registry->controls = g_hash_table_new_full(NULL, NULL, g_object_unref, wrap_control_destroy);
 
     return registry;
 }
@@ -65,10 +61,10 @@ void registry_destroy(Registry *registry)
     registry_unwatch(registry);
 
     // free members
+    g_hash_table_unref(registry->accessibles);
     g_object_unref(registry->match_interactive);
 
-    g_hash_table_unref(registry->controls);
-
+    // free registry
     g_free(registry);
 }
 
@@ -81,10 +77,8 @@ void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscri
     if (!window)
         return;
 
-    // set new window
+    // set watching members
     registry->window = g_object_ref(window);
-
-    // set subscriber
     registry->subscriber = subscriber;
 
     // start the refresh loop
@@ -103,12 +97,12 @@ void registry_unwatch(Registry *registry)
 
     // remove all controls
     GHashTableIter iter;
-    gpointer accessible_ptr, control_ptr;
-    g_hash_table_iter_init(&iter, registry->controls);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
+    gpointer accessible_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, registry->accessibles);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
     {
         if (registry->subscriber.remove)
-            registry->subscriber.remove(control_ptr, registry->subscriber.data);
+            registry->subscriber.remove(accessible_ptr, registry->subscriber.data);
         g_hash_table_iter_remove(&iter);
     }
 
@@ -118,71 +112,50 @@ void registry_unwatch(Registry *registry)
 
 static void registry_refresh(Registry *registry)
 {
-    GHashTable *refreshed = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+    GHashTable *refreshed_accessibles = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
 
-    // refresh the registry
-    registry_refresh_recurse(registry, registry->window, refreshed);
+    // loop through queued accessibles
+    GList *accessible_queue = g_list_append(NULL, g_object_ref(registry->window));
+    while (accessible_queue)
+    {
+        // pop first accessible to check
+        AtspiAccessible *accessible = accessible_queue->data;
+        accessible_queue = g_list_delete_link(accessible_queue, accessible_queue);
+
+        // add accessible as refreshed
+        g_hash_table_add(refreshed_accessibles, accessible);
+
+        // identify the accessible
+        ControlType control_type = identify_control(accessible);
+
+        // add child accessibles to the front
+        if (registry_check_children(registry, control_type))
+            accessible_queue = g_list_concat(registry_get_children(registry, accessible), accessible_queue);
+
+        // add accessible
+        if (control_type != CONTROL_TYPE_NONE && !g_hash_table_contains(registry->accessibles, accessible))
+        {
+            g_hash_table_add(registry->accessibles, g_object_ref(accessible));
+            if (registry->subscriber.add)
+                registry->subscriber.add(accessible, registry->subscriber.data);
+        }
+    }
 
     // remove non refreshed controls
     // todo: callback remove before callback add to better utilize codes
     GHashTableIter iter;
-    gpointer accessible_ptr, control_ptr;
-    g_hash_table_iter_init(&iter, registry->controls);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &control_ptr))
+    gpointer accessible_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, registry->accessibles);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
     {
-        if (!g_hash_table_contains(refreshed, accessible_ptr))
-        {
-            if (registry->subscriber.remove)
-                registry->subscriber.remove(control_ptr, registry->subscriber.data);
-            g_hash_table_iter_remove(&iter);
-        }
+        if (g_hash_table_contains(refreshed_accessibles, accessible_ptr))
+            continue;
+
+        if (registry->subscriber.remove)
+            registry->subscriber.remove(accessible_ptr, registry->subscriber.data);
+        g_hash_table_iter_remove(&iter);
     }
-    g_hash_table_unref(refreshed);
-}
-
-static void registry_refresh_recurse(Registry *registry, AtspiAccessible *accessible, GHashTable *refreshed)
-{
-    // add if new
-    if (!g_hash_table_contains(registry->controls, accessible))
-    {
-        // todo: make a control creator that can return multiple controls as well
-        // feedback like "don't check children"
-        ControlType control_type = control_identify_type(accessible);
-        if (control_type != CONTROL_TYPE_NONE)
-        {
-            Control *control = control_new(control_type, accessible, registry->control_config);
-            g_hash_table_insert(registry->controls, g_object_ref(accessible), control);
-            if (registry->subscriber.add)
-                registry->subscriber.add(control, registry->subscriber.data);
-        }
-    }
-
-    // mark as refreshed
-    g_hash_table_add(refreshed, g_object_ref(accessible));
-
-    // get collection
-    AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
-    if (!collection)
-    {
-        g_warning("registry: Collection is NULL");
-        return;
-    }
-
-    // process children that are interactive
-    GArray *children = atspi_collection_get_matches(collection,
-                                                    registry->match_interactive,
-                                                    ATSPI_Collection_SORT_ORDER_CANONICAL,
-                                                    0, FALSE, NULL);
-    for (gint index = 0; index < children->len; index++)
-    {
-        AtspiAccessible *child = g_array_index(children, AtspiAccessible *, index);
-        registry_refresh_recurse(registry, child, refreshed);
-        g_object_unref(child);
-    }
-    g_array_unref(children);
-    g_object_unref(collection);
-
-    return;
+    g_hash_table_unref(refreshed_accessibles);
 }
 
 static gboolean registry_refresh_loop(gpointer registry_ptr)
@@ -192,11 +165,52 @@ static gboolean registry_refresh_loop(gpointer registry_ptr)
     // refresh the registry
     registry_refresh(registry);
 
-    // add a source to call in a bit
+    // add a source to call after interval
     registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
                                                 registry_refresh_loop,
                                                 registry);
 
     // remove this source
     return G_SOURCE_REMOVE;
+}
+
+static gboolean registry_check_children(Registry *registry, ControlType control_type)
+{
+    switch (control_type)
+    {
+    case CONTROL_TYPE_TAB:
+        return FALSE;
+    default:
+        return TRUE;
+    }
+}
+
+static GList *registry_get_children(Registry *registry, AtspiAccessible *accessible)
+{
+    GList *children = NULL;
+
+    // get collection
+    AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
+    if (!collection)
+    {
+        g_warning("registry: Collection is NULL");
+        return children;
+    }
+
+    // get interactive children
+    GArray *array = atspi_collection_get_matches(collection,
+                                                 registry->match_interactive,
+                                                 ATSPI_Collection_SORT_ORDER_CANONICAL,
+                                                 0, FALSE, NULL);
+
+    // convert to linked list
+    for (gint index = 0; index < array->len; index++)
+        children = g_list_append(children, g_array_index(array, AtspiAccessible *, index));
+
+    // cleanup
+    g_array_unref(array);
+    g_object_unref(collection);
+
+    // return
+    return children;
 }
