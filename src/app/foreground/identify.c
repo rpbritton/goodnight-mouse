@@ -57,7 +57,7 @@ static const ControlType role_to_type[ATSPI_ROLE_COUNT] = {
     CONTROL_TYPE_NONE,  // ATSPI_ROLE_MENU_BAR
     CONTROL_TYPE_PRESS, // ATSPI_ROLE_MENU_ITEM
     CONTROL_TYPE_NONE,  // ATSPI_ROLE_OPTION_PANE
-    CONTROL_TYPE_NONE,  // ATSPI_ROLE_PAGE_TAB
+    CONTROL_TYPE_TAB,   // ATSPI_ROLE_PAGE_TAB
     CONTROL_TYPE_NONE,  // ATSPI_ROLE_PAGE_TAB_LIST
     CONTROL_TYPE_NONE,  // ATSPI_ROLE_PANEL
     CONTROL_TYPE_FOCUS, // ATSPI_ROLE_PASSWORD_TEXT
@@ -157,6 +157,23 @@ ControlType identify_control(AtspiAccessible *accessible)
     if (!accessible)
         return CONTROL_TYPE_NONE;
 
+    // get control type from role
     AtspiRole role = atspi_accessible_get_role(accessible, NULL);
-    return role_to_type[role];
+    ControlType control_type = role_to_type[role];
+
+    // check specific exceptions
+    switch (control_type)
+    {
+    case CONTROL_TYPE_FOCUS:
+        // todo: check if already has focus
+        break;
+    case CONTROL_TYPE_TAB:
+        // todo: check if already active (what about closing in shifted state)
+        break;
+    default:
+        break;
+    }
+
+    // return
+    return control_type;
 }
