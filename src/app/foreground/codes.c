@@ -25,7 +25,7 @@ static void wrap_tag_destroy(gpointer tag_ptr)
 }
 
 static void codes_reset(Codes *codes);
-static void codes_validate_code(Codes *codes);
+static void codes_apply_code(Codes *codes);
 
 Codes *codes_new(CodesConfig *config)
 {
@@ -169,8 +169,8 @@ void codes_add_key(Codes *codes, guint key)
     // add key
     g_array_append_val(codes->code, key);
 
-    // validate code
-    codes_validate_code(codes);
+    // apply code
+    codes_apply_code(codes);
 }
 
 void codes_pop_key(Codes *codes)
@@ -182,51 +182,29 @@ void codes_pop_key(Codes *codes)
     // remove last key
     codes->code = g_array_remove_index(codes->code, codes->code->len - 1);
 
-    // validate code
-    codes_validate_code(codes);
+    // apply code
+    codes_apply_code(codes);
 }
 
-static void codes_validate_code(Codes *codes)
+static void codes_apply_code(Codes *codes)
 {
     // do nothing if no tags are used
     if (g_hash_table_size(codes->tags_used) == 0)
         return;
 
     // check each tag against the code
-    gboolean matches = FALSE;
+    gboolean valid = FALSE;
     GHashTableIter iter;
     gpointer tag_ptr, null_ptr;
     g_hash_table_iter_init(&iter, codes->tags_used);
     while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
-    {
-        switch (tag_match_code(tag_ptr, codes->code))
-        {
-        case TAG_MATCH:
-        case TAG_PARTIAL_MATCH:
-            matches = TRUE;
-            break;
-        case TAG_NO_MATCH:
-            continue;
-        }
-    }
+        if (tag_apply_code(tag_ptr, codes->code))
+            valid = TRUE;
 
     // reset the code if no matches
-    if (!matches)
+    if (!valid)
     {
         codes->code = g_array_remove_range(codes->code, 0, codes->code->len);
-        codes_validate_code(codes);
+        codes_apply_code(codes);
     }
-}
-
-Tag *codes_matching_tag(Codes *codes)
-{
-    // search for a tag that fully matches the code
-    GHashTableIter iter;
-    gpointer tag_ptr, null_ptr;
-    g_hash_table_iter_init(&iter, codes->tags_used);
-    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
-        if (tag_match_code(tag_ptr, codes->code) == TAG_MATCH)
-            return tag_ptr;
-
-    return NULL;
 }

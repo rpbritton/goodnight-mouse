@@ -122,7 +122,7 @@ static void registry_refresh(Registry *registry)
         AtspiAccessible *accessible = accessible_queue->data;
         accessible_queue = g_list_delete_link(accessible_queue, accessible_queue);
 
-        // add accessible as refreshed
+        // add accessible reference into refreshed record
         g_hash_table_add(refreshed_accessibles, accessible);
 
         // identify the accessible
@@ -132,13 +132,18 @@ static void registry_refresh(Registry *registry)
         if (registry_check_children(registry, control_type))
             accessible_queue = g_list_concat(registry_get_children(registry, accessible), accessible_queue);
 
+        // don't add if control type none
+        if (control_type == CONTROL_TYPE_NONE)
+            continue;
+
+        // don't add if exists
+        if (g_hash_table_contains(registry->accessibles, accessible))
+            continue;
+
         // add accessible
-        if (control_type != CONTROL_TYPE_NONE && !g_hash_table_contains(registry->accessibles, accessible))
-        {
-            g_hash_table_add(registry->accessibles, g_object_ref(accessible));
-            if (registry->subscriber.add)
-                registry->subscriber.add(accessible, registry->subscriber.data);
-        }
+        g_hash_table_add(registry->accessibles, g_object_ref(accessible));
+        if (registry->subscriber.add)
+            registry->subscriber.add(accessible, registry->subscriber.data);
     }
 
     // remove non refreshed controls
@@ -207,7 +212,7 @@ static GList *registry_get_children(Registry *registry, AtspiAccessible *accessi
     for (gint index = 0; index < array->len; index++)
         children = g_list_append(children, g_array_index(array, AtspiAccessible *, index));
 
-    // cleanup
+    // clean up
     g_array_unref(array);
     g_object_unref(collection);
 

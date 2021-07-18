@@ -19,8 +19,6 @@
 
 #include "foreground.h"
 
-#include "execution.h"
-
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
@@ -28,7 +26,7 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
-static void check_tag_matched(Foreground *foreground);
+static void foreground_check_tags(Foreground *foreground);
 
 static const InputEvent KEYBOARD_EVENTS = {
     .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
@@ -190,11 +188,11 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
         break;
     case GDK_KEY_BackSpace:
         codes_pop_key(foreground->codes);
-        check_tag_matched(foreground);
+        foreground_check_tags(foreground);
         break;
     default:
         codes_add_key(foreground->codes, event.id);
-        check_tag_matched(foreground);
+        foreground_check_tags(foreground);
         break;
     }
 
@@ -216,16 +214,28 @@ static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
     foreground_quit(foreground_ptr);
 }
 
-// todo: move more of this into codes?
-static void check_tag_matched(Foreground *foreground)
+static void foreground_check_tags(Foreground *foreground)
 {
-    // check to see if a tag was matched
-    Tag *tag = codes_matching_tag(foreground->codes);
-    if (!tag)
+    // look for matched tag
+    gboolean matched = FALSE;
+    GHashTableIter iter;
+    gpointer accessible_ptr, tag_ptr;
+    g_hash_table_iter_init(&iter, foreground->accessible_to_tag);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &tag_ptr))
+    {
+        if (tag_matches_code(tag_ptr))
+        {
+            matched = TRUE;
+            break;
+        }
+    }
+
+    // return if no match
+    if (!matched)
         return;
 
     // execute the accessible
-    execute_control(tag_get_accessible(tag), FALSE);
+    execute_control(accessible_ptr, FALSE);
 
     // quit
     foreground_quit(foreground);

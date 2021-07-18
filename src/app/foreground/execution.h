@@ -22,6 +22,6 @@
 
 #include <atspi/atspi.h>
 
-void execute_control(AtspiAccessible *accessible, gboolean alternative);
+void execute_control(AtspiAccessible *accessible, gboolean shifted);
 
 #endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */

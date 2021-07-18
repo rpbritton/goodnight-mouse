@@ -51,6 +51,5 @@ Tag *codes_allocate(Codes *codes);
 void codes_deallocate(Codes *codes, Tag *tag);
 void codes_add_key(Codes *codes, guint key);
 void codes_pop_key(Codes *codes);
-Tag *codes_matching_tag(Codes *codes);
 
 #endif /* B10FD127_9857_4FE9_AF02_AB3EC418F0FF */

@@ -28,6 +28,7 @@ Tag *tag_new(TagConfig *config)
 
     // init members
     tag->code = NULL;
+    tag->matches_code = FALSE;
 
     tag->accessible = NULL;
 
@@ -78,11 +79,6 @@ void tag_destroy(Tag *tag)
     g_object_unref(tag->wrapper);
 
     g_free(tag);
-}
-
-AtspiAccessible *tag_get_accessible(Tag *tag)
-{
-    return tag->accessible;
 }
 
 void tag_set_accessible(Tag *tag, AtspiAccessible *accessible)
@@ -193,11 +189,12 @@ void tag_unset_code(Tag *tag)
     // reset code
     g_array_unref(tag->code);
     tag->code = NULL;
+    tag->matches_code = FALSE;
 }
 
-TagMatch tag_match_code(Tag *tag, GArray *code)
+gboolean tag_apply_code(Tag *tag, GArray *code)
 {
-    gboolean match = TRUE;
+    gboolean valid = TRUE;
     gint match_index = -1;
 
     // compare code
@@ -206,14 +203,14 @@ TagMatch tag_match_code(Tag *tag, GArray *code)
         // code is too long; invalid
         if (index == tag->code->len)
         {
-            match = FALSE;
+            valid = FALSE;
             break;
         }
 
         // break if character doesn't match
         if (g_array_index(code, guint, index) != g_array_index(tag->code, guint, index))
         {
-            match = FALSE;
+            valid = FALSE;
             break;
         }
 
@@ -221,11 +218,14 @@ TagMatch tag_match_code(Tag *tag, GArray *code)
         match_index = index;
     }
 
+    // set whether tag matches code
+    tag->matches_code = (match_index + 1 == tag->code->len);
+
     // hide and return if not matching
-    if (!match)
+    if (!valid)
     {
         gtk_widget_hide(tag->label);
-        return TAG_NO_MATCH;
+        return valid;
     }
 
     // update label character css classes
@@ -247,10 +247,13 @@ TagMatch tag_match_code(Tag *tag, GArray *code)
     // ensure label is showing
     gtk_widget_show(tag->label);
 
-    // return whether matches full code
-    if (match_index + 1 != tag->code->len)
-        return TAG_PARTIAL_MATCH;
-    return TAG_MATCH;
+    // return the match
+    return valid;
+}
+
+gboolean tag_matches_code(Tag *tag)
+{
+    return tag->matches_code;
 }
 
 static void tag_generate_label(Tag *tag)

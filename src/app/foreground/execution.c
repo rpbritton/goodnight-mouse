@@ -32,7 +32,7 @@ static gboolean press_using_gdk_mouse(AtspiAccessible *accessible);
 
 static gboolean focus_using_atspi(AtspiAccessible *accessible);
 
-void execute_control(AtspiAccessible *accessible, gboolean alternative)
+void execute_control(AtspiAccessible *accessible, gboolean shifted)
 {
     ControlType control_type = identify_control(accessible);
 

@@ -28,13 +28,6 @@
 #define TAG_CHARACTER_CSS_CLASS "tag_character"
 #define TAG_CHARACTER_ACTIVE_CSS_CLASS "tag_character_active"
 
-typedef enum TagMatch
-{
-    TAG_NO_MATCH,
-    TAG_PARTIAL_MATCH,
-    TAG_MATCH,
-} TagMatch;
-
 typedef struct TagConfig
 {
     GtkStyleProvider *styling;
@@ -45,6 +38,7 @@ typedef struct TagConfig
 typedef struct Tag
 {
     GArray *code;
+    gboolean matches_code;
 
     AtspiAccessible *accessible;
 
@@ -59,7 +53,6 @@ Tag *tag_new(TagConfig *config);
 void tag_destroy(Tag *tag);
 
 void tag_set_accessible(Tag *tag, AtspiAccessible *accessible);
-AtspiAccessible *tag_get_accessible(Tag *tag);
 void tag_unset_accessible(Tag *tag);
 
 void tag_show(Tag *tag, GtkLayout *parent);
@@ -69,6 +62,7 @@ void tag_reposition(Tag *tag);
 void tag_set_code(Tag *tag, GArray *code);
 GArray *tag_get_code(Tag *tag);
 void tag_unset_code(Tag *tag);
-TagMatch tag_match_code(Tag *tag, GArray *code);
+gboolean tag_apply_code(Tag *tag, GArray *code);
+gboolean tag_matches_code(Tag *tag);
 
 #endif /* D8EAD49E_03F6_46EE_9DA3_3605763E815D */
