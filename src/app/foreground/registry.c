@@ -179,11 +179,12 @@ static gboolean registry_refresh_loop(gpointer registry_ptr)
     return G_SOURCE_REMOVE;
 }
 
+// todo: is this too specific (would be cleaner without?)
 static gboolean registry_check_children(Registry *registry, ControlType control_type)
 {
     switch (control_type)
     {
-    case CONTROL_TYPE_TAB:
+    case CONTROL_TYPE_PAGE_TAB:
         return FALSE;
     default:
         return TRUE;

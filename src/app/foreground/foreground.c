@@ -213,6 +213,8 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
         if (codes_matched_tag(foreground->codes))
             foreground_quit(foreground);
         break;
+
+        // todo: consider passing some keys through, like arrow keys
     }
 
     return INPUT_CONSUME_EVENT;

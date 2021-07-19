@@ -161,8 +161,6 @@ void tag_reposition(Tag *tag)
     if (!tag->accessible)
         return;
 
-    // todo: check if accessible is visible/in the window
-
     // get accessible position
     AtspiComponent *component = atspi_accessible_get_component_iface(tag->accessible);
     AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_WINDOW, NULL);

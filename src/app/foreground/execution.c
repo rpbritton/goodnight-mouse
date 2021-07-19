@@ -36,55 +36,26 @@ void execute_control(AtspiAccessible *accessible, gboolean shifted)
 
     // todo: unset modifiers
 
-    if (!shifted)
+    switch (control_type)
     {
-        switch (control_type)
+    case CONTROL_TYPE_PRESS:
+        if (!shifted)
         {
-        case CONTROL_TYPE_PRESS:
-            // attempt using action
+            // attempt press using action
             if (execute_action(accessible, 0))
                 break;
 
-            // attempt using return key
+            // attempt press using return key
             if (execute_focus(accessible) &&
                 execute_key(GDK_KEY_Return))
                 break;
 
-            // attempt using mouse click
+            // attempt press using mouse click
             if (execute_mouse(accessible, 1))
                 break;
-
-            break;
-        case CONTROL_TYPE_FOCUS:
-            // attempt focus
-            if (execute_focus(accessible))
-                break;
-
-            break;
-        case CONTROL_TYPE_TAB:
-            // attempt using action
-            if (execute_action(accessible, 0))
-                break;
-
-            // attempt using return key
-            if (execute_focus(accessible) &&
-                execute_key(GDK_KEY_Return))
-                break;
-
-            // attempt using mouse click
-            if (execute_mouse(accessible, 1))
-                break;
-
-            break;
-        default:
-            break;
         }
-    }
-    else
-    {
-        switch (control_type)
+        else
         {
-        case CONTROL_TYPE_PRESS:
             // todo: doesn't do exactly what I want since shift is active
 
             // todo: check if execute_modifiers is actually unsetting control
@@ -101,23 +72,44 @@ void execute_control(AtspiAccessible *accessible, gboolean shifted)
                 execute_mouse(accessible, 1) &&
                 execute_modifiers(GDK_CONTROL_MASK, FALSE))
                 break;
-
-            break;
-        case CONTROL_TYPE_FOCUS:
-            // attempt the focus
-            if (execute_focus(accessible))
-                break;
-
-            break;
-        case CONTROL_TYPE_TAB:
-            // attempt middle mouse button
-            if (execute_mouse(accessible, 2))
-                break;
-
-            break;
-        default:
-            break;
         }
+        break;
+
+    case CONTROL_TYPE_FOCUS:
+        // attempt focus
+        execute_focus(accessible);
+        break;
+
+    case CONTROL_TYPE_PAGE_TAB:
+        if (!shifted)
+        {
+            // attempt press using action
+            if (execute_action(accessible, 0))
+                break;
+
+            // attempt press using return key
+            if (execute_focus(accessible) &&
+                execute_key(GDK_KEY_Return))
+                break;
+
+            // attempt press using mouse click
+            if (execute_mouse(accessible, 1))
+                break;
+        }
+        else
+        {
+            // use middle mouse button to close tab
+            execute_mouse(accessible, 2);
+        }
+        break;
+
+    case CONTROL_TYPE_ONLY_ACTION:
+        // use action
+        execute_action(accessible, 0);
+        break;
+
+    case CONTROL_TYPE_NONE:
+        break;
     }
 }
 
