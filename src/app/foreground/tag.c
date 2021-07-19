@@ -108,7 +108,7 @@ void tag_unset_accessible(Tag *tag)
     tag->accessible = NULL;
 }
 
-void tag_set_shifted(Tag *tag, gboolean shifted)
+void tag_shifted(Tag *tag, gboolean shifted)
 {
     // do nothing if not changed
     if (shifted == tag->shifted)

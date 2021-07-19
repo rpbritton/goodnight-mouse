@@ -85,6 +85,7 @@ void foreground_run(Foreground *foreground)
 
     // init shift state
     foreground->shifted = !!(input_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
     AtspiAccessible *window = focus_get_window(foreground->focus);
@@ -150,9 +151,8 @@ static void callback_accessible_add(AtspiAccessible *accessible, gpointer foregr
     // create tag
     Tag *tag = codes_allocate(foreground->codes);
 
-    // configure tag
+    // set the accessible
     tag_set_accessible(tag, accessible);
-    tag_set_shifted(tag, foreground->shifted);
 
     // add to the overlay
     overlay_add(foreground->overlay, tag);
@@ -191,13 +191,7 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     if (shifted != foreground->shifted)
     {
         foreground->shifted = shifted;
-
-        // update tags
-        GHashTableIter iter;
-        gpointer accessible_ptr, tag_ptr;
-        g_hash_table_iter_init(&iter, foreground->accessible_to_tag);
-        while (g_hash_table_iter_next(&iter, &accessible_ptr, &tag_ptr))
-            tag_set_shifted(tag_ptr, foreground->shifted);
+        overlay_shifted(foreground->overlay, foreground->shifted);
     }
 
     // only check presses

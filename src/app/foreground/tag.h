@@ -57,7 +57,7 @@ void tag_destroy(Tag *tag);
 void tag_set_accessible(Tag *tag, AtspiAccessible *accessible);
 void tag_unset_accessible(Tag *tag);
 
-void tag_set_shifted(Tag *tag, gboolean shifted);
+void tag_shifted(Tag *tag, gboolean shifted);
 
 void tag_show(Tag *tag, GtkLayout *parent);
 void tag_hide(Tag *tag);

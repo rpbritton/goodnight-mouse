@@ -33,6 +33,7 @@ Overlay *overlay_new(OverlayConfig *config)
 
     overlay->window = NULL;
     overlay->tags = g_hash_table_new(NULL, NULL);
+    overlay->shifted = FALSE;
 
     // create overlay
     overlay->overlay = gtk_window_new(GTK_WINDOW_POPUP);
@@ -128,6 +129,9 @@ void overlay_add(Overlay *overlay, Tag *tag)
     if (!added)
         return;
 
+    // set shifted
+    tag_shifted(tag, overlay->shifted);
+
     // show tag if overlay is shown
     if (overlay->window)
         tag_show(tag, GTK_LAYOUT(overlay->container));
@@ -143,6 +147,21 @@ void overlay_remove(Overlay *overlay, Tag *tag)
     // hide tag from overlay if shown
     if (overlay->window)
         tag_hide(tag);
+}
+
+void overlay_shifted(Overlay *overlay, gboolean shifted)
+{
+    // do nothing if same
+    if (shifted == overlay->shifted)
+        return;
+    overlay->shifted = shifted;
+
+    // update all tags
+    GHashTableIter iter;
+    gpointer tag_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, overlay->tags);
+    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
+        tag_shifted(tag_ptr, overlay->shifted);
 }
 
 static void remove_input(GtkWidget *overlay, gpointer data)

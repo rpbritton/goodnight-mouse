@@ -38,6 +38,7 @@ typedef struct Overlay
 {
     AtspiAccessible *window;
     GHashTable *tags;
+    gboolean shifted;
 
     GtkWidget *overlay;
     GtkWidget *container;
@@ -51,5 +52,6 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window);
 void overlay_hide(Overlay *overlay);
 void overlay_add(Overlay *overlay, Tag *tag);
 void overlay_remove(Overlay *overlay, Tag *tag);
+void overlay_shifted(Overlay *overlay, gboolean shifted);
 
 #endif /* CD11B90E_5DEF_4A3C_9FA5_7626C9545641 */
