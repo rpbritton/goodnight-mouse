@@ -204,6 +204,14 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     case GDK_KEY_Escape:
         foreground_quit(foreground);
         break;
+    case GDK_KEY_Up:
+    case GDK_KEY_Down:
+    case GDK_KEY_Left:
+    case GDK_KEY_Right:
+    case GDK_KEY_Page_Up:
+    case GDK_KEY_Page_Down:
+        return INPUT_RELAY_EVENT;
+        break;
     case GDK_KEY_BackSpace:
         codes_pop_key(foreground->codes);
         break;
