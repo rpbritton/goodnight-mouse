@@ -28,8 +28,6 @@
 
 #define MOUSE_EVENTS (INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED)
 
-static void register_listeners(Input *input);
-static void deregister_listeners(Input *input);
 static gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
 static void subscriber_free_generic(gpointer subscriber);
 static gint subscriber_matches_callback_generic(gconstpointer subscriber, gconstpointer callback);
@@ -41,8 +39,13 @@ Input *input_new()
     // initialize subscriber list
     input->subscribers = NULL;
 
+    // create listeners
+    input->listening = FALSE;
+    input->keyboard_listener = atspi_device_listener_new(event_callback, input, NULL);
+    input->mouse_listener = atspi_device_listener_new(event_callback, input, NULL);
+
     // register listeners
-    register_listeners(input);
+    input_start(input);
 
     return input;
 }
@@ -50,7 +53,11 @@ Input *input_new()
 void input_destroy(Input *input)
 {
     // deregister listeners
-    deregister_listeners(input);
+    input_stop(input);
+
+    // free listeners
+    g_object_unref(input->keyboard_listener);
+    g_object_unref(input->mouse_listener);
 
     // free subscriber lists
     g_slist_free_full(input->subscribers, subscriber_free_generic);
@@ -75,20 +82,24 @@ void input_unsubscribe(Input *input, InputCallback callback)
     }
 }
 
-guint input_modifiers()
+guint input_modifiers(Input *input)
 {
     GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
     guint modifiers = gdk_keymap_get_modifier_state(keymap);
     return modifiers;
 }
 
-static void register_listeners(Input *input)
+void input_start(Input *input)
 {
+    // check state
+    if (input->listening)
+        return;
+    input->listening = TRUE;
+
     // disable timeout to prevent long blocking on pending key events
     timeout_disable();
 
     // register keyboard listener
-    input->keyboard_listener = atspi_device_listener_new(event_callback, input, NULL);
     for (gint modifier_mask = 0; modifier_mask <= 0xFF; modifier_mask++)
         atspi_register_keystroke_listener(input->keyboard_listener,
                                           NULL,
@@ -98,15 +109,19 @@ static void register_listeners(Input *input)
                                           NULL);
 
     // register mouse listener
-    input->mouse_listener = atspi_device_listener_new(event_callback, input, NULL);
     atspi_register_device_event_listener(input->mouse_listener, MOUSE_EVENTS, NULL, NULL);
 
     // renable timeout
     timeout_enable();
 }
 
-static void deregister_listeners(Input *input)
+void input_stop(Input *input)
 {
+    // check state
+    if (!input->listening)
+        return;
+    input->listening = FALSE;
+
     // disable timeout to prevent long blocking on pending key events
     timeout_disable();
 
@@ -117,11 +132,9 @@ static void deregister_listeners(Input *input)
                                             modifier_mask,
                                             KEYBOARD_EVENTS,
                                             NULL);
-    g_object_unref(input->keyboard_listener);
 
     // deregister mouse listener
     atspi_deregister_device_event_listener(input->mouse_listener, NULL, NULL);
-    g_object_unref(input->mouse_listener);
 
     // renable timeout
     timeout_enable();

@@ -30,9 +30,13 @@ static gboolean execute_key(guint key);
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button);
 static gboolean execute_focus(AtspiAccessible *accessible);
 
-void execute_control(AtspiAccessible *accessible, gboolean shifted)
+void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted)
 {
+    // get control type
     ControlType control_type = identify_control(accessible);
+
+    // pause input
+    input_stop(input);
 
     // todo: unset modifiers
 
@@ -111,6 +115,9 @@ void execute_control(AtspiAccessible *accessible, gboolean shifted)
     case CONTROL_TYPE_NONE:
         break;
     }
+
+    // resume input
+    input_start(input);
 }
 
 static gboolean execute_action(AtspiAccessible *accessible, guint index)
