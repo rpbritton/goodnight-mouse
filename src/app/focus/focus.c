@@ -19,6 +19,8 @@
 
 #include "focus.h"
 
+#include "window.h"
+
 #define WINDOW_ACTIVATE_EVENT "window:activate"
 #define WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
@@ -32,7 +34,6 @@ static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer 
 static void activation_callback(AtspiEvent *event, gpointer focus_ptr);
 static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr);
 static void notify_subscribers(Focus *focus);
-static AtspiAccessible *force_window();
 
 Focus *focus_new()
 {
@@ -42,7 +43,7 @@ Focus *focus_new()
     focus->subscribers = NULL;
 
     // get first window
-    focus->window = force_window(focus);
+    focus->window = window_get_focused(focus);
 
     // register listeners
     focus->listener_activation = atspi_event_listener_new(activation_callback, focus, NULL);
@@ -160,62 +161,4 @@ AtspiAccessible *focus_get_window(Focus *focus)
     if (focus->window)
         g_object_ref(focus->window);
     return focus->window;
-}
-
-static AtspiAccessible *force_window()
-{
-    AtspiAccessible *active_window = NULL;
-
-    // get the (only) desktop
-    AtspiAccessible *desktop = atspi_get_desktop(0);
-
-    // todo: consider alternative approach (e.g. X11 libraries; it's faster and more reliable)
-    // one way: find application id through X11, use atspi_accessible_get_process_id on
-    // applications to avoid checking every window.
-
-    // loop through all applications
-    gint num_applications = atspi_accessible_get_child_count(desktop, NULL);
-    for (gint application_index = 0; application_index < num_applications; application_index++)
-    {
-        AtspiAccessible *application = atspi_accessible_get_child_at_index(desktop, application_index, NULL);
-        if (!application)
-            continue;
-
-        // loop through all windows
-        gint num_windows = atspi_accessible_get_child_count(application, NULL);
-        for (gint window_index = 0; window_index < num_windows; window_index++)
-        {
-            AtspiAccessible *window = atspi_accessible_get_child_at_index(application, window_index, NULL);
-            if (!window)
-                continue;
-
-            // check if window is active
-            AtspiStateSet *state_set = atspi_accessible_get_state_set(window);
-            if (atspi_state_set_contains(state_set, ATSPI_STATE_ACTIVE))
-            {
-                if (active_window)
-                {
-                    const gchar *active_name = atspi_accessible_get_name(active_window, NULL);
-                    const gchar *other_name = atspi_accessible_get_name(window, NULL);
-                    g_warning("More than one window says they have focus! Using '%s', not '%s'",
-                              active_name, other_name);
-                    g_free((gpointer)active_name);
-                    g_free((gpointer)other_name);
-                }
-                else
-                {
-                    active_window = g_object_ref(window);
-                }
-            }
-
-            g_object_unref(state_set);
-            g_object_unref(window);
-        }
-
-        g_object_unref(application);
-    }
-
-    g_object_unref(desktop);
-
-    return active_window;
 }
