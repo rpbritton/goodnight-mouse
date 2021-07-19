@@ -24,6 +24,8 @@ static void wrap_tag_destroy(gpointer tag_ptr)
     tag_destroy(tag_ptr);
 }
 
+static GArray *codes_new_code(Codes *codes);
+static void codes_wrap_code(Codes *codes);
 static void codes_reset(Codes *codes);
 static void codes_apply_code(Codes *codes);
 
@@ -46,6 +48,7 @@ Codes *codes_new(CodesConfig *config)
     }
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
     codes->key_index = 0;
+    codes->no_repeat = config->no_repeat;
 
     // init tags
     codes->tags = NULL;
@@ -88,36 +91,11 @@ Tag *codes_allocate(Codes *codes)
         return tag;
     }
 
-    // update the prefix if out of keys
-    if (codes->key_index == codes->keys->len)
-    {
-        // remove the first tag
-        Tag *tag = codes->tags->data;
-        codes->tags = g_list_delete_link(codes->tags, codes->tags);
-
-        // use the first code as the new prefix
-        g_array_unref(codes->code_prefix);
-        codes->code_prefix = tag_get_code(tag);
-
-        // reset the key index
-        codes->key_index = 0;
-
-        // create and set the new code
-        GArray *code = g_array_append_val(g_array_copy(codes->code_prefix),
-                                          g_array_index(codes->keys, guint, codes->key_index++));
-        tag_set_code(tag, code);
-        g_array_unref(code);
-
-        // readd tag to the list
-        codes->tags = g_list_append(codes->tags, tag);
-    }
-
     // create a new tag
     Tag *tag = tag_new(&codes->tag_config);
 
     // create and set the new code
-    GArray *code = g_array_append_val(g_array_copy(codes->code_prefix),
-                                      g_array_index(codes->keys, guint, codes->key_index++));
+    GArray *code = codes_new_code(codes);
     tag_set_code(tag, code);
     g_array_unref(code);
 
@@ -127,6 +105,54 @@ Tag *codes_allocate(Codes *codes)
 
     // return new tag
     return tag;
+}
+
+static GArray *codes_new_code(Codes *codes)
+{
+    // wrap code if at end
+    if (codes->key_index == codes->keys->len)
+        codes_wrap_code(codes);
+
+    // check for no repeat
+    if (codes->no_repeat && codes->code_prefix->len > 0)
+    {
+        guint next_key = g_array_index(codes->keys, guint, codes->key_index);
+        guint last_key = g_array_index(codes->code_prefix, guint, codes->code_prefix->len - 1);
+        if (next_key == last_key)
+        {
+            codes->key_index++;
+
+            // wrap code if at end
+            if (codes->key_index == codes->keys->len)
+                codes_wrap_code(codes);
+        }
+    }
+
+    // append key to code prefix
+    return g_array_append_val(g_array_copy(codes->code_prefix),
+                              g_array_index(codes->keys, guint, codes->key_index++));
+}
+
+static void codes_wrap_code(Codes *codes)
+{
+    // remove the first tag
+    Tag *tag = codes->tags->data;
+    codes->tags = g_list_delete_link(codes->tags, codes->tags);
+
+    // use the first code as the new prefix
+    g_array_unref(codes->code_prefix);
+    codes->code_prefix = tag_get_code(tag);
+
+    // reset the key index
+    codes->key_index = 0;
+
+    // create and set the new code
+    GArray *code = codes_new_code(codes);
+    tag_set_code(tag, code);
+    g_array_unref(code);
+
+    // readd tag to the list
+    codes->tags = g_list_append(codes->tags, tag);
 }
 
 void codes_deallocate(Codes *codes, Tag *tag)

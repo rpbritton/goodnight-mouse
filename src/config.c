@@ -53,8 +53,10 @@ Config *config_parse(int argc, char **argv)
     config->log_verbose = TRUE;
 
     config->app.foreground.codes.keys = g_array_new(FALSE, FALSE, sizeof(guint));
-    guint keys[] = {GDK_KEY_a, GDK_KEY_b, GDK_KEY_c};
-    g_array_append_vals(config->app.foreground.codes.keys, keys, 3);
+    guint keys[] = {GDK_KEY_e, GDK_KEY_s, GDK_KEY_n, GDK_KEY_t,
+                    GDK_KEY_i, GDK_KEY_r, GDK_KEY_o, GDK_KEY_a};
+    g_array_append_vals(config->app.foreground.codes.keys, keys, 8);
+    config->app.foreground.codes.no_repeat = TRUE;
 
     GtkCssProvider *css_provider1 = gtk_css_provider_new();
     gtk_css_provider_load_from_data(css_provider1, css1, -1, NULL);

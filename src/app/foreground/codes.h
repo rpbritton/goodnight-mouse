@@ -29,7 +29,9 @@ typedef struct CodesConfig
 {
     TagConfig tag;
     GArray *keys;
+    gboolean no_repeat;
 } CodesConfig;
+
 typedef struct Codes
 {
     GArray *code;
@@ -39,6 +41,7 @@ typedef struct Codes
     GArray *keys;
     GArray *code_prefix;
     gint key_index;
+    gboolean no_repeat;
 
     GList *tags;
     GHashTable *tags_used;
