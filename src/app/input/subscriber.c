@@ -48,14 +48,16 @@ InputResponse subscriber_call(Subscriber *subscriber, InputEvent event)
     return subscriber->callback(event, subscriber->data);
 }
 
-gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event)
+gint subscriber_compare_event(Subscriber *subscriber, InputEvent event)
 {
-    return (((subscriber->event.type == INPUT_ALL_TYPES) || (subscriber->event.type & event.type)) &&
-            ((subscriber->event.id == INPUT_ALL_IDS) || (subscriber->event.id == event.id)) &&
-            ((subscriber->event.modifiers == INPUT_ALL_MODIFIERS) || (subscriber->event.modifiers == event.modifiers)));
+    // return 0 == match
+    return !(((subscriber->event.type == INPUT_ALL_TYPES) || (subscriber->event.type & event.type)) &&
+             ((subscriber->event.id == INPUT_ALL_IDS) || (subscriber->event.id == event.id)) &&
+             ((subscriber->event.modifiers == INPUT_ALL_MODIFIERS) || (subscriber->event.modifiers == event.modifiers)));
 }
 
-gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback)
+gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer callback)
 {
-    return (subscriber->callback == callback);
+    // return 0 == match
+    return !(((Subscriber *)subscriber)->callback == (InputCallback)callback);
 }

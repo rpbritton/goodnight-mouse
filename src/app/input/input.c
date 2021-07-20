@@ -29,8 +29,6 @@
 #define MOUSE_EVENTS (INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED)
 
 static gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
-static void subscriber_free_generic(gpointer subscriber);
-static gint subscriber_matches_callback_generic(gconstpointer subscriber, gconstpointer callback);
 
 Input *input_new()
 {
@@ -60,7 +58,7 @@ void input_destroy(Input *input)
     g_object_unref(input->mouse_listener);
 
     // free subscriber lists
-    g_slist_free_full(input->subscribers, subscriber_free_generic);
+    g_slist_free_full(input->subscribers, (GDestroyNotify)subscriber_free);
 
     g_free(input);
 }
@@ -75,7 +73,7 @@ void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpo
 void input_unsubscribe(Input *input, InputCallback callback)
 {
     GSList *subscriber_node;
-    while ((subscriber_node = g_slist_find_custom(input->subscribers, callback, subscriber_matches_callback_generic)))
+    while ((subscriber_node = g_slist_find_custom(input->subscribers, callback, subscriber_compare_callback)))
     {
         subscriber_free(subscriber_node->data);
         input->subscribers = g_slist_remove_all(input->subscribers, subscriber_node->data);
@@ -162,7 +160,7 @@ static gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr
     {
         Subscriber *subscriber = (Subscriber *)subscriber_node->data;
 
-        if (!subscriber_matches_event(subscriber, event))
+        if (subscriber_compare_event(subscriber, event))
             continue;
 
         if (subscriber_call(subscriber, event) == INPUT_CONSUME_EVENT)
@@ -170,15 +168,4 @@ static gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr
     }
 
     return consumption;
-}
-
-static void subscriber_free_generic(gpointer subscriber)
-{
-    return subscriber_free((Subscriber *)subscriber);
-}
-
-static gint subscriber_matches_callback_generic(gconstpointer subscriber, gconstpointer callback)
-{
-    // return 0 = match
-    return !subscriber_matches_callback((Subscriber *)subscriber, (InputCallback)callback);
 }

@@ -34,7 +34,7 @@ typedef struct Subscriber
 Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer data);
 void subscriber_free(Subscriber *subscriber);
 InputResponse subscriber_call(Subscriber *subscriber, InputEvent event);
-gboolean subscriber_matches_event(Subscriber *subscriber, InputEvent event);
-gboolean subscriber_matches_callback(Subscriber *subscriber, InputCallback callback);
+gint subscriber_compare_event(Subscriber *subscriber, InputEvent event);
+gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer callback);
 
 #endif /* BD2D3A3A_EF81_4C26_A692_58D39FBCBA95 */
