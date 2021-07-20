@@ -19,46 +19,71 @@
 
 #include "config.h"
 
-// todo: overhaul, make configurable at runtime.
-// use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
-// use getopt.h for arguments
+#define DEFAULT_CONFIG_PATH "~/.config/goodnight_mouse/goodnight_mouse.cfg"
 
 Config *config_new(int argc, char **argv)
 {
-    // todo: set with arguments
-    gchar *config_file = "./examples/config/goodnight_mouse.cfg";
-
-    // get the key file
-    GKeyFile *key_file = g_key_file_new();
     GError *error = NULL;
-    g_key_file_load_from_file(key_file, config_file, G_KEY_FILE_NONE, &error);
+
+    // default command line arguments
+    gchar *config_path = NULL;
+    gboolean verbose = FALSE;
+    gboolean once = FALSE;
+
+    // add command line arguments
+    GOptionContext *context = g_option_context_new(NULL);
+    GOptionEntry entries[] =
+        {
+            {"config", 'c', 0, G_OPTION_ARG_FILENAME, &config_path, "Path to config file", NULL},
+            {"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Enable verbose logging", NULL},
+            {"once", 'o', 0, G_OPTION_ARG_NONE, &once, "Immediately trigger and run once", NULL},
+            {NULL},
+        };
+    g_option_context_add_main_entries(context, entries, NULL);
+
+    // parse command line arguments
+    g_option_context_parse(context, &argc, &argv, &error);
+    g_option_context_free(context);
     if (error)
     {
-        g_warning("config: Failed to load config file: %s", error->message);
+        g_warning("command line: %s", error->message);
         g_error_free(error);
         return NULL;
     }
-    g_key_file_set_list_separator(key_file, ',');
 
-    // todo: override key file parameters with arguments
-    // (causes a bit of a loop problem with config being an argument)
+    // check config_path
+    if (!config_path)
+        config_path = g_strdup(DEFAULT_CONFIG_PATH);
+
+    // get the key file
+    GKeyFile *key_file = g_key_file_new();
+    g_key_file_set_list_separator(key_file, ',');
+    g_key_file_load_from_file(key_file, config_path, G_KEY_FILE_NONE, &error);
+    g_free(config_path);
+    if (error)
+    {
+        g_warning("config: Failed to load config %s", error->message);
+        g_error_free(error);
+        return NULL;
+    }
 
     // create config
     Config *config = g_new0(Config, 1);
     gboolean config_valid = TRUE;
 
     // get once
-    config->once = FALSE;
+    config->once = once;
 
     // get verbose
-    config->verbose = TRUE;
+    config->verbose = verbose;
 
     // get app
     config->app = app_new_config(key_file);
     if (!config->app)
         config_valid = FALSE;
 
-    // todo: free key file
+    // free key file
+    g_key_file_free(key_file);
 
     // return
     if (!config_valid)
