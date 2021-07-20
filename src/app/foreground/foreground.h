@@ -22,18 +22,14 @@
 
 #include <glib.h>
 
+#include "foreground_config.h"
+
 #include "../input/input.h"
 #include "../focus/focus.h"
 
 #include "registry.h"
 #include "codes.h"
 #include "overlay.h"
-
-typedef struct ForegroundConfig
-{
-    OverlayConfig overlay;
-    CodesConfig codes;
-} ForegroundConfig;
 
 typedef struct Foreground
 {

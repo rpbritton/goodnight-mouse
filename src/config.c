@@ -23,63 +23,58 @@
 // use https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html for config
 // use getopt.h for arguments
 
-static const gchar *css1 = ".overlay_window {"
-                           "    background-color: rgba(100%, 0%, 0%, 0.05);"
-                           "}";
-
-static const gchar *css2 = ".tag_label {"
-                           "    background-color: #000;"
-                           "    font-family: 'IBM Plex Mono', monospace;"
-                           "    font-weight: bold;"
-                           "    font-size: 14px;"
-                           "    border: 1px solid #FFF;"
-                           "    padding: 1px 3px;"
-                           "    border-radius: 3px;"
-                           "}"
-                           ""
-                           ".tag_character {"
-                           "    color: #0F0;"
-                           "}"
-                           ""
-                           ".tag_character_active {"
-                           "    color: #00F;"
-                           "}";
-
-Config *config_parse(int argc, char **argv)
+Config *config_new(int argc, char **argv)
 {
-    Config *config = g_new(Config, 1);
+    // todo: set with arguments
+    gchar *config_file = "./examples/config/goodnight_mouse.cfg";
 
-    config->run_once = FALSE;
-    config->log_verbose = TRUE;
+    // get the key file
+    GKeyFile *key_file = g_key_file_new();
+    GError *error = NULL;
+    g_key_file_load_from_file(key_file, config_file, G_KEY_FILE_NONE, &error);
+    if (error)
+    {
+        g_warning("config: Failed to load config file: %s", error->message);
+        g_error_free(error);
+        return NULL;
+    }
+    g_key_file_set_list_separator(key_file, ',');
 
-    config->app.foreground.codes.keys = g_array_new(FALSE, FALSE, sizeof(guint));
-    guint keys[] = {GDK_KEY_e, GDK_KEY_s, GDK_KEY_n, GDK_KEY_t,
-                    GDK_KEY_i, GDK_KEY_r, GDK_KEY_o, GDK_KEY_a};
-    g_array_append_vals(config->app.foreground.codes.keys, keys, 8);
-    config->app.foreground.codes.no_repeat = TRUE;
+    // todo: override key file parameters with arguments
+    // (causes a bit of a loop problem with config being an argument)
 
-    GtkCssProvider *css_provider1 = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css_provider1, css1, -1, NULL);
-    config->app.foreground.overlay.styling = GTK_STYLE_PROVIDER(css_provider1);
+    // create config
+    Config *config = g_new0(Config, 1);
+    gboolean config_valid = TRUE;
 
-    GtkCssProvider *css_provider2 = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css_provider2, css2, -1, NULL);
-    config->app.foreground.codes.tag.styling = GTK_STYLE_PROVIDER(css_provider2);
-    config->app.foreground.codes.tag.alignment_horizontal = GTK_ALIGN_START;
-    config->app.foreground.codes.tag.alignment_vertical = GTK_ALIGN_CENTER;
+    // get once
+    config->once = FALSE;
 
-    config->app.background.trigger_id = GDK_KEY_v;
-    config->app.background.trigger_modifiers = GDK_SUPER_MASK;
+    // get verbose
+    config->verbose = TRUE;
 
+    // get app
+    config->app = app_new_config(key_file);
+    if (!config->app)
+        config_valid = FALSE;
+
+    // todo: free key file
+
+    // return
+    if (!config_valid)
+    {
+        config_destroy(config);
+        return NULL;
+    }
     return config;
 }
 
 void config_destroy(Config *config)
 {
-    g_array_unref(config->app.foreground.codes.keys);
+    if (!config)
+        return;
 
-    g_object_unref(config->app.foreground.overlay.styling);
-    g_object_unref(config->app.foreground.codes.tag.styling);
+    app_destroy_config(config->app);
 
     g_free(config);
 }

@@ -22,17 +22,17 @@
 
 #include <glib.h>
 
-#include "app/app.h"
+#include "app/app_config.h"
 
 typedef struct Config
 {
-    gboolean log_verbose;
-    gboolean run_once;
+    gboolean verbose;
+    gboolean once;
 
-    AppConfig app;
+    AppConfig *app;
 } Config;
 
-Config *config_parse(int argc, char **argv);
+Config *config_new(int argc, char **argv);
 void config_destroy(Config *config);
 
 #endif /* E72C461F_B3E0_4080_8624_9A8F366A3903 */

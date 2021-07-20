@@ -35,14 +35,16 @@ static void set_verbose_logging()
 
 int main(int argc, char **argv)
 {
-    Config *config = config_parse(argc, argv);
+    Config *config = config_new(argc, argv);
+    if (!config)
+        return -1;
 
-    if (config->log_verbose)
+    if (config->verbose)
         set_verbose_logging();
 
-    App *app = app_new(&config->app);
+    App *app = app_new(config->app);
 
-    if (config->run_once)
+    if (config->once)
         app_run_once(app);
     else
         app_run(app);

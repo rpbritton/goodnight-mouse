@@ -23,25 +23,20 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 
-#include "tag.h"
+#include "codes_config.h"
 
-typedef struct CodesConfig
-{
-    TagConfig tag;
-    GArray *keys;
-    gboolean no_repeat;
-} CodesConfig;
+#include "tag.h"
 
 typedef struct Codes
 {
     GArray *code;
 
-    TagConfig tag_config;
+    TagConfig *tag_config;
 
     GArray *keys;
     GArray *code_prefix;
     gint key_index;
-    gboolean no_repeat;
+    gboolean consecutive_keys;
 
     GList *tags;
     GHashTable *tags_used;

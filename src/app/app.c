@@ -41,8 +41,8 @@ App *app_new(AppConfig *config)
     // create managers
     app->input = input_new();
     app->focus = focus_new();
-    app->foreground = foreground_new(&config->foreground, app->input, app->focus);
-    app->background = background_new(&config->background, app->input, app->foreground);
+    app->foreground = foreground_new(config->foreground, app->input, app->focus);
+    app->background = background_new(config->background, app->input, app->foreground);
 
     return app;
 }

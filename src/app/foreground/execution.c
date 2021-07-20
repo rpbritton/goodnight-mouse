@@ -38,8 +38,9 @@ void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted
     // pause input
     input_stop(input);
 
-    // todo: unset modifiers
+    // todo: figure out how to unset shift if shifted
 
+    // choose action of execution
     switch (control_type)
     {
     case CONTROL_TYPE_PRESS:

@@ -23,14 +23,9 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 
+#include "background_config.h"
 #include "../input/input.h"
 #include "../foreground/foreground.h"
-
-typedef struct BackgroundConfig
-{
-    guint trigger_id;
-    guint trigger_modifiers;
-} BackgroundConfig;
 
 typedef struct Background
 {

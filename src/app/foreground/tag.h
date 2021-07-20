@@ -23,17 +23,7 @@
 #include <atspi/atspi.h>
 #include <gtk/gtk.h>
 
-#define TAG_CONTAINER_CSS_CLASS "tag_container"
-#define TAG_LABEL_CSS_CLASS "tag_label"
-#define TAG_CHARACTER_CSS_CLASS "tag_character"
-#define TAG_CHARACTER_ACTIVE_CSS_CLASS "tag_character_active"
-
-typedef struct TagConfig
-{
-    GtkStyleProvider *styling;
-    GtkAlign alignment_horizontal;
-    GtkAlign alignment_vertical;
-} TagConfig;
+#include "tag_config.h"
 
 typedef struct Tag
 {

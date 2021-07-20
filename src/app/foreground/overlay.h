@@ -24,15 +24,11 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
+#include "overlay_config.h"
+
 #include "tag.h"
 
 #define OVERLAY_WINDOW_TITLE "goodnight_mouse"
-#define OVERLAY_CSS_CLASS "overlay_window"
-
-typedef struct OverlayConfig
-{
-    GtkStyleProvider *styling;
-} OverlayConfig;
 
 typedef struct Overlay
 {

@@ -32,8 +32,8 @@ Background *background_new(BackgroundConfig *config, Input *input, Foreground *f
     // add trigger
     // todo: include shift key for shifted state?
     background->trigger_event.type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED;
-    background->trigger_event.id = config->trigger_id;
-    background->trigger_event.modifiers = config->trigger_modifiers;
+    background->trigger_event.id = config->key;
+    background->trigger_event.modifiers = config->modifiers;
 
     // create main loop
     background->loop = g_main_loop_new(NULL, FALSE);

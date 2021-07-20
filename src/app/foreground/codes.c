@@ -19,11 +19,6 @@
 
 #include "codes.h"
 
-static void wrap_tag_destroy(gpointer tag_ptr)
-{
-    tag_destroy(tag_ptr);
-}
-
 static GArray *codes_new_code(Codes *codes);
 static void codes_wrap_code(Codes *codes);
 static void codes_reset(Codes *codes);
@@ -40,15 +35,10 @@ Codes *codes_new(CodesConfig *config)
     codes->tag_config = config->tag;
 
     // set up code generator
-    codes->keys = g_array_sized_new(FALSE, FALSE, sizeof(guint), config->keys->len);
-    for (gint index = 0; index < config->keys->len; index++)
-    {
-        guint key = gdk_keyval_to_lower(g_array_index(config->keys, guint, index));
-        g_array_append_val(codes->keys, key);
-    }
+    codes->keys = g_array_copy(config->keys);
     codes->code_prefix = g_array_new(FALSE, FALSE, sizeof(guint));
     codes->key_index = 0;
-    codes->no_repeat = config->no_repeat;
+    codes->consecutive_keys = config->consecutive_keys;
 
     // init tags
     codes->tags = NULL;
@@ -61,7 +51,7 @@ Codes *codes_new(CodesConfig *config)
 void codes_destroy(Codes *codes)
 {
     // free tags
-    g_list_free_full(codes->tags, wrap_tag_destroy);
+    g_list_free_full(codes->tags, (GDestroyNotify)tag_destroy);
     g_hash_table_unref(codes->tags_used);
     g_list_free(codes->tags_unused);
 
@@ -92,7 +82,7 @@ Tag *codes_allocate(Codes *codes)
     }
 
     // create a new tag
-    Tag *tag = tag_new(&codes->tag_config);
+    Tag *tag = tag_new(codes->tag_config);
 
     // create and set the new code
     GArray *code = codes_new_code(codes);
@@ -114,7 +104,7 @@ static GArray *codes_new_code(Codes *codes)
         codes_wrap_code(codes);
 
     // check for no repeat
-    if (codes->no_repeat && codes->code_prefix->len > 0)
+    if (codes->consecutive_keys && codes->code_prefix->len > 0)
     {
         guint next_key = g_array_index(codes->keys, guint, codes->key_index);
         guint last_key = g_array_index(codes->code_prefix, guint, codes->code_prefix->len - 1);
@@ -177,7 +167,7 @@ static void codes_reset(Codes *codes)
     codes->key_index = 0;
 
     // clear tags
-    g_list_free_full(codes->tags, wrap_tag_destroy);
+    g_list_free_full(codes->tags, (GDestroyNotify)tag_destroy);
     codes->tags = NULL;
     g_hash_table_remove_all(codes->tags_used);
     g_list_free(codes->tags_unused);

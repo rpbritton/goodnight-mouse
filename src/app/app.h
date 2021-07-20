@@ -22,16 +22,11 @@
 
 #include <glib.h>
 
+#include "app_config.h"
 #include "input/input.h"
 #include "focus/focus.h"
 #include "background/background.h"
 #include "foreground/foreground.h"
-
-typedef struct AppConfig
-{
-    BackgroundConfig background;
-    ForegroundConfig foreground;
-} AppConfig;
 
 typedef struct App
 {

@@ -55,8 +55,8 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     foreground->focus = focus;
 
     // create members
-    foreground->codes = codes_new(&config->codes);
-    foreground->overlay = overlay_new(&config->overlay);
+    foreground->codes = codes_new(config->codes);
+    foreground->overlay = overlay_new(config->overlay);
     foreground->registry = registry_new();
 
     return foreground;
