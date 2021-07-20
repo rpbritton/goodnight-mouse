@@ -38,7 +38,7 @@ Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer da
     return subscriber;
 }
 
-void subscriber_free(Subscriber *subscriber)
+void subscriber_destroy(Subscriber *subscriber)
 {
     g_free(subscriber);
 }

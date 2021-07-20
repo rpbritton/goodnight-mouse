@@ -32,7 +32,7 @@ typedef struct Subscriber
 } Subscriber;
 
 Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer data);
-void subscriber_free(Subscriber *subscriber);
+void subscriber_destroy(Subscriber *subscriber);
 InputResponse subscriber_call(Subscriber *subscriber, InputEvent event);
 gint subscriber_compare_event(Subscriber *subscriber, InputEvent event);
 gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer callback);

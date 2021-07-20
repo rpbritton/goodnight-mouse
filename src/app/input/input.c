@@ -58,7 +58,7 @@ void input_destroy(Input *input)
     g_object_unref(input->mouse_listener);
 
     // free subscriber lists
-    g_slist_free_full(input->subscribers, (GDestroyNotify)subscriber_free);
+    g_slist_free_full(input->subscribers, (GDestroyNotify)subscriber_destroy);
 
     g_free(input);
 }
@@ -75,7 +75,7 @@ void input_unsubscribe(Input *input, InputCallback callback)
     GSList *subscriber_node;
     while ((subscriber_node = g_slist_find_custom(input->subscribers, callback, subscriber_compare_callback)))
     {
-        subscriber_free(subscriber_node->data);
+        subscriber_destroy(subscriber_node->data);
         input->subscribers = g_slist_remove_all(input->subscribers, subscriber_node->data);
     }
 }
