@@ -66,6 +66,9 @@ AtspiAccessible *window_get_focused()
 
     guint pid = ((guint *)data)[0];
     XFree(data);
+
+    // close display
+    XCloseDisplay(display);
 #endif
 
     // get the (only) desktop

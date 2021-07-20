@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 {
     Config *config = config_new(argc, argv);
     if (!config)
-        return -1;
+        exit(1);
 
     if (config->verbose)
         set_verbose_logging();

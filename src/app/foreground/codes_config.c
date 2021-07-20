@@ -92,5 +92,8 @@ void codes_destroy_config(CodesConfig *config)
     if (!config)
         return;
 
+    g_array_unref(config->keys);
+    tag_destroy_config(config->tag);
+
     g_free(config);
 }

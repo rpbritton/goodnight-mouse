@@ -64,6 +64,7 @@ Config *config_new(int argc, char **argv)
     {
         g_warning("config: Failed to load config %s", error->message);
         g_error_free(error);
+        g_key_file_free(key_file);
         return NULL;
     }
 
