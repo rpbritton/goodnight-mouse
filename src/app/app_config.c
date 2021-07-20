@@ -19,6 +19,7 @@
 
 #include "app_config.h"
 
+// create an app config using the key file and default values
 AppConfig *app_new_config(GKeyFile *key_file)
 {
     // create config
@@ -44,6 +45,7 @@ AppConfig *app_new_config(GKeyFile *key_file)
     return config;
 }
 
+// destroy and free the app config
 void app_destroy_config(AppConfig *config)
 {
     if (!config)

@@ -23,6 +23,7 @@
 
 #define CONFIG_GROUP "tag"
 
+// creates a tag config from a key file and default values
 TagConfig *tag_new_config(GKeyFile *key_file)
 {
     // create config
@@ -372,6 +373,7 @@ TagConfig *tag_new_config(GKeyFile *key_file)
     return config;
 }
 
+// destroys and frees a tag config
 void tag_destroy_config(TagConfig *config)
 {
     if (!config)

@@ -25,6 +25,7 @@
 
 static gboolean signal_quit(gpointer app_ptr);
 
+// create a new app from the configuration
 App *app_new(AppConfig *config)
 {
     App *app = g_new(App, 1);
@@ -47,6 +48,7 @@ App *app_new(AppConfig *config)
     return app;
 }
 
+// destroy and free an app
 void app_destroy(App *app)
 {
     // free managers
@@ -66,28 +68,33 @@ void app_destroy(App *app)
     g_free(app);
 }
 
+// run an app's background
 void app_run(App *app)
 {
     background_run(app->background);
 }
 
+// run the app's foreground
 void app_run_once(App *app)
 {
     foreground_run(app->foreground);
 }
 
+// returns whether the app is currently running
 gboolean app_is_running(App *app)
 {
     return background_is_running(app->background) ||
            foreground_is_running(app->foreground);
 }
 
+// quit the app if running
 void app_quit(App *app)
 {
     background_quit(app->background);
     foreground_quit(app->foreground);
 }
 
+// callback for a signal to quit has been received
 static gboolean signal_quit(gpointer app_ptr)
 {
     App *app = (App *)app_ptr;

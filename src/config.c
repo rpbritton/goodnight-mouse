@@ -21,6 +21,7 @@
 
 #define DEFAULT_CONFIG_PATH "~/.config/goodnight_mouse/goodnight_mouse.cfg"
 
+// create a config from the command line arguments and config file
 Config *config_new(int argc, char **argv)
 {
     // create config
@@ -88,6 +89,7 @@ Config *config_new(int argc, char **argv)
     return config;
 }
 
+// destroy and free a config
 void config_destroy(Config *config)
 {
     if (!config)

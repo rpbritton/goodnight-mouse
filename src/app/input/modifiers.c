@@ -19,6 +19,8 @@
 
 #include "modifiers.h"
 
+// map all virtual modifiers onto their physical counterparts, and only return
+// the 8 physical modifiers
 guint modifiers_map(guint modifiers)
 {
     GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());

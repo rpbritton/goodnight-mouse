@@ -31,6 +31,9 @@
 #include "codes.h"
 #include "overlay.h"
 
+// a foreground which when run will show an overlay populated with tags with codes.
+// key events will narrow down the codes, an when one code is focused on, that
+// accessible will be executed.
 typedef struct Foreground
 {
     GMainLoop *loop;

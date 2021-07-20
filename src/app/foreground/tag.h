@@ -25,6 +25,7 @@
 
 #include "tag_config.h"
 
+// a tag that can show a code as a gtk widget over an accessible
 typedef struct Tag
 {
     GArray *code;

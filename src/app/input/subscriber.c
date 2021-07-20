@@ -21,6 +21,7 @@
 
 #include "modifiers.h"
 
+// create a subscriber containing the given subscription information
 Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer data)
 {
     Subscriber *subscriber = g_new(Subscriber, 1);
@@ -38,16 +39,19 @@ Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer da
     return subscriber;
 }
 
+// destroy and free a subscriber
 void subscriber_destroy(Subscriber *subscriber)
 {
     g_free(subscriber);
 }
 
+// call a subscriber with an event
 InputResponse subscriber_call(Subscriber *subscriber, InputEvent event)
 {
     return subscriber->callback(event, subscriber->data);
 }
 
+// check if a subscriber matches an event
 gint subscriber_compare_event(Subscriber *subscriber, InputEvent event)
 {
     // return 0 == match
@@ -56,6 +60,7 @@ gint subscriber_compare_event(Subscriber *subscriber, InputEvent event)
              ((subscriber->event.modifiers == INPUT_ALL_MODIFIERS) || (subscriber->event.modifiers == event.modifiers)));
 }
 
+// check if a subscriber matches a callback
 gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer callback)
 {
     // return 0 == match

@@ -27,6 +27,7 @@
 
 #include "tag.h"
 
+// a tag generator that assignes unique codes from the given set of keys
 typedef struct Codes
 {
     GArray *code;

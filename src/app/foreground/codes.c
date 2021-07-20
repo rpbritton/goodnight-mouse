@@ -24,6 +24,7 @@ static void codes_wrap_code(Codes *codes);
 static void codes_reset(Codes *codes);
 static void codes_apply_code(Codes *codes);
 
+// create a new codes manager
 Codes *codes_new(CodesConfig *config)
 {
     Codes *codes = g_new(Codes, 1);
@@ -48,6 +49,7 @@ Codes *codes_new(CodesConfig *config)
     return codes;
 }
 
+// destroy a codes manager
 void codes_destroy(Codes *codes)
 {
     // free tags
@@ -65,6 +67,7 @@ void codes_destroy(Codes *codes)
     g_free(codes);
 }
 
+// create a new tag with a unique code
 Tag *codes_allocate(Codes *codes)
 {
     // check for unused mapping
@@ -97,6 +100,7 @@ Tag *codes_allocate(Codes *codes)
     return tag;
 }
 
+// creates a new code using a the code generator
 static GArray *codes_new_code(Codes *codes)
 {
     // wrap code if at end
@@ -123,6 +127,7 @@ static GArray *codes_new_code(Codes *codes)
                               g_array_index(codes->keys, guint, codes->key_index++));
 }
 
+// allocates more available codes by appending to an existing code
 static void codes_wrap_code(Codes *codes)
 {
     // remove the first tag
@@ -145,6 +150,8 @@ static void codes_wrap_code(Codes *codes)
     codes->tags = g_list_append(codes->tags, tag);
 }
 
+// removes a tag from use which may be reused. if no tags are used
+// the code generator will be reset
 void codes_deallocate(Codes *codes, Tag *tag)
 {
     // remove tag from used
@@ -160,6 +167,7 @@ void codes_deallocate(Codes *codes, Tag *tag)
         codes_reset(codes);
 }
 
+// resets a code generator, destroying all existing tags and codes
 static void codes_reset(Codes *codes)
 {
     // reset code generator
@@ -177,6 +185,7 @@ static void codes_reset(Codes *codes)
     codes->code = g_array_remove_range(codes->code, 0, codes->code->len);
 }
 
+// appends a key to the current code and applies it to the tags
 void codes_add_key(Codes *codes, guint key)
 {
     // convert to lower
@@ -197,6 +206,7 @@ void codes_add_key(Codes *codes, guint key)
     codes_apply_code(codes);
 }
 
+// removes the last key from the current code and applies the new one to the tags
 void codes_pop_key(Codes *codes)
 {
     // make sure a key can be popped
@@ -210,6 +220,8 @@ void codes_pop_key(Codes *codes)
     codes_apply_code(codes);
 }
 
+// applies the current code to all the tags. if no tags match the current code
+// is reset
 static void codes_apply_code(Codes *codes)
 {
     // do nothing if no tags are used
@@ -233,6 +245,7 @@ static void codes_apply_code(Codes *codes)
     }
 }
 
+// returns the tag that perfectly matches the current code, otherwise NULL
 Tag *codes_matched_tag(Codes *codes)
 {
     // search the tags

@@ -24,6 +24,8 @@
 
 #include "event.h"
 
+// an input event subscriber that contains the event to subscribe to and
+// callback information
 typedef struct Subscriber
 {
     InputEvent event;

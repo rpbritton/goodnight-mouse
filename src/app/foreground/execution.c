@@ -23,13 +23,13 @@
 
 #include "identify.h"
 
-// todo: use regex matching on action name?
 static gboolean execute_action(AtspiAccessible *accessible, guint index);
 static gboolean execute_modifiers(guint modifiers, gboolean lock);
 static gboolean execute_key(guint key);
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button);
 static gboolean execute_focus(AtspiAccessible *accessible);
 
+// executes an accessible by identifying it's control type, and potentially it's shifted variant
 void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted)
 {
     // get control type
@@ -62,8 +62,6 @@ void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted
         else
         {
             // todo: doesn't do exactly what I want since shift is active
-
-            // todo: check if execute_modifiers is actually unsetting control
 
             // attempt using ctrl + return key
             if (execute_modifiers(GDK_CONTROL_MASK, TRUE) &&
@@ -145,6 +143,7 @@ static gboolean execute_action(AtspiAccessible *accessible, guint index)
     return TRUE;
 }
 
+// lock or unlock a mask of modifiers
 static gboolean execute_modifiers(guint modifiers, gboolean lock)
 {
     if (lock)
@@ -161,6 +160,7 @@ static gboolean execute_modifiers(guint modifiers, gboolean lock)
     return TRUE;
 }
 
+// presses and releases the given key
 static gboolean execute_key(guint key)
 {
     g_debug("execute_key: Pressing key '%d'", key);
@@ -173,6 +173,7 @@ static gboolean execute_key(guint key)
     return TRUE;
 }
 
+// executes a mouse click of the button into the center of the given accessible
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button)
 {
     g_debug("execute_mouse: Clicking mouse '%d'", button);
@@ -209,6 +210,7 @@ static gboolean execute_mouse(AtspiAccessible *accessible, guint button)
     return TRUE;
 }
 
+// grabs the input focus onto the given accessible
 static gboolean execute_focus(AtspiAccessible *accessible)
 {
     g_debug("execute_focus: Focusing accessible");

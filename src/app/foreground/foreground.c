@@ -28,18 +28,21 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
+// input event that contains all key events
 static const InputEvent KEYBOARD_EVENTS = {
     .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
     .id = INPUT_ALL_IDS,
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
+// input event that contains all mouse events
 static const InputEvent MOUSE_EVENTS = {
     .type = INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED,
     .id = INPUT_ALL_IDS,
     .modifiers = INPUT_ALL_MODIFIERS,
 };
 
+// creates a new foreground that can be run
 Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
@@ -62,6 +65,7 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     return foreground;
 }
 
+// destroys and frees a foreground
 void foreground_destroy(Foreground *foreground)
 {
     // free members
@@ -78,6 +82,7 @@ void foreground_destroy(Foreground *foreground)
     g_free(foreground);
 }
 
+// runs a foreground by starting a g main loop. stopped by calling quit.
 void foreground_run(Foreground *foreground)
 {
     if (foreground_is_running(foreground))
@@ -131,11 +136,13 @@ void foreground_run(Foreground *foreground)
     g_object_unref(window);
 }
 
+// returns whether the given foreground is running
 gboolean foreground_is_running(Foreground *foreground)
 {
     return g_main_loop_is_running(foreground->loop);
 }
 
+// quits a given foreground if running
 void foreground_quit(Foreground *foreground)
 {
     if (!foreground_is_running(foreground))
@@ -144,6 +151,7 @@ void foreground_quit(Foreground *foreground)
     g_main_loop_quit(foreground->loop);
 }
 
+// event callback to a new accessible added
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
@@ -161,6 +169,7 @@ static void callback_accessible_add(AtspiAccessible *accessible, gpointer foregr
     g_hash_table_insert(foreground->accessible_to_tag, g_object_ref(accessible), tag);
 }
 
+// event callback to a previously added accessible being removed
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
@@ -181,6 +190,7 @@ static void callback_accessible_remove(AtspiAccessible *accessible, gpointer for
     g_hash_table_remove(foreground->accessible_to_tag, accessible);
 }
 
+// event callback for all keyboard events
 static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
@@ -228,12 +238,14 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     return INPUT_CONSUME_EVENT;
 }
 
+// event callback for all mouse events
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
 {
     foreground_quit(foreground_ptr);
     return INPUT_RELAY_EVENT;
 }
 
+// event callback for window focus changes
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
 {
     if (window)

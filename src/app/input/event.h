@@ -27,6 +27,7 @@
 #define INPUT_ALL_IDS 0xFFFFFFFF
 #define INPUT_ALL_MODIFIERS 0xFFFFFFFF
 
+// types of input key and mouse events
 typedef enum InputEventType
 {
     INPUT_KEY_PRESSED = (1 << ATSPI_KEY_PRESSED_EVENT),
@@ -35,6 +36,7 @@ typedef enum InputEventType
     INPUT_BUTTON_RELEASED = (1 << ATSPI_BUTTON_RELEASED_EVENT),
 } InputEventType;
 
+// an input event
 typedef struct InputEvent
 {
     InputEventType type;
@@ -42,12 +44,14 @@ typedef struct InputEvent
     guint modifiers;
 } InputEvent;
 
+// whether to consume or relay an event to the application, decided by callbacks
 typedef enum InputResponse
 {
     INPUT_RELAY_EVENT = FALSE,
     INPUT_CONSUME_EVENT = TRUE,
 } InputResponse;
 
+// input event subscriber callback
 typedef InputResponse (*InputCallback)(InputEvent event, gpointer data);
 
 #endif /* E34E90F1_4A14_4140_9689_E5590AD1C2FE */

@@ -25,6 +25,7 @@
 #include "overlay_config.h"
 #include "codes_config.h"
 
+// configuration for a foreground
 typedef struct ForegroundConfig
 {
     OverlayConfig *overlay;

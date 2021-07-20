@@ -25,6 +25,7 @@
 #include "background/background_config.h"
 #include "foreground/foreground_config.h"
 
+// configuration for creating a new app
 typedef struct AppConfig
 {
     BackgroundConfig *background;

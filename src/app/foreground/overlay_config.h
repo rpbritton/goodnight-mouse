@@ -25,6 +25,7 @@
 
 #define OVERLAY_CSS_CLASS "overlay_window"
 
+// overlay that shows on top of the focus window and contains tags
 typedef struct OverlayConfig
 {
     GtkStyleProvider *styling;

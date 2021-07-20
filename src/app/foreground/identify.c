@@ -19,6 +19,7 @@
 
 #include "identify.h"
 
+// atspi role to control type mappings
 static const ControlType role_to_type[ATSPI_ROLE_COUNT] = {
     CONTROL_TYPE_NONE,        // ATSPI_ROLE_INVALID
     CONTROL_TYPE_NONE,        // ATSPI_ROLE_ACCELERATOR_LABEL
@@ -152,6 +153,7 @@ static const ControlType role_to_type[ATSPI_ROLE_COUNT] = {
     CONTROL_TYPE_NONE,        // ATSPI_ROLE_LAST_DEFINED
 };
 
+// from an accessible find the control type
 ControlType identify_control(AtspiAccessible *accessible)
 {
     if (!accessible)

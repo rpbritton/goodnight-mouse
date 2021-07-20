@@ -23,6 +23,7 @@
 
 #define CONFIG_GROUP "background"
 
+// creates a background config using a key file and default values
 BackgroundConfig *background_new_config(GKeyFile *key_file)
 {
     // create config
@@ -105,6 +106,7 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
     return config;
 }
 
+// destroys and frees a background config
 void background_destroy_config(BackgroundConfig *config)
 {
     if (!config)

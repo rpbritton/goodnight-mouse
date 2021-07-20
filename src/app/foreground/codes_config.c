@@ -23,6 +23,7 @@
 
 #define CONFIG_GROUP "codes"
 
+// creates a new codes configuration from a key file and default values
 CodesConfig *codes_new_config(GKeyFile *key_file)
 {
     // create config
@@ -87,6 +88,7 @@ CodesConfig *codes_new_config(GKeyFile *key_file)
     return config;
 }
 
+// destroys and frees a codes config
 void codes_destroy_config(CodesConfig *config)
 {
     if (!config)

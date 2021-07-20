@@ -24,6 +24,7 @@
 
 #include "app/app_config.h"
 
+// config for the executable and app
 typedef struct Config
 {
     gboolean verbose;

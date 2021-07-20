@@ -19,6 +19,7 @@
 
 #include "foreground_config.h"
 
+// create a new foreground config from the key file and default values
 ForegroundConfig *foreground_new_config(GKeyFile *key_file)
 {
     // create config
@@ -44,6 +45,7 @@ ForegroundConfig *foreground_new_config(GKeyFile *key_file)
     return config;
 }
 
+// destroys and frees a foreground config
 void foreground_destroy_config(ForegroundConfig *config)
 {
     if (!config)

@@ -27,6 +27,8 @@
 #include "../input/input.h"
 #include "../foreground/foreground.h"
 
+// background state that can run a g main loop and trigger a foreground
+// when a hotkey is pressed
 typedef struct Background
 {
     GMainLoop *loop;

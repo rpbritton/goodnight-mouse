@@ -22,6 +22,7 @@
 
 #include <atspi/atspi.h>
 
+// different types of controls that control accessible identification and execution
 typedef enum ControlType
 {
     CONTROL_TYPE_NONE,

@@ -24,6 +24,7 @@
 #include "X11/Xlib.h"
 #endif
 
+// gets the currently focused window using atspi and/or X11 libraries
 AtspiAccessible *window_get_focused()
 {
     AtspiAccessible *active_window = NULL;

@@ -20,7 +20,8 @@
 #include "app/app.h"
 #include "config.h"
 
-static void set_verbose_logging()
+// passes through debug logs
+static void enable_verbose_logging()
 {
     const gchar *current_domains = g_getenv("G_MESSAGES_DEBUG");
     if (current_domains)
@@ -33,6 +34,7 @@ static void set_verbose_logging()
         g_setenv("G_MESSAGES_DEBUG", G_LOG_DOMAIN, FALSE);
 }
 
+// main function of the executable
 int main(int argc, char **argv)
 {
     Config *config = config_new(argc, argv);
@@ -40,7 +42,7 @@ int main(int argc, char **argv)
         exit(1);
 
     if (config->verbose)
-        set_verbose_logging();
+        enable_verbose_logging();
 
     App *app = app_new(config->app);
 

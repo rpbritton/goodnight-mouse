@@ -22,6 +22,7 @@
 
 #include <glib.h>
 
+// background configuration
 typedef struct BackgroundConfig
 {
     guint key;

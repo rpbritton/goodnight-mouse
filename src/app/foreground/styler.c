@@ -19,8 +19,7 @@
 
 #include "styler.h"
 
-//static GHashTable *styler_get_properties(Styler styler, gchar *css_class);
-
+// start and create a new styler
 Styler *styler_start()
 {
     Styler *styler = g_new(Styler, 1);
@@ -28,6 +27,7 @@ Styler *styler_start()
     return styler;
 }
 
+// cleans up the styler and returns a css provider
 GtkCssProvider *styler_finish(Styler *styler)
 {
     // create provider
@@ -41,6 +41,7 @@ GtkCssProvider *styler_finish(Styler *styler)
     return styling;
 }
 
+// adds a css property to the given class
 void styler_add(Styler *styler, gchar *css_class, gchar *property, gchar *value)
 {
     gchar *old_css = styler->css;

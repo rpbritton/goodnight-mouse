@@ -28,6 +28,7 @@
 #include "background/background.h"
 #include "foreground/foreground.h"
 
+// an app that manages the lifetime of a foreground and or background
 typedef struct App
 {
     guint signal_sighup;

@@ -30,6 +30,7 @@
 
 #define OVERLAY_WINDOW_TITLE "goodnight_mouse"
 
+// overlay window that can hold tags and show over a given window
 typedef struct Overlay
 {
     AtspiAccessible *window;

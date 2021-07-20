@@ -24,6 +24,7 @@
 
 #include "tag_config.h"
 
+// the configuration used to create a new code manager
 typedef struct CodesConfig
 {
     GArray *keys;

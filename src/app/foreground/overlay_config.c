@@ -23,6 +23,7 @@
 
 #define CONFIG_GROUP "overlay"
 
+// creates an overlay config from key file and default values
 OverlayConfig *overlay_new_config(GKeyFile *key_file)
 {
     // create config
@@ -69,6 +70,7 @@ OverlayConfig *overlay_new_config(GKeyFile *key_file)
     return config;
 }
 
+// destroys and frees a code config
 void overlay_destroy_config(OverlayConfig *config)
 {
     if (!config)

@@ -25,6 +25,8 @@
 
 #include "event.h"
 
+// input watcher that listens for key and mouse button events, and relays
+// them onto subscribers
 typedef struct Input
 {
     GSList *subscribers;

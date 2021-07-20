@@ -30,6 +30,7 @@
 
 static gboolean event_callback(AtspiDeviceEvent *event, gpointer input_ptr);
 
+// create a new input watcher
 Input *input_new()
 {
     Input *input = g_new(Input, 1);
@@ -48,6 +49,7 @@ Input *input_new()
     return input;
 }
 
+// destroy and free an input watcher
 void input_destroy(Input *input)
 {
     // deregister listeners
@@ -63,6 +65,7 @@ void input_destroy(Input *input)
     g_free(input);
 }
 
+// subscribe to a certain input event
 void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpointer data)
 {
     Subscriber *subscriber = subscriber_new(event, callback, data);
@@ -70,6 +73,7 @@ void input_subscribe(Input *input, InputEvent event, InputCallback callback, gpo
     input->subscribers = g_slist_prepend(input->subscribers, subscriber);
 }
 
+// unsubscribe all instances of a callback
 void input_unsubscribe(Input *input, InputCallback callback)
 {
     GSList *subscriber_node;
@@ -80,6 +84,7 @@ void input_unsubscribe(Input *input, InputCallback callback)
     }
 }
 
+// get the currently set modifiers
 guint input_modifiers(Input *input)
 {
     GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
@@ -87,6 +92,7 @@ guint input_modifiers(Input *input)
     return modifiers;
 }
 
+// start watching input events
 void input_start(Input *input)
 {
     // check state
@@ -113,6 +119,7 @@ void input_start(Input *input)
     timeout_enable();
 }
 
+// stop watching input events
 void input_stop(Input *input)
 {
     // check state
@@ -138,6 +145,7 @@ void input_stop(Input *input)
     timeout_enable();
 }
 
+// handle an event callback from atspi and notify the subscribers
 static gboolean event_callback(AtspiDeviceEvent *atspi_event, gpointer input_ptr)
 {
     // extract event

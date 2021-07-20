@@ -23,6 +23,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 
+// tool for creating a css provider from added properties
 typedef struct Styler
 {
     gchar *css;

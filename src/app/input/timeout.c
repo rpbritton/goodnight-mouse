@@ -33,6 +33,7 @@ static guint log_handler_id = 0;
 
 static void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data);
 
+// enable the atspi dbus call timeouts
 void timeout_enable()
 {
     if (timeout_enabled)
@@ -53,6 +54,7 @@ void timeout_enable()
     g_log_remove_handler("dbind", log_handler_id);
 }
 
+// disable the atspi dbus call timeouts
 void timeout_disable()
 {
     if (!timeout_enabled)
@@ -75,6 +77,7 @@ void timeout_disable()
     g_object_unref(desktop);
 }
 
+// log handler to hide dbus timeout log warnings
 static void log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer data)
 {
     if (g_strrstr(message, DBUS_TIMEOUT_MESSAGE))

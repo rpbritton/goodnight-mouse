@@ -27,6 +27,7 @@ static void overlay_refresh(Overlay *overlay);
 static void overlay_reposition(Overlay *overlay);
 static gboolean overlay_refresh_loop(gpointer overlay_ptr);
 
+// creates a new overlay from the config
 Overlay *overlay_new(OverlayConfig *config)
 {
     Overlay *overlay = g_new(Overlay, 1);
@@ -58,6 +59,7 @@ Overlay *overlay_new(OverlayConfig *config)
     return overlay;
 }
 
+// destroys and frees an overlay
 void overlay_destroy(Overlay *overlay)
 {
     // hide overlay
@@ -72,6 +74,7 @@ void overlay_destroy(Overlay *overlay)
     g_free(overlay);
 }
 
+// shows the overlay on top of the window
 void overlay_show(Overlay *overlay, AtspiAccessible *window)
 {
     // do nothing if invalid winow
@@ -98,6 +101,7 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
     gtk_widget_show_all(overlay->overlay);
 }
 
+// hides the overlay and unsets the followed window
 void overlay_hide(Overlay *overlay)
 {
     // do nothing if no window
@@ -122,6 +126,7 @@ void overlay_hide(Overlay *overlay)
     g_source_remove(overlay->refresh_source_id);
 }
 
+// adds a tag to the overlay
 void overlay_add(Overlay *overlay, Tag *tag)
 {
     // add tag reference
@@ -137,6 +142,7 @@ void overlay_add(Overlay *overlay, Tag *tag)
         tag_show(tag, GTK_LAYOUT(overlay->container));
 }
 
+// removes the tag from the overlay
 void overlay_remove(Overlay *overlay, Tag *tag)
 {
     // remove tag reference
@@ -149,6 +155,7 @@ void overlay_remove(Overlay *overlay, Tag *tag)
         tag_hide(tag);
 }
 
+// sets the overlay into the shifted state, which will apply it to the tags
 void overlay_shifted(Overlay *overlay, gboolean shifted)
 {
     // do nothing if same
@@ -164,6 +171,7 @@ void overlay_shifted(Overlay *overlay, gboolean shifted)
         tag_shifted(tag_ptr, overlay->shifted);
 }
 
+// stops the overlay window from capturing mouse events
 static void remove_input(GtkWidget *overlay, gpointer data)
 {
     cairo_rectangle_int_t rectangle = {
@@ -177,6 +185,7 @@ static void remove_input(GtkWidget *overlay, gpointer data)
     cairo_region_destroy(region);
 }
 
+// repositions the overlay window and all its tags
 static void overlay_refresh(Overlay *overlay)
 {
     // do nothing if not shown
@@ -194,6 +203,7 @@ static void overlay_refresh(Overlay *overlay)
         tag_reposition(tag_ptr);
 }
 
+// repositions the overlay over the followed window
 static void overlay_reposition(Overlay *overlay)
 {
     AtspiComponent *component = atspi_accessible_get_component_iface(overlay->window);
@@ -206,6 +216,7 @@ static void overlay_reposition(Overlay *overlay)
     g_free(rect);
 }
 
+// refreshes the overlay every interval
 static gboolean overlay_refresh_loop(gpointer overlay_ptr)
 {
     Overlay *overlay = overlay_ptr;

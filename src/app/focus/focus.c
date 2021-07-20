@@ -24,17 +24,19 @@
 #define WINDOW_ACTIVATE_EVENT "window:activate"
 #define WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
+// subscriber contains the callback and data information
 typedef struct Subscriber
 {
     FocusCallback callback;
     gpointer data;
 } Subscriber;
 
-static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer source);
+static gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer source);
 static void activation_callback(AtspiEvent *event, gpointer focus_ptr);
 static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr);
 static void notify_subscribers(Focus *focus);
 
+// creates a new focus watcher
 Focus *focus_new()
 {
     Focus *focus = g_new(Focus, 1);
@@ -54,6 +56,7 @@ Focus *focus_new()
     return focus;
 }
 
+// destroys a focus watcher
 void focus_destroy(Focus *focus)
 {
     // deregister listeners
@@ -72,6 +75,7 @@ void focus_destroy(Focus *focus)
     g_free(focus);
 }
 
+// subscribes to focus activate and deactivate events
 void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data)
 {
     Subscriber *subscriber = g_new(Subscriber, 1);
@@ -82,22 +86,25 @@ void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data)
     focus->subscribers = g_list_prepend(focus->subscribers, subscriber);
 }
 
+// unsubscribes all instances of a callback from the focus listener
 void focus_unsubscribe(Focus *focus, FocusCallback callback)
 {
     GList *subscriber_node;
-    while ((subscriber_node = g_list_find_custom(focus->subscribers, callback, subscriber_matches_callback)))
+    while ((subscriber_node = g_list_find_custom(focus->subscribers, callback, subscriber_compare_callback)))
     {
         g_free(subscriber_node->data);
         focus->subscribers = g_list_remove_all(focus->subscribers, subscriber_node->data);
     }
 }
 
-static gint subscriber_matches_callback(gconstpointer subscriber, gconstpointer callback)
+// compares a subscriber to a callback, returns 0 on match
+static gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer callback)
 {
     // return 0 = match
     return !(((Subscriber *)subscriber)->callback == callback);
 }
 
+// handles a window focus event and notifies subscribers
 static void activation_callback(AtspiEvent *event, gpointer focus_ptr)
 {
     Focus *focus = focus_ptr;
@@ -118,6 +125,7 @@ static void activation_callback(AtspiEvent *event, gpointer focus_ptr)
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
+// handles a window deactivation event and notifies subscribers
 static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr)
 {
     Focus *focus = focus_ptr;
@@ -144,6 +152,7 @@ static void deactivation_callback(AtspiEvent *event, gpointer focus_ptr)
     g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
+// notifies all subscribers the current state of the focus watcher
 static void notify_subscribers(Focus *focus)
 {
     for (GList *link = focus->subscribers; link; link = link->next)
@@ -156,6 +165,7 @@ static void notify_subscribers(Focus *focus)
     }
 }
 
+// asks the focus watcher for the currently focused window
 AtspiAccessible *focus_get_window(Focus *focus)
 {
     if (focus->window)

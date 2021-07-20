@@ -23,12 +23,12 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 
-// todo: move
 #define TAG_CONTAINER_CSS_CLASS "tag_container"
 #define TAG_LABEL_CSS_CLASS "tag_label"
 #define TAG_CHARACTER_CSS_CLASS "tag_character"
 #define TAG_CHARACTER_ACTIVE_CSS_CLASS "tag_character_active"
 
+// configuration for a tag
 typedef struct TagConfig
 {
     GtkStyleProvider *styling;

@@ -25,9 +25,10 @@
 
 #include "control.h"
 
-// todo: possible call with a list of controls so they can be shuffled/processed better
+// callback type used to add or remove an accessible
 typedef void (*RegistryCallback)(AtspiAccessible *, gpointer data);
 
+// callback info for a registry subscriber
 typedef struct RegistrySubscriber
 {
     RegistryCallback add;
@@ -35,6 +36,8 @@ typedef struct RegistrySubscriber
     gpointer data;
 } RegistrySubscriber;
 
+// registry that maintains a list of accessibles that can be executed, with
+// support for callback events on add and remove
 typedef struct Registry
 {
     GHashTable *accessibles;

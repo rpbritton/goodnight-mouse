@@ -23,6 +23,7 @@ static void tag_generate_label(Tag *tag);
 static void tag_destroy_label(Tag *tag);
 static void tag_show_label(Tag *tag);
 
+// creates a new tag
 Tag *tag_new(TagConfig *config)
 {
     Tag *tag = g_new(Tag, 1);
@@ -63,6 +64,7 @@ Tag *tag_new(TagConfig *config)
     return tag;
 }
 
+// destroys and frees a tag
 void tag_destroy(Tag *tag)
 {
     // hide tag
@@ -84,6 +86,7 @@ void tag_destroy(Tag *tag)
     g_free(tag);
 }
 
+// sets a tag to follow an accessible
 void tag_set_accessible(Tag *tag, AtspiAccessible *accessible)
 {
     // unset last accessible
@@ -97,6 +100,7 @@ void tag_set_accessible(Tag *tag, AtspiAccessible *accessible)
         tag_reposition(tag);
 }
 
+// stops a tag from following an accessible
 void tag_unset_accessible(Tag *tag)
 {
     // do nothing if not set
@@ -108,6 +112,7 @@ void tag_unset_accessible(Tag *tag)
     tag->accessible = NULL;
 }
 
+// shiftes a tag to show upper or lower case
 void tag_shifted(Tag *tag, gboolean shifted)
 {
     // do nothing if not changed
@@ -121,6 +126,7 @@ void tag_shifted(Tag *tag, gboolean shifted)
     tag_generate_label(tag);
 }
 
+// add and show a tag in a gtk layout
 void tag_show(Tag *tag, GtkLayout *parent)
 {
     // return if invalid parent
@@ -141,6 +147,7 @@ void tag_show(Tag *tag, GtkLayout *parent)
     gtk_widget_show(tag->wrapper);
 }
 
+// removes a tag from its parent
 void tag_hide(Tag *tag)
 {
     // return already hidden
@@ -155,6 +162,7 @@ void tag_hide(Tag *tag)
     tag->parent = NULL;
 }
 
+// repositions a tag over its accessible
 void tag_reposition(Tag *tag)
 {
     // stop if no accessible
@@ -179,6 +187,7 @@ void tag_reposition(Tag *tag)
     g_free(rect);
 }
 
+// sets a tag's code
 void tag_set_code(Tag *tag, GArray *code)
 {
     // set code
@@ -190,11 +199,13 @@ void tag_set_code(Tag *tag, GArray *code)
         tag_generate_label(tag);
 }
 
+// returns a tag's code
 GArray *tag_get_code(Tag *tag)
 {
     return g_array_ref(tag->code);
 }
 
+// unsets a tag's code
 void tag_unset_code(Tag *tag)
 {
     if (!tag->code)
@@ -206,6 +217,8 @@ void tag_unset_code(Tag *tag)
     tag->match_index = 0;
 }
 
+// applies a code to a tag, marking some characters as active or hiding the tag
+// if the codes mismatch
 gboolean tag_apply_code(Tag *tag, GArray *code)
 {
     gint match_index = 0;
@@ -239,11 +252,13 @@ gboolean tag_apply_code(Tag *tag, GArray *code)
     return tag->match_index > -1;
 }
 
+// returns if tag perfectly matches the last applied code
 gboolean tag_matches_code(Tag *tag)
 {
     return tag->match_index == tag->code->len;
 }
 
+// generates the tag label from the code
 static void tag_generate_label(Tag *tag)
 {
     // remove old label
@@ -277,6 +292,7 @@ static void tag_generate_label(Tag *tag)
     tag_show_label(tag);
 }
 
+// destroys the current tag label
 static void tag_destroy_label(Tag *tag)
 {
     // do nothing if no label exists
@@ -292,6 +308,7 @@ static void tag_destroy_label(Tag *tag)
     tag->characters = NULL;
 }
 
+// shows the tag label and sets active character css class
 static void tag_show_label(Tag *tag)
 {
     // update label character css classes

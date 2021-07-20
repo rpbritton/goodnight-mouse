@@ -23,6 +23,7 @@
 #include <glib.h>
 #include <atspi/atspi.h>
 
+// a window focus watcher whose events can be subscribed to
 typedef struct Focus
 {
     GList *subscribers;
@@ -31,6 +32,7 @@ typedef struct Focus
     AtspiAccessible *window;
 } Focus;
 
+// a callback for when the currently focused window changes, possibly to NULL
 typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
 
 Focus *focus_new();

@@ -22,6 +22,7 @@
 static InputResponse input_callback(InputEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 
+// creates a background that can be run
 Background *background_new(BackgroundConfig *config, Input *input, Foreground *foreground)
 {
     Background *background = g_new(Background, 1);
@@ -30,7 +31,6 @@ Background *background_new(BackgroundConfig *config, Input *input, Foreground *f
     background->foreground = foreground;
 
     // add trigger
-    // todo: include shift key for shifted state?
     background->trigger_event.type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED;
     background->trigger_event.id = config->key;
     background->trigger_event.modifiers = config->modifiers;
@@ -41,6 +41,7 @@ Background *background_new(BackgroundConfig *config, Input *input, Foreground *f
     return background;
 }
 
+// destroys a background
 void background_destroy(Background *background)
 {
     // free main loop
@@ -49,6 +50,7 @@ void background_destroy(Background *background)
     g_free(background);
 }
 
+// runs the background until quit is called
 void background_run(Background *background)
 {
     if (background_is_running(background))
@@ -66,11 +68,13 @@ void background_run(Background *background)
     input_unsubscribe(background->input, input_callback);
 }
 
+// returns whether the background is running
 gboolean background_is_running(Background *background)
 {
     return g_main_loop_is_running(background->loop);
 }
 
+// quits the background if running
 void background_quit(Background *background)
 {
     if (!background_is_running(background))
@@ -81,6 +85,8 @@ void background_quit(Background *background)
     g_main_loop_quit(background->loop);
 }
 
+// callback to handle the hotkey input event by scheduling the foreground
+// to start
 static InputResponse input_callback(InputEvent event, gpointer background_ptr)
 {
     if (event.type == INPUT_KEY_PRESSED)
@@ -92,6 +98,8 @@ static InputResponse input_callback(InputEvent event, gpointer background_ptr)
     return INPUT_CONSUME_EVENT;
 }
 
+// starts the foreground from inside a source, which will be removed on foreground
+// completion
 static gboolean start_foreground(gpointer background_ptr)
 {
     Background *background = (Background *)background_ptr;
