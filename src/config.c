@@ -23,20 +23,24 @@
 
 Config *config_new(int argc, char **argv)
 {
+    // create config
+    Config *config = g_new0(Config, 1);
+    gboolean config_valid = TRUE;
+
     GError *error = NULL;
 
     // default command line arguments
     gchar *config_path = NULL;
-    gboolean verbose = FALSE;
-    gboolean once = FALSE;
+    config->verbose = FALSE;
+    config->once = FALSE;
 
     // add command line arguments
     GOptionContext *context = g_option_context_new(NULL);
     GOptionEntry entries[] =
         {
             {"config", 'c', 0, G_OPTION_ARG_FILENAME, &config_path, "Path to config file", NULL},
-            {"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Enable verbose logging", NULL},
-            {"once", 'o', 0, G_OPTION_ARG_NONE, &once, "Immediately trigger and run once", NULL},
+            {"verbose", 'v', 0, G_OPTION_ARG_NONE, &config->verbose, "Enable verbose logging", NULL},
+            {"once", 'o', 0, G_OPTION_ARG_NONE, &config->once, "Immediately trigger and run once", NULL},
             {NULL},
         };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -47,11 +51,11 @@ Config *config_new(int argc, char **argv)
     if (error)
     {
         g_warning("command line: %s", error->message);
-        g_error_free(error);
-        return NULL;
+        config_valid = FALSE;
     }
+    g_clear_error(&error);
 
-    // check config_path
+    // if config path not given use default
     if (!config_path)
         config_path = g_strdup(DEFAULT_CONFIG_PATH);
 
@@ -60,23 +64,12 @@ Config *config_new(int argc, char **argv)
     g_key_file_set_list_separator(key_file, ',');
     g_key_file_load_from_file(key_file, config_path, G_KEY_FILE_NONE, &error);
     g_free(config_path);
-    if (error)
+    if (error && config_valid)
     {
         g_warning("config: Failed to load config %s", error->message);
-        g_error_free(error);
-        g_key_file_free(key_file);
-        return NULL;
+        config_valid = FALSE;
     }
-
-    // create config
-    Config *config = g_new0(Config, 1);
-    gboolean config_valid = TRUE;
-
-    // get once
-    config->once = once;
-
-    // get verbose
-    config->verbose = verbose;
+    g_clear_error(&error);
 
     // get app
     config->app = app_new_config(key_file);
