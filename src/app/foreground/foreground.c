@@ -128,7 +128,10 @@ void foreground_run(Foreground *foreground)
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);
     if (tag)
+    {
+        g_debug("foreground: Tag matched, executing control");
         execute_control(foreground->input, tag->accessible, foreground->shifted);
+    }
 
     // clean up members
     registry_unwatch(foreground->registry);
@@ -207,11 +210,13 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     // only check presses
     if (event.type != INPUT_KEY_PRESSED)
         return INPUT_CONSUME_EVENT;
+    g_debug("foreground: Received key press event for '%s'", gdk_keyval_name(event.id));
 
     // process key type
     switch (event.id)
     {
     case GDK_KEY_Escape:
+        // quit on escape
         foreground_quit(foreground);
         break;
     case GDK_KEY_Up:
@@ -220,19 +225,22 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     case GDK_KEY_Right:
     case GDK_KEY_Page_Up:
     case GDK_KEY_Page_Down:
+    case GDK_KEY_Home:
+    case GDK_KEY_End:
+        // pass these keys through to the window below
         return INPUT_RELAY_EVENT;
         break;
     case GDK_KEY_BackSpace:
+        // remove the last key
         codes_pop_key(foreground->codes);
         break;
     default:
+        // add this pressed key
         codes_add_key(foreground->codes, event.id);
         // quit if matched
         if (codes_matched_tag(foreground->codes))
             foreground_quit(foreground);
         break;
-
-        // todo: consider passing some keys through, like arrow keys
     }
 
     return INPUT_CONSUME_EVENT;
@@ -241,6 +249,9 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
 // event callback for all mouse events
 static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
 {
+    g_debug("foreground: Received mouse button event");
+
+    // mouse button, quit
     foreground_quit(foreground_ptr);
     return INPUT_RELAY_EVENT;
 }
@@ -248,8 +259,7 @@ static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
 // event callback for window focus changes
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
 {
-    if (window)
-        g_object_unref(window);
+    g_debug("foreground: Received window focus change event");
 
     // window focus changed, quit
     foreground_quit(foreground_ptr);

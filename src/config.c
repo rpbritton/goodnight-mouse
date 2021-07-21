@@ -86,6 +86,7 @@ Config *config_new(int argc, char **argv)
         config_destroy(config);
         return NULL;
     }
+    g_debug("config: Parse successful");
     return config;
 }
 

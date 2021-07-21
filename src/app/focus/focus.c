@@ -158,9 +158,6 @@ static void notify_subscribers(Focus *focus)
     for (GList *link = focus->subscribers; link; link = link->next)
     {
         Subscriber *subscriber = link->data;
-
-        if (focus->window)
-            g_object_ref(focus->window);
         subscriber->callback(focus->window, subscriber->data);
     }
 }

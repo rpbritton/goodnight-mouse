@@ -121,7 +121,7 @@ void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted
 
 static gboolean execute_action(AtspiAccessible *accessible, guint index)
 {
-    g_debug("execute_action: Attempting action '%d'", index);
+    g_debug("execution: Attempting action '%d'", index);
 
     // get action
     AtspiAction *action = atspi_accessible_get_action_iface(accessible);
@@ -147,9 +147,9 @@ static gboolean execute_action(AtspiAccessible *accessible, guint index)
 static gboolean execute_modifiers(guint modifiers, gboolean lock)
 {
     if (lock)
-        g_debug("execute_modifiers: Locking modifiers '%d'", modifiers);
+        g_debug("execution: Locking modifiers '%d'", modifiers);
     else
-        g_debug("execute_modifiers: Unlocking modifiers '%d'", modifiers);
+        g_debug("execution: Unlocking modifiers '%d'", modifiers);
 
     // set modifiers
     AtspiKeySynthType synth_type = lock ? ATSPI_KEY_LOCKMODIFIERS : ATSPI_KEY_UNLOCKMODIFIERS;
@@ -163,7 +163,7 @@ static gboolean execute_modifiers(guint modifiers, gboolean lock)
 // presses and releases the given key
 static gboolean execute_key(guint key)
 {
-    g_debug("execute_key: Pressing key '%d'", key);
+    g_debug("execution: Pressing key '%d'", key);
 
     // send key
     if (!atspi_generate_keyboard_event(key, NULL, ATSPI_KEY_SYM, NULL))
@@ -176,7 +176,7 @@ static gboolean execute_key(guint key)
 // executes a mouse click of the button into the center of the given accessible
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button)
 {
-    g_debug("execute_mouse: Clicking mouse '%d'", button);
+    g_debug("execution: Clicking mouse '%d'", button);
 
     // record the current mouse position
     GdkSeat *seat = gdk_display_get_default_seat(gdk_display_get_default());
@@ -213,7 +213,7 @@ static gboolean execute_mouse(AtspiAccessible *accessible, guint button)
 // grabs the input focus onto the given accessible
 static gboolean execute_focus(AtspiAccessible *accessible)
 {
-    g_debug("execute_focus: Focusing accessible");
+    g_debug("execution: Focusing accessible");
 
     // check for focusable state
     AtspiStateSet *states = atspi_accessible_get_state_set(accessible);

@@ -71,12 +71,14 @@ void app_destroy(App *app)
 // run an app's background
 void app_run(App *app)
 {
+    g_debug("app: Running loop");
     background_run(app->background);
 }
 
 // run the app's foreground
 void app_run_once(App *app)
 {
+    g_debug("app: Running once");
     foreground_run(app->foreground);
 }
 
