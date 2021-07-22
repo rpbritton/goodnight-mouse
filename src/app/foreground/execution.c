@@ -28,6 +28,7 @@ static gboolean execute_modifiers(guint modifiers, gboolean lock);
 static gboolean execute_key(guint key);
 static gboolean execute_mouse(AtspiAccessible *accessible, guint button);
 static gboolean execute_focus(AtspiAccessible *accessible);
+static gboolean execute_press(AtspiAccessible *accessible);
 
 // executes an accessible by identifying it's control type, and potentially it's shifted variant
 void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted)
@@ -43,21 +44,29 @@ void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted
     // choose action of execution
     switch (control_type)
     {
+    case CONTROL_TYPE_NONE:
+        break;
+
     case CONTROL_TYPE_PRESS:
+        execute_press(accessible);
+        break;
+
+    case CONTROL_TYPE_FOCUS:
+        execute_focus(accessible);
+        break;
+
+    case CONTROL_TYPE_TAB:
+        if (!shifted)
+            execute_press(accessible);
+        else
+            execute_mouse(accessible, 2);
+
+        break;
+
+    case CONTROL_TYPE_LINK:
         if (!shifted)
         {
-            // attempt press using action
-            if (execute_action(accessible, 0))
-                break;
-
-            // attempt press using return key
-            if (execute_focus(accessible) &&
-                execute_key(GDK_KEY_Return))
-                break;
-
-            // attempt press using mouse click
-            if (execute_mouse(accessible, 1))
-                break;
+            execute_press(accessible);
         }
         else
         {
@@ -78,40 +87,21 @@ void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted
         }
         break;
 
-    case CONTROL_TYPE_FOCUS:
-        // attempt focus
-        execute_focus(accessible);
-        break;
-
-    case CONTROL_TYPE_PAGE_TAB:
-        if (!shifted)
+    case CONTROL_TYPE_FOCUSABLE:
+        // check if focusable accessible has an action
+        AtspiAction *action = atspi_accessible_get_action_iface(accessible);
+        gint n_actions = 0;
+        if (action)
         {
-            // attempt press using action
-            if (execute_action(accessible, 0))
-                break;
-
-            // attempt press using return key
-            if (execute_focus(accessible) &&
-                execute_key(GDK_KEY_Return))
-                break;
-
-            // attempt press using mouse click
-            if (execute_mouse(accessible, 1))
-                break;
+            n_actions = atspi_action_get_n_actions(action, NULL);
+            g_object_unref(action);
         }
+
+        if (n_actions > 0)
+            execute_press(accessible);
         else
-        {
-            // use middle mouse button to close tab
-            execute_mouse(accessible, 2);
-        }
-        break;
+            execute_focus(accessible);
 
-    case CONTROL_TYPE_ONLY_ACTION:
-        // use action
-        execute_action(accessible, 0);
-        break;
-
-    case CONTROL_TYPE_NONE:
         break;
     }
 
@@ -233,6 +223,32 @@ static gboolean execute_focus(AtspiAccessible *accessible)
     if (!success)
         return FALSE;
 
+    // check if now contains focused state
+    states = atspi_accessible_get_state_set(accessible);
+    gboolean focused = atspi_state_set_contains(states, ATSPI_STATE_FOCUSED);
+    g_object_unref(states);
+    if (!focused)
+        return FALSE;
+
     // success
     return TRUE;
+}
+
+// attempt to press an accessible, like lift-clicking with a mouse on a button
+static gboolean execute_press(AtspiAccessible *accessible)
+{
+    // attempt press using action
+    if (execute_action(accessible, 0))
+        return TRUE;
+
+    // attempt press using return key
+    if (execute_focus(accessible) &&
+        execute_key(GDK_KEY_Return))
+        return TRUE;
+
+    // attempt press using mouse click
+    if (execute_mouse(accessible, 1))
+        return TRUE;
+
+    return FALSE;
 }

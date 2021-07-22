@@ -184,7 +184,7 @@ static gboolean registry_check_children(Registry *registry, ControlType control_
 {
     switch (control_type)
     {
-    case CONTROL_TYPE_PAGE_TAB:
+    case CONTROL_TYPE_TAB:
         return FALSE;
     default:
         return TRUE;
