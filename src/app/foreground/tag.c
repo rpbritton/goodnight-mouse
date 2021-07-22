@@ -47,7 +47,7 @@ Tag *tag_new(TagConfig *config)
     // create the label wrapper
     tag->wrapper = g_object_ref(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
     gtk_style_context_add_class(gtk_widget_get_style_context(tag->wrapper), TAG_CONTAINER_CSS_CLASS);
-    gtk_container_add(GTK_CONTAINER(tag->wrapper), tag->label);
+    gtk_box_pack_start(GTK_BOX(tag->wrapper), tag->label, TRUE, TRUE, 0);
 
     // init the gtk labels
     tag->characters = NULL;
