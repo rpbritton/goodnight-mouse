@@ -38,8 +38,25 @@ ControlType identify_control(AtspiAccessible *accessible)
         control_type = CONTROL_TYPE_LINK;
         break;
 
+    case ATSPI_ROLE_PUSH_BUTTON:
+    case ATSPI_ROLE_TOGGLE_BUTTON:
+    case ATSPI_ROLE_COMBO_BOX:
+    case ATSPI_ROLE_RADIO_BUTTON:
+    case ATSPI_ROLE_SPIN_BUTTON:
+    case ATSPI_ROLE_CHECK_BOX:
+    case ATSPI_ROLE_CHECK_MENU_ITEM:
+    case ATSPI_ROLE_MENU:
+    case ATSPI_ROLE_MENU_ITEM:
+        control_type = CONTROL_TYPE_PRESS;
+        break;
+
+    case ATSPI_ROLE_TEXT:
+    case ATSPI_ROLE_ENTRY:
+    case ATSPI_ROLE_PASSWORD_TEXT:
+        control_type = CONTROL_TYPE_FOCUS;
+
     default:
-        // check if accessible of unknown role contains a noteworthy state
+        // check if accessible of unknown role is focusable
         AtspiStateSet *states = atspi_accessible_get_state_set(accessible);
         if (atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE))
             control_type = CONTROL_TYPE_FOCUSABLE;
