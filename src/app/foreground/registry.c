@@ -25,7 +25,7 @@
 
 #define REGISTRY_REFRESH_INTERVAL 500
 
-static void registry_refresh(Registry *registry);
+static void registry_refresh(Registry *registry, gboolean pause_for_events);
 static gboolean registry_refresh_loop(gpointer registry_ptr);
 
 static gboolean registry_check_children(Registry *registry, ControlType control_type);
@@ -86,8 +86,13 @@ void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscri
     registry->window = g_object_ref(window);
     registry->subscriber = subscriber;
 
+    // refresh the registry now
+    registry_refresh(registry, FALSE);
+
     // start the refresh loop
-    registry_refresh_loop(registry);
+    registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
+                                                registry_refresh_loop,
+                                                registry);
 }
 
 void registry_unwatch(Registry *registry)
@@ -115,17 +120,20 @@ void registry_unwatch(Registry *registry)
     g_source_remove(registry->refresh_source_id);
 }
 
-static void registry_refresh(Registry *registry)
+static void registry_refresh(Registry *registry, gboolean pause_for_events)
 {
     GHashTable *accessibles_to_keep = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
     GArray *accessibles_to_add = g_array_new(FALSE, FALSE, sizeof(AtspiAccessible *));
-
-    // todo: process g lib main loop events every few children
 
     // loop through queued accessibles
     GList *accessible_queue = g_list_append(NULL, g_object_ref(registry->window));
     while (accessible_queue)
     {
+        // check to pause to process other glib events
+        if (pause_for_events)
+            while (g_main_context_iteration(NULL, FALSE))
+                continue;
+
         // pop first accessible to check
         AtspiAccessible *accessible = accessible_queue->data;
         accessible_queue = g_list_delete_link(accessible_queue, accessible_queue);
@@ -165,7 +173,7 @@ static gboolean registry_refresh_loop(gpointer registry_ptr)
     Registry *registry = registry_ptr;
 
     // refresh the registry
-    registry_refresh(registry);
+    registry_refresh(registry, TRUE);
 
     // add a source to call after interval
     registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
