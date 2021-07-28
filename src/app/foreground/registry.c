@@ -19,6 +19,8 @@
 
 #include "registry.h"
 
+#include <gsl/gsl_qrng.h>
+
 #include "identify.h"
 
 #define REGISTRY_REFRESH_INTERVAL 500
@@ -28,6 +30,9 @@ static gboolean registry_refresh_loop(gpointer registry_ptr);
 
 static gboolean registry_check_children(Registry *registry, ControlType control_type);
 static GList *registry_get_children(Registry *registry, AtspiAccessible *accessible);
+
+static void registry_remove_missing_accessibles(Registry *registry, GHashTable *accessibles_to_keep);
+static void registry_add_accessibles(Registry *registry, GArray *accessibles_to_add);
 
 Registry *registry_new()
 {
@@ -112,7 +117,10 @@ void registry_unwatch(Registry *registry)
 
 static void registry_refresh(Registry *registry)
 {
-    GHashTable *refreshed_accessibles = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+    GHashTable *accessibles_to_keep = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+    GArray *accessibles_to_add = g_array_new(FALSE, FALSE, sizeof(AtspiAccessible *));
+
+    // todo: process g lib main loop events every few children
 
     // loop through queued accessibles
     GList *accessible_queue = g_list_append(NULL, g_object_ref(registry->window));
@@ -122,45 +130,34 @@ static void registry_refresh(Registry *registry)
         AtspiAccessible *accessible = accessible_queue->data;
         accessible_queue = g_list_delete_link(accessible_queue, accessible_queue);
 
-        // add accessible reference into refreshed record
-        g_hash_table_add(refreshed_accessibles, accessible);
+        // mark to keep, stealing the reference
+        g_hash_table_add(accessibles_to_keep, accessible);
 
         // identify the accessible
         ControlType control_type = identify_control(accessible);
 
-        // add child accessibles to the front
+        // add the children to the front
         if (registry_check_children(registry, control_type))
             accessible_queue = g_list_concat(registry_get_children(registry, accessible), accessible_queue);
 
-        // don't add if control type none
+        // don't do anything if the control type is none
         if (control_type == CONTROL_TYPE_NONE)
             continue;
 
-        // don't add if exists
-        if (g_hash_table_contains(registry->accessibles, accessible))
-            continue;
-
-        // add accessible
-        g_hash_table_add(registry->accessibles, g_object_ref(accessible));
-        if (registry->subscriber.add)
-            registry->subscriber.add(accessible, registry->subscriber.data);
+        // mark to add if does yet not exist
+        if (!g_hash_table_contains(registry->accessibles, accessible))
+            accessibles_to_add = g_array_append_val(accessibles_to_add, accessible);
     }
 
-    // remove non refreshed controls
-    // todo: callback remove before callback add to better utilize codes
-    GHashTableIter iter;
-    gpointer accessible_ptr, null_ptr;
-    g_hash_table_iter_init(&iter, registry->accessibles);
-    while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
-    {
-        if (g_hash_table_contains(refreshed_accessibles, accessible_ptr))
-            continue;
+    // remove accessibles that were not found in the refresh
+    registry_remove_missing_accessibles(registry, accessibles_to_keep);
 
-        if (registry->subscriber.remove)
-            registry->subscriber.remove(accessible_ptr, registry->subscriber.data);
-        g_hash_table_iter_remove(&iter);
-    }
-    g_hash_table_unref(refreshed_accessibles);
+    // add accessibles that do not exist yet
+    registry_add_accessibles(registry, accessibles_to_add);
+
+    // free
+    g_array_unref(accessibles_to_add);
+    g_hash_table_unref(accessibles_to_keep);
 }
 
 static gboolean registry_refresh_loop(gpointer registry_ptr)
@@ -219,4 +216,62 @@ static GList *registry_get_children(Registry *registry, AtspiAccessible *accessi
 
     // return
     return children;
+}
+
+// remove all accessibles not found in the given hash table
+static void registry_remove_missing_accessibles(Registry *registry, GHashTable *accessibles_to_keep)
+{
+    // check all existing accessibles
+    GHashTableIter iter;
+    gpointer accessible_ptr, null_ptr;
+    g_hash_table_iter_init(&iter, registry->accessibles);
+    while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
+    {
+        // do nothing if found
+        if (g_hash_table_contains(accessibles_to_keep, accessible_ptr))
+            continue;
+
+        // remove if not found
+        if (registry->subscriber.remove)
+            registry->subscriber.remove(accessible_ptr, registry->subscriber.data);
+        g_hash_table_iter_remove(&iter);
+    }
+}
+
+// add accessibles to the registry and callback in a quasi-random manner
+static void registry_add_accessibles(Registry *registry, GArray *accessibles_to_add)
+{
+    // create a quasi-random number generator
+    gsl_qrng *generator = gsl_qrng_alloc(gsl_qrng_halton, 1);
+    // the lowest power of 2 greater than the number of accessibles multiplied
+    // by the generated value will be a unique, whole integer that can be used
+    // as an index, with the exception of 0 being 0.5
+    gint multiplier = 1;
+    while (multiplier < accessibles_to_add->len)
+        multiplier *= 2;
+
+    // iterate through all the indexes
+    for (gint count = 0; count < multiplier; count++)
+    {
+        double value;
+        gsl_qrng_get(generator, &value);
+
+        // get index from generator
+        gint index = (gint)(value * multiplier);
+        if (index >= accessibles_to_add->len)
+            continue;
+
+        // get accessible
+        AtspiAccessible *accessible = g_array_index(accessibles_to_add, AtspiAccessible *, index);
+        if (g_hash_table_contains(registry->accessibles, accessible))
+            continue;
+
+        // add accessible
+        g_hash_table_add(registry->accessibles, g_object_ref(accessible));
+        if (registry->subscriber.add)
+            registry->subscriber.add(accessible, registry->subscriber.data);
+    }
+
+    // free generator
+    gsl_qrng_free(generator);
 }

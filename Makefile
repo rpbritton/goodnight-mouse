@@ -26,7 +26,7 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
 CFLAGS := -Wall
 LDFLAGS :=
-LIBS := glib-2.0 atspi-2 gobject-2.0 gtk+-3.0
+LIBS := glib-2.0 atspi-2 gobject-2.0 gtk+-3.0 gsl
 
 LIBS += x11
 CFLAGS += -DUSE_X11
