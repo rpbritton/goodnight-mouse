@@ -17,33 +17,24 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef B1E39E9E_46A9_450C_AE4B_72A95E00B143
-#define B1E39E9E_46A9_450C_AE4B_72A95E00B143
+#ifndef CABA104F_07B2_475B_9F0E_E472190346A3
+#define CABA104F_07B2_475B_9F0E_E472190346A3
 
-#include <glib.h>
+#include "event.h"
 
-#include "app_config.h"
-#include "focus/focus.h"
-#include "background/background.h"
-#include "foreground/foreground.h"
-
-// an app that manages the lifetime of a foreground and or background
-typedef struct App
+// listener used to subscribe to a single key event
+typedef struct KeyListener
 {
-    guint signal_sighup;
-    guint signal_sigint;
-    guint signal_sigterm;
+    AtspiDeviceListener *atspi_listener;
+    GArray *atspi_key;
+    AtspiKeyEventMask atspi_type;
+    AtspiKeyMaskType atspi_modifiers;
 
-    Focus *focus;
-    Background *background;
-    Foreground *foreground;
-} App;
+    KeyboardCallback callback;
+    gpointer callback_data;
+} KeyListener;
 
-App *app_new(AppConfig *config);
-void app_destroy(App *app);
-void app_run(App *app);
-void app_run_once(App *app);
-gboolean app_is_running(App *app);
-void app_quit(App *app);
+KeyListener *key_listener_new(KeyboardEvent event, KeyboardCallback callback, gpointer data);
+void key_listener_destroy(KeyListener *listener);
 
-#endif /* B1E39E9E_46A9_450C_AE4B_72A95E00B143 */
+#endif /* CABA104F_07B2_475B_9F0E_E472190346A3 */

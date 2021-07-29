@@ -40,10 +40,9 @@ App *app_new(AppConfig *config)
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
     // create managers
-    app->input = input_new();
     app->focus = focus_new();
-    app->foreground = foreground_new(config->foreground, app->input, app->focus);
-    app->background = background_new(config->background, app->input, app->foreground);
+    app->foreground = foreground_new(config->foreground, app->focus);
+    app->background = background_new(config->background, app->foreground);
 
     return app;
 }
@@ -55,7 +54,6 @@ void app_destroy(App *app)
     background_destroy(app->background);
     foreground_destroy(app->foreground);
     focus_destroy(app->focus);
-    input_destroy(app->input);
 
     // remove signal subscription
     g_source_remove(app->signal_sighup);

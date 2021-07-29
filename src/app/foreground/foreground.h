@@ -24,7 +24,6 @@
 
 #include "foreground_config.h"
 
-#include "../input/input.h"
 #include "../focus/focus.h"
 
 #include "registry.h"
@@ -42,7 +41,6 @@ typedef struct Foreground
 
     gboolean shifted;
 
-    Input *input;
     Focus *focus;
 
     Codes *codes;
@@ -50,7 +48,7 @@ typedef struct Foreground
     Registry *registry;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus);
+Foreground *foreground_new(ForegroundConfig *config, Focus *focus);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);

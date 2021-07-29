@@ -17,11 +17,21 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84
-#define CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84
+#ifndef D102CB85_DF5A_44CB_80DC_B281855A12AB
+#define D102CB85_DF5A_44CB_80DC_B281855A12AB
 
-#include <gdk/gdk.h>
+#include "event.h"
 
-guint modifiers_map(guint modifiers);
+// used to subscribe to all events emitted from a keyboard
+typedef struct KeyboardListener
+{
+    AtspiDeviceListener *atspi_listener;
 
-#endif /* CBDCCCF7_38E5_4DEA_B5F1_7501BA275C84 */
+    KeyboardCallback callback;
+    gpointer callback_data;
+} KeyboardListener;
+
+KeyboardListener *keyboard_listener_new(KeyboardCallback callback, gpointer data);
+void keyboard_listener_destroy(KeyboardListener *listener);
+
+#endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */

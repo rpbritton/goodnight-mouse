@@ -17,26 +17,12 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BD2D3A3A_EF81_4C26_A692_58D39FBCBA95
-#define BD2D3A3A_EF81_4C26_A692_58D39FBCBA95
+#ifndef E7CEDCB5_8525_4FE2_9618_A2D3EA2C6065
+#define E7CEDCB5_8525_4FE2_9618_A2D3EA2C6065
 
 #include <glib.h>
 
-#include "event.h"
+guint keyboard_modifiers();
+guint keyboard_modifiers_map(guint modifiers);
 
-// an input event subscriber that contains the event to subscribe to and
-// callback information
-typedef struct Subscriber
-{
-    InputEvent event;
-    InputCallback callback;
-    gpointer data;
-} Subscriber;
-
-Subscriber *subscriber_new(InputEvent event, InputCallback callback, gpointer data);
-void subscriber_destroy(Subscriber *subscriber);
-InputResponse subscriber_call(Subscriber *subscriber, InputEvent event);
-gint subscriber_compare_event(Subscriber *subscriber, InputEvent event);
-gint subscriber_compare_callback(gconstpointer subscriber, gconstpointer callback);
-
-#endif /* BD2D3A3A_EF81_4C26_A692_58D39FBCBA95 */
+#endif /* E7CEDCB5_8525_4FE2_9618_A2D3EA2C6065 */

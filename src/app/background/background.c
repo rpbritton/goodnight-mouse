@@ -19,24 +19,24 @@
 
 #include "background.h"
 
-static InputResponse input_callback(InputEvent event, gpointer background_ptr);
+static KeyboardResponse key_callback(KeyboardEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 
 // creates a background that can be run
-Background *background_new(BackgroundConfig *config, Input *input, Foreground *foreground)
+Background *background_new(BackgroundConfig *config, Foreground *foreground)
 {
     Background *background = g_new(Background, 1);
 
-    background->input = input;
-    background->foreground = foreground;
-
-    // add trigger
-    background->trigger_event.type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED;
-    background->trigger_event.id = config->key;
-    background->trigger_event.modifiers = config->modifiers;
-
     // create main loop
     background->loop = g_main_loop_new(NULL, FALSE);
+
+    // add members
+    background->foreground = foreground;
+
+    // add trigger event
+    background->trigger_event.type = KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED;
+    background->trigger_event.key = config->key;
+    background->trigger_event.modifiers = config->modifiers;
 
     return background;
 }
@@ -53,19 +53,20 @@ void background_destroy(Background *background)
 // runs the background until quit is called
 void background_run(Background *background)
 {
+    // do nothing if running
     if (background_is_running(background))
         return;
 
-    // subscribe events
-    input_subscribe(background->input, background->trigger_event, input_callback, background);
+    // listen for the trigger
+    KeyListener *trigger_listener = key_listener_new(background->trigger_event, key_callback, background);
 
     // run loop
     g_debug("background: Starting loop");
     g_main_loop_run(background->loop);
     g_debug("background: Stopping loop");
 
-    // unsubscribe events
-    input_unsubscribe(background->input, input_callback);
+    // destroy trigger listener
+    key_listener_destroy(trigger_listener);
 }
 
 // returns whether the background is running
@@ -87,15 +88,15 @@ void background_quit(Background *background)
 
 // callback to handle the hotkey input event by scheduling the foreground
 // to start
-static InputResponse input_callback(InputEvent event, gpointer background_ptr)
+static KeyboardResponse key_callback(KeyboardEvent event, gpointer background_ptr)
 {
-    if (event.type == INPUT_KEY_PRESSED)
+    if (event.type == KEYBOARD_EVENT_PRESSED)
     {
         g_debug("background: Input hotkey triggered");
         g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
     }
 
-    return INPUT_CONSUME_EVENT;
+    return KEYBOARD_EVENT_CONSUME;
 }
 
 // starts the foreground from inside a source, which will be removed on foreground

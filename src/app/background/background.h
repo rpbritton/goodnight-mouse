@@ -24,7 +24,7 @@
 #include <gdk/gdk.h>
 
 #include "background_config.h"
-#include "../input/input.h"
+#include "../listeners/keyboard/key.h"
 #include "../foreground/foreground.h"
 
 // background state that can run a g main loop and trigger a foreground
@@ -33,13 +33,12 @@ typedef struct Background
 {
     GMainLoop *loop;
 
-    Input *input;
     Foreground *foreground;
 
-    InputEvent trigger_event;
+    KeyboardEvent trigger_event;
 } Background;
 
-Background *background_new(BackgroundConfig *config, Input *input, Foreground *foreground);
+Background *background_new(BackgroundConfig *config, Foreground *foreground);
 void background_destroy(Background *background);
 void background_run(Background *background);
 gboolean background_is_running(Background *background);

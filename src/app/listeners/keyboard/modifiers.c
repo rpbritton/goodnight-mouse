@@ -19,9 +19,18 @@
 
 #include "modifiers.h"
 
-// map all virtual modifiers onto their physical counterparts, and only return
-// the 8 physical modifiers
-guint modifiers_map(guint modifiers)
+#include <gdk/gdk.h>
+
+// get the current keyboard modifier state
+guint keyboard_modifiers()
+{
+    GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
+    guint modifiers = gdk_keymap_get_modifier_state(keymap);
+    return keyboard_modifiers_map(modifiers);
+}
+
+// map all modifiers to the eight real ones
+guint keyboard_modifiers_map(guint modifiers)
 {
     GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
     gdk_keymap_map_virtual_modifiers(keymap, &modifiers);

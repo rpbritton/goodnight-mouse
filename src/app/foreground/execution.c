@@ -31,13 +31,10 @@ static gboolean execute_focus(AtspiAccessible *accessible);
 static gboolean execute_press(AtspiAccessible *accessible);
 
 // executes an accessible by identifying it's control type, and potentially it's shifted variant
-void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted)
+void execute_control(AtspiAccessible *accessible, gboolean shifted)
 {
     // get control type
     ControlType control_type = identify_control(accessible);
-
-    // pause input
-    input_stop(input);
 
     // todo: figure out how to unset shift if shifted
 
@@ -104,9 +101,6 @@ void execute_control(Input *input, AtspiAccessible *accessible, gboolean shifted
 
         break;
     }
-
-    // resume input
-    input_start(input);
 }
 
 static gboolean execute_action(AtspiAccessible *accessible, guint index)

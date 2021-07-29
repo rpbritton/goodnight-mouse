@@ -19,31 +19,20 @@
 
 #include "foreground.h"
 
+#include "../listeners/keyboard/keyboard.h"
+#include "../listeners/keyboard/modifiers.h"
+
 #include "execution.h"
 
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
-static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr);
-static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
+static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
+//static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
-// input event that contains all key events
-static const InputEvent KEYBOARD_EVENTS = {
-    .type = INPUT_KEY_PRESSED | INPUT_KEY_RELEASED,
-    .id = INPUT_ALL_IDS,
-    .modifiers = INPUT_ALL_MODIFIERS,
-};
-
-// input event that contains all mouse events
-static const InputEvent MOUSE_EVENTS = {
-    .type = INPUT_BUTTON_PRESSED | INPUT_BUTTON_RELEASED,
-    .id = INPUT_ALL_IDS,
-    .modifiers = INPUT_ALL_MODIFIERS,
-};
-
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
+Foreground *foreground_new(ForegroundConfig *config, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -54,7 +43,6 @@ Foreground *foreground_new(ForegroundConfig *config, Input *input, Focus *focus)
     foreground->accessible_to_tag = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
 
     // add members
-    foreground->input = input;
     foreground->focus = focus;
 
     // create members
@@ -89,7 +77,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground->shifted = !!(input_modifiers(foreground->input) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    foreground->shifted = !!(keyboard_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
@@ -111,9 +99,11 @@ void foreground_run(Foreground *foreground)
     overlay_show(foreground->overlay, window);
 
     // subscribe events
-    input_subscribe(foreground->input, KEYBOARD_EVENTS, callback_keyboard, foreground);
-    input_subscribe(foreground->input, MOUSE_EVENTS, callback_mouse, foreground);
+    //input_subscribe(foreground->input, MOUSE_EVENTS, callback_mouse, foreground);
     focus_subscribe(foreground->focus, callback_focus, foreground);
+
+    // create listeners
+    KeyboardListener *keyboard_listener = keyboard_listener_new(callback_keyboard, foreground);
 
     // run loop
     g_debug("foreground: Starting loop");
@@ -121,16 +111,19 @@ void foreground_run(Foreground *foreground)
     g_debug("foreground: Stopping loop");
 
     // unsubscribe events
-    input_unsubscribe(foreground->input, callback_keyboard);
-    input_unsubscribe(foreground->input, callback_mouse);
+    // input_unsubscribe(foreground->input, callback_keyboard);
+    // input_unsubscribe(foreground->input, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus);
+
+    // destroy listeners
+    keyboard_listener_destroy(keyboard_listener);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);
     if (tag)
     {
         g_debug("foreground: Tag matched, executing control");
-        execute_control(foreground->input, tag->accessible, foreground->shifted);
+        execute_control(tag->accessible, foreground->shifted);
     }
 
     // clean up members
@@ -194,12 +187,12 @@ static void callback_accessible_remove(AtspiAccessible *accessible, gpointer for
 }
 
 // event callback for all keyboard events
-static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr)
+static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
     // get shifted, note modifiers are set after the event
-    gboolean shifted = !!(input_modifiers(foreground->input) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    gboolean shifted = !!(keyboard_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
     // check if shift state changed
     if (shifted != foreground->shifted)
     {
@@ -208,12 +201,12 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     }
 
     // only check presses
-    if (event.type != INPUT_KEY_PRESSED)
-        return INPUT_CONSUME_EVENT;
-    g_debug("foreground: Received key press event for '%s'", gdk_keyval_name(event.id));
+    if (event.type != KEYBOARD_EVENT_PRESSED)
+        return KEYBOARD_EVENT_CONSUME;
+    g_debug("foreground: Received key press event for '%s'", gdk_keyval_name(event.key));
 
     // process key type
-    switch (event.id)
+    switch (event.key)
     {
     case GDK_KEY_Escape:
         // quit on escape
@@ -228,7 +221,7 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
     case GDK_KEY_Home:
     case GDK_KEY_End:
         // pass these keys through to the window below
-        return INPUT_RELAY_EVENT;
+        return KEYBOARD_EVENT_RELAY;
         break;
     case GDK_KEY_BackSpace:
         // remove the last key
@@ -236,25 +229,25 @@ static InputResponse callback_keyboard(InputEvent event, gpointer foreground_ptr
         break;
     default:
         // add this pressed key
-        codes_add_key(foreground->codes, event.id);
+        codes_add_key(foreground->codes, event.key);
         // quit if matched
         if (codes_matched_tag(foreground->codes))
             foreground_quit(foreground);
         break;
     }
 
-    return INPUT_CONSUME_EVENT;
+    return KEYBOARD_EVENT_CONSUME;
 }
 
 // event callback for all mouse events
-static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
-{
-    g_debug("foreground: Received mouse button event");
-
-    // mouse button, quit
-    foreground_quit(foreground_ptr);
-    return INPUT_RELAY_EVENT;
-}
+//  static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
+//  {
+//      g_debug("foreground: Received mouse button event");
+//
+//      // mouse button, quit
+//      foreground_quit(foreground_ptr);
+//      return INPUT_RELAY_EVENT;
+//  }
 
 // event callback for window focus changes
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
