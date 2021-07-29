@@ -23,7 +23,6 @@
 #include <glib.h>
 
 #include "app_config.h"
-#include "focus/focus.h"
 #include "background/background.h"
 #include "foreground/foreground.h"
 
@@ -34,7 +33,6 @@ typedef struct App
     guint signal_sigint;
     guint signal_sigterm;
 
-    Focus *focus;
     Background *background;
     Foreground *foreground;
 } App;

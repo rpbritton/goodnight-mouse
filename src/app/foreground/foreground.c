@@ -22,6 +22,8 @@
 #include "../lib/keyboard/keyboard.h"
 #include "../lib/keyboard/modifiers.h"
 #include "../lib/mouse/mouse.h"
+#include "../lib/focus/focus.h"
+#include "../lib/focus/window.h"
 
 #include "execution.h"
 
@@ -33,7 +35,7 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config, Focus *focus)
+Foreground *foreground_new(ForegroundConfig *config)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -42,9 +44,6 @@ Foreground *foreground_new(ForegroundConfig *config, Focus *focus)
 
     // create tag management
     foreground->accessible_to_tag = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
-
-    // add members
-    foreground->focus = focus;
 
     // create members
     foreground->codes = codes_new(config->codes);
@@ -82,7 +81,7 @@ void foreground_run(Foreground *foreground)
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
-    AtspiAccessible *window = focus_get_window(foreground->focus);
+    AtspiAccessible *window = focus_get_window();
     if (!window)
     {
         g_warning("foreground: No active window, stopping.");
@@ -102,24 +101,20 @@ void foreground_run(Foreground *foreground)
     while (g_main_context_iteration(NULL, FALSE))
         continue;
 
-    // subscribe events
-    focus_subscribe(foreground->focus, callback_focus, foreground);
-
     // create listeners
     KeyboardListener *keyboard_listener = keyboard_listener_new(callback_keyboard, foreground);
     MouseListener *mouse_listener = mouse_listener_new(callback_mouse, foreground);
+    FocusListener *focus_listener = focus_listener_new(callback_focus, foreground);
 
     // run loop
     g_debug("foreground: Starting loop");
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
-    // unsubscribe events
-    focus_unsubscribe(foreground->focus, callback_focus);
-
     // destroy listeners
     keyboard_listener_destroy(keyboard_listener);
     mouse_listener_destroy(mouse_listener);
+    focus_listener_destroy(focus_listener);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);

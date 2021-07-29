@@ -24,8 +24,6 @@
 
 #include "foreground_config.h"
 
-#include "../focus/focus.h"
-
 #include "registry.h"
 #include "codes.h"
 #include "overlay.h"
@@ -41,14 +39,12 @@ typedef struct Foreground
 
     gboolean shifted;
 
-    Focus *focus;
-
     Codes *codes;
     Overlay *overlay;
     Registry *registry;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config, Focus *focus);
+Foreground *foreground_new(ForegroundConfig *config);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
