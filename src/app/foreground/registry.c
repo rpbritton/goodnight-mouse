@@ -213,6 +213,8 @@ static GList *registry_get_children(Registry *registry, AtspiAccessible *accessi
                                                  registry->match_interactive,
                                                  ATSPI_Collection_SORT_ORDER_CANONICAL,
                                                  0, FALSE, NULL);
+    if (!array)
+        return children;
 
     // convert to linked list
     for (gint index = 0; index < array->len; index++)

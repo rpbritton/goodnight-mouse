@@ -21,6 +21,7 @@
 
 #include "../listeners/keyboard/keyboard.h"
 #include "../listeners/keyboard/modifiers.h"
+#include "../listeners/mouse/mouse.h"
 
 #include "execution.h"
 
@@ -28,7 +29,7 @@ static void callback_accessible_add(AtspiAccessible *accessible, gpointer foregr
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
 static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
-//static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr);
+static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
@@ -99,11 +100,11 @@ void foreground_run(Foreground *foreground)
     overlay_show(foreground->overlay, window);
 
     // subscribe events
-    //input_subscribe(foreground->input, MOUSE_EVENTS, callback_mouse, foreground);
     focus_subscribe(foreground->focus, callback_focus, foreground);
 
     // create listeners
     KeyboardListener *keyboard_listener = keyboard_listener_new(callback_keyboard, foreground);
+    MouseListener *mouse_listener = mouse_listener_new(callback_mouse, foreground);
 
     // run loop
     g_debug("foreground: Starting loop");
@@ -111,12 +112,11 @@ void foreground_run(Foreground *foreground)
     g_debug("foreground: Stopping loop");
 
     // unsubscribe events
-    // input_unsubscribe(foreground->input, callback_keyboard);
-    // input_unsubscribe(foreground->input, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus);
 
     // destroy listeners
     keyboard_listener_destroy(keyboard_listener);
+    mouse_listener_destroy(mouse_listener);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);
@@ -240,14 +240,14 @@ static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foregrou
 }
 
 // event callback for all mouse events
-//  static InputResponse callback_mouse(InputEvent event, gpointer foreground_ptr)
-//  {
-//      g_debug("foreground: Received mouse button event");
-//
-//      // mouse button, quit
-//      foreground_quit(foreground_ptr);
-//      return INPUT_RELAY_EVENT;
-//  }
+static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr)
+{
+    g_debug("foreground: Received mouse button event");
+
+    // mouse button, quit
+    foreground_quit(foreground_ptr);
+    return MOUSE_EVENT_RELAY;
+}
 
 // event callback for window focus changes
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)

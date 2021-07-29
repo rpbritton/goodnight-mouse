@@ -17,23 +17,23 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "keyboard.h"
+#include "mouse.h"
 
 #include "../timeout/timeout.h"
 
-// callback to handle an atspi keyboard event
+// callback to handle an atspi mouse event
 static gboolean atspi_callback(AtspiDeviceEvent *atspi_event, gpointer listener_ptr)
 {
-    KeyboardListener *listener = listener_ptr;
-    KeyboardEvent event = keyboard_event_from_atspi(atspi_event);
+    MouseListener *listener = listener_ptr;
+    MouseEvent event = mouse_event_from_atspi(atspi_event);
     g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
     return listener->callback(event, listener->callback_data);
 }
 
-// creates a new keyboard event listener and starts listening
-KeyboardListener *keyboard_listener_new(KeyboardCallback callback, gpointer data)
+// creates a new mouse event listener and starts listening
+MouseListener *mouse_listener_new(MouseCallback callback, gpointer data)
 {
-    KeyboardListener *listener = g_new(KeyboardListener, 1);
+    MouseListener *listener = g_new(MouseListener, 1);
 
     // add members
     listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
@@ -44,33 +44,23 @@ KeyboardListener *keyboard_listener_new(KeyboardCallback callback, gpointer data
     // disable atspi timeout to avoid a deadlock with incoming key events
     timeout_disable();
     // register listener
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_register_keystroke_listener(listener->atspi_listener,
-                                          NULL,
-                                          modifiers,
-                                          KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
-                                          ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
-                                          NULL);
+    atspi_register_device_event_listener(listener->atspi_listener,
+                                         MOUSE_EVENT_PRESSED | MOUSE_EVENT_RELEASED,
+                                         NULL,
+                                         NULL);
     // reenable the timeout
     timeout_enable();
 
     return listener;
 }
 
-// stops and destroys a keyboard listener
-void keyboard_listener_destroy(KeyboardListener *listener)
+// stops and destroys a mouse listener
+void mouse_listener_destroy(MouseListener *listener)
 {
     // disable atspi timeout to avoid a deadlock with incoming key events
     timeout_disable();
     // deregister listener
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_deregister_keystroke_listener(listener->atspi_listener,
-                                            NULL,
-                                            modifiers,
-                                            KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
-                                            NULL);
-    // reenable the timeout
-    timeout_enable();
+    atspi_deregister_device_event_listener(listener->atspi_listener, NULL, NULL);
 
     // free members
     g_object_unref(listener->atspi_listener);

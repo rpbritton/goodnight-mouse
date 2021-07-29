@@ -19,6 +19,8 @@
 
 #include "key.h"
 
+#include "../timeout/timeout.h"
+
 #include "modifiers.h"
 
 // callback used to handle an atspi keyboard event
@@ -50,6 +52,8 @@ KeyListener *key_listener_new(KeyboardEvent event, KeyboardCallback callback, gp
     listener->callback = callback;
     listener->callback_data = data;
 
+    // disable atspi timeout to avoid a deadlock with incoming key events
+    timeout_disable();
     // register listener
     atspi_register_keystroke_listener(listener->atspi_listener,
                                       listener->atspi_key,
@@ -64,12 +68,16 @@ KeyListener *key_listener_new(KeyboardEvent event, KeyboardCallback callback, gp
 // creates a new key event listener and starts listening
 void key_listener_destroy(KeyListener *listener)
 {
+    // disable atspi timeout to avoid a deadlock with incoming key events
+    timeout_disable();
     // deregister listener
     atspi_deregister_keystroke_listener(listener->atspi_listener,
                                         listener->atspi_key,
                                         listener->atspi_modifiers,
                                         listener->atspi_type,
                                         NULL);
+    // reenable the timeout
+    timeout_enable();
 
     // free members
     g_object_unref(listener->atspi_listener);
