@@ -19,8 +19,11 @@
 
 #include "background.h"
 
-static KeyboardResponse key_callback(KeyboardEvent event, gpointer background_ptr);
+#include "../lib/focus/focus.h"
+
+static KeyboardResponse callback_key(KeyboardEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
+static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
 // creates a background that can be run
 Background *background_new(BackgroundConfig *config, Foreground *foreground)
@@ -57,8 +60,9 @@ void background_run(Background *background)
     if (background_is_running(background))
         return;
 
-    // listen for the trigger
-    KeyListener *trigger_listener = key_listener_new(background->trigger_event, key_callback, background);
+    // Create listeners
+    KeyListener *trigger_listener = key_listener_new(background->trigger_event, callback_key, background);
+    FocusListener *focus_listener = focus_listener_new(callback_focus, background);
 
     // run loop
     g_debug("background: Starting loop");
@@ -67,6 +71,7 @@ void background_run(Background *background)
 
     // destroy trigger listener
     key_listener_destroy(trigger_listener);
+    focus_listener_destroy(focus_listener);
 }
 
 // returns whether the background is running
@@ -88,7 +93,7 @@ void background_quit(Background *background)
 
 // callback to handle the hotkey input event by scheduling the foreground
 // to start
-static KeyboardResponse key_callback(KeyboardEvent event, gpointer background_ptr)
+static KeyboardResponse callback_key(KeyboardEvent event, gpointer background_ptr)
 {
     if (event.type == KEYBOARD_EVENT_PRESSED)
     {
@@ -109,4 +114,19 @@ static gboolean start_foreground(gpointer background_ptr)
     foreground_run(background->foreground);
 
     return G_SOURCE_REMOVE;
+}
+
+// listens for focus events, which can cache windows and improve speeds
+static void callback_focus(AtspiAccessible *window, gpointer background_ptr)
+{
+    if (window)
+    {
+        const gchar *window_name = atspi_accessible_get_name(window, NULL);
+        g_debug("background: Activated window '%s'", window_name);
+        g_free((gpointer)window_name);
+    }
+    else
+    {
+        g_debug("background: Deactivated window");
+    }
 }
