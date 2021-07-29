@@ -98,6 +98,9 @@ void foreground_run(Foreground *foreground)
 
     // show the overlay
     overlay_show(foreground->overlay, window);
+    // flush the main loop to have the window shown before listeners get registered
+    while (g_main_context_iteration(NULL, FALSE))
+        continue;
 
     // subscribe events
     focus_subscribe(foreground->focus, callback_focus, foreground);
