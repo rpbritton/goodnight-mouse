@@ -61,6 +61,8 @@ KeyListener *key_listener_new(KeyboardEvent event, KeyboardCallback callback, gp
                                       listener->atspi_type,
                                       ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
                                       NULL);
+    // reenable the timeout
+    timeout_enable();
 
     return listener;
 }

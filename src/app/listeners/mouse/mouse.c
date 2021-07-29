@@ -61,6 +61,8 @@ void mouse_listener_destroy(MouseListener *listener)
     timeout_disable();
     // deregister listener
     atspi_deregister_device_event_listener(listener->atspi_listener, NULL, NULL);
+    // reenable the timeout
+    timeout_enable();
 
     // free members
     g_object_unref(listener->atspi_listener);
