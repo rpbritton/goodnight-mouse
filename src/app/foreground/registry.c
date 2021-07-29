@@ -23,7 +23,7 @@
 
 #include "identify.h"
 
-#define REGISTRY_REFRESH_INTERVAL 500
+#define REGISTRY_REFRESH_INTERVAL 250
 
 static void registry_refresh(Registry *registry, gboolean pause_for_events);
 static gboolean registry_refresh_loop(gpointer registry_ptr);
