@@ -24,7 +24,7 @@
 #include <gdk/gdk.h>
 
 #include "background_config.h"
-#include "../listeners/keyboard/key.h"
+#include "../lib/keyboard/key.h"
 #include "../foreground/foreground.h"
 
 // background state that can run a g main loop and trigger a foreground

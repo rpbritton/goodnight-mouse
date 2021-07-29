@@ -19,9 +19,9 @@
 
 #include "foreground.h"
 
-#include "../listeners/keyboard/keyboard.h"
-#include "../listeners/keyboard/modifiers.h"
-#include "../listeners/mouse/mouse.h"
+#include "../lib/keyboard/keyboard.h"
+#include "../lib/keyboard/modifiers.h"
+#include "../lib/mouse/mouse.h"
 
 #include "execution.h"
 
