@@ -99,6 +99,8 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
 
     // show the window
     gtk_widget_show_all(overlay->overlay);
+    while (g_main_context_iteration(NULL, FALSE))
+        continue;
 }
 
 // hides the overlay and unsets the followed window
