@@ -37,21 +37,21 @@ KeyListener *key_listener_new(KeyboardEvent event, KeyboardCallback callback, gp
 {
     KeyListener *listener = g_new(KeyListener, 1);
 
-    // add members
-    listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
+    // add callback
+    listener->callback = callback;
+    listener->callback_data = data;
 
+    // create key event
     listener->atspi_key = g_array_sized_new(FALSE, TRUE, sizeof(AtspiKeyDefinition), 1);
     AtspiKeyDefinition atspi_key;
     memset(&atspi_key, 0, sizeof(AtspiKeyDefinition));
     atspi_key.keysym = event.key;
     g_array_append_val(listener->atspi_key, atspi_key);
-
     listener->atspi_type = event.type;
     listener->atspi_modifiers = keyboard_modifiers_map(event.modifiers);
 
-    listener->callback = callback;
-    listener->callback_data = data;
-
+    // create listener
+    listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
     // disable atspi timeout to avoid a deadlock with incoming key events
     timeout_disable();
     // register listener
@@ -80,9 +80,10 @@ void key_listener_destroy(KeyListener *listener)
                                         NULL);
     // reenable the timeout
     timeout_enable();
-
-    // free members
+    // free listener
     g_object_unref(listener->atspi_listener);
+
+    // free key event
     g_array_unref(listener->atspi_key);
 
     // free

@@ -25,13 +25,13 @@
 // listener used to subscribe to a single key event
 typedef struct KeyListener
 {
+    KeyboardCallback callback;
+    gpointer callback_data;
+
     AtspiDeviceListener *atspi_listener;
     GArray *atspi_key;
     AtspiKeyEventMask atspi_type;
     AtspiKeyMaskType atspi_modifiers;
-
-    KeyboardCallback callback;
-    gpointer callback_data;
 } KeyListener;
 
 KeyListener *key_listener_new(KeyboardEvent event, KeyboardCallback callback, gpointer data);

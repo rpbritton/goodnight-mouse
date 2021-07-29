@@ -25,10 +25,10 @@
 // used to subscribe to all events emitted from a keyboard
 typedef struct KeyboardListener
 {
-    AtspiDeviceListener *atspi_listener;
-
     KeyboardCallback callback;
     gpointer callback_data;
+
+    AtspiDeviceListener *atspi_listener;
 } KeyboardListener;
 
 KeyboardListener *keyboard_listener_new(KeyboardCallback callback, gpointer data);

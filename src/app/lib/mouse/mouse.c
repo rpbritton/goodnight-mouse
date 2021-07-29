@@ -35,12 +35,12 @@ MouseListener *mouse_listener_new(MouseCallback callback, gpointer data)
 {
     MouseListener *listener = g_new(MouseListener, 1);
 
-    // add members
-    listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
-
+    // add callback
     listener->callback = callback;
     listener->callback_data = data;
 
+    // create listener
+    listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
     // disable atspi timeout to avoid a deadlock with incoming key events
     timeout_disable();
     // register listener
