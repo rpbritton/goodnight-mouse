@@ -192,21 +192,26 @@ static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foregrou
 {
     Foreground *foreground = foreground_ptr;
 
-    // get shifted, note modifiers are set after the event
-    gboolean shifted = !!(keyboard_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    // modifiers are not set in the modifier key event, so get fresh set
+    guint current_modifiers = keyboard_modifiers();
+
     // check if shift state changed
-    if (shifted != foreground->shifted)
+    if (!!(current_modifiers & (GDK_SHIFT_MASK | GDK_LOCK_MASK)) != foreground->shifted)
     {
-        foreground->shifted = shifted;
+        foreground->shifted = !foreground->shifted;
         overlay_shifted(foreground->overlay, foreground->shifted);
     }
+
+    // don't use key if modifiers other than shift or lock are held
+    if (current_modifiers & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK))
+        return KEYBOARD_EVENT_CONSUME;
 
     // only check presses
     if (event.type != KEYBOARD_EVENT_PRESSED)
         return KEYBOARD_EVENT_CONSUME;
-    g_debug("foreground: Received key press event for '%s'", gdk_keyval_name(event.key));
 
     // process key type
+    g_debug("foreground: Checking key press event for '%s'", gdk_keyval_name(event.key));
     switch (event.key)
     {
     case GDK_KEY_Escape:
