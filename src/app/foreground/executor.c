@@ -31,12 +31,13 @@ static gboolean execute_focus(Executor *executor, AtspiAccessible *accessible);
 static gboolean execute_press(Executor *executor, AtspiAccessible *accessible);
 
 // creates a new executor
-Executor *executor_new(Mouse *mouse)
+Executor *executor_new(Mouse *mouse, Keyboard *keyboard)
 {
     Executor *executor = g_new(Executor, 1);
 
     // add members
     executor->mouse = mouse;
+    executor->keyboard = keyboard;
 
     return executor;
 }
@@ -55,7 +56,7 @@ void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shift
 
     // todo: figure out how to unset shift if shifted
 
-    // choose action of execution
+    // choose action of executor
     switch (control_type)
     {
     case CONTROL_TYPE_NONE:
@@ -120,9 +121,10 @@ void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shift
     }
 }
 
+// execute the given accessible's action
 static gboolean execute_action(Executor *executor, AtspiAccessible *accessible, guint index)
 {
-    g_debug("execution: Attempting action '%d'", index);
+    g_debug("executor: Attempting action '%d'", index);
 
     // get action
     AtspiAction *action = atspi_accessible_get_action_iface(accessible);
@@ -148,36 +150,27 @@ static gboolean execute_action(Executor *executor, AtspiAccessible *accessible, 
 static gboolean execute_modifiers(Executor *executor, guint modifiers, gboolean lock)
 {
     if (lock)
-        g_debug("execution: Locking modifiers '%d'", modifiers);
+        g_debug("executor: Locking modifiers '%d'", modifiers);
     else
-        g_debug("execution: Unlocking modifiers '%d'", modifiers);
+        g_debug("executor: Unlocking modifiers '%d'", modifiers);
 
-    // set modifiers
-    AtspiKeySynthType synth_type = lock ? ATSPI_KEY_LOCKMODIFIERS : ATSPI_KEY_UNLOCKMODIFIERS;
-    if (!atspi_generate_keyboard_event(modifiers, NULL, synth_type, NULL))
-        return FALSE;
-
-    // success
-    return TRUE;
+    // attempt modifier set
+    return keyboard_set_modifiers(executor->keyboard, modifiers, lock);
 }
 
 // presses and releases the given key
 static gboolean execute_key(Executor *executor, guint key)
 {
-    g_debug("execution: Pressing key '%d'", key);
+    g_debug("executor: Pressing key '%d'", key);
 
-    // send key
-    if (!atspi_generate_keyboard_event(key, NULL, ATSPI_KEY_SYM, NULL))
-        return FALSE;
-
-    // success
-    return TRUE;
+    // attempt key press
+    return keyboard_press_key(executor->keyboard, key);
 }
 
 // executes a mouse click of the button into the center of the given accessible
 static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button)
 {
-    g_debug("execution: Clicking mouse '%d'", button);
+    g_debug("executor: Clicking mouse '%d'", button);
 
     // get position of the center of the accessible
     AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
@@ -189,14 +182,14 @@ static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, g
     g_object_unref(component);
     g_free(bounds);
 
-    // return if mouse is successful
+    // attempt mouse press
     return mouse_press(executor->mouse, x, y, button);
 }
 
 // grabs the input focus onto the given accessible
 static gboolean execute_focus(Executor *executor, AtspiAccessible *accessible)
 {
-    g_debug("execution: Focusing accessible");
+    g_debug("executor: Focusing accessible");
 
     // check for focusable state
     AtspiStateSet *states = atspi_accessible_get_state_set(accessible);

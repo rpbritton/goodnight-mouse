@@ -44,7 +44,7 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
     foreground->codes = codes_new(config->codes);
     foreground->overlay = overlay_new(config->overlay);
     foreground->registry = registry_new();
-    foreground->executor = executor_new(mouse);
+    foreground->executor = executor_new(mouse, keyboard);
 
     // add listeners
     foreground->keyboard = keyboard;

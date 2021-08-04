@@ -17,22 +17,12 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DC8D1073_8C84_4BB1_9DF3_49B95D76178D
-#define DC8D1073_8C84_4BB1_9DF3_49B95D76178D
+#ifndef E7A7B34D_5F98_4087_B797_6D0FA73394FC
+#define E7A7B34D_5F98_4087_B797_6D0FA73394FC
 
-#include <atspi/atspi.h>
+#include "keyboard.h"
 
-#include "../lib/mouse/emulation.h"
-#include "../lib/keyboard/emulation.h"
+gboolean keyboard_set_modifiers(Keyboard *keyboard, guint modifiers, gboolean lock);
+gboolean keyboard_press_key(Keyboard *keyboard, guint key);
 
-typedef struct Executor
-{
-    Mouse *mouse;
-    Keyboard *keyboard;
-} Executor;
-
-Executor *executor_new(Mouse *mouse, Keyboard *keyboard);
-void executor_destroy(Executor *executor);
-void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shifted);
-
-#endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */
+#endif /* E7A7B34D_5F98_4087_B797_6D0FA73394FC */

@@ -26,9 +26,9 @@ gboolean mouse_press(Mouse *mouse, gint x, gint y, guint button)
     gboolean success = TRUE;
 
     // unregister mouse
-    gboolean registered = mouse_is_registered(mouse);
-    if (registered)
-        mouse_deregister(mouse);
+    //gboolean registered = mouse_is_registered(mouse);
+    //if (registered)
+    //    mouse_deregister(mouse);
 
     // record the current mouse position
     GdkSeat *seat = gdk_display_get_default_seat(gdk_display_get_default());
@@ -48,8 +48,8 @@ gboolean mouse_press(Mouse *mouse, gint x, gint y, guint button)
         success = FALSE;
 
     // reregister mouse
-    if (registered)
-        mouse_register(mouse);
+    //if (registered)
+    //    mouse_register(mouse);
 
     // return success
     return success;

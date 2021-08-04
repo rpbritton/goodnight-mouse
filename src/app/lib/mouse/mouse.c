@@ -65,6 +65,8 @@ void mouse_register(Mouse *mouse)
     // do nothing if registered
     if (mouse->registered)
         return;
+    g_debug("mouse: Registering event listener");
+    mouse->registered = TRUE;
 
     // register to all mouse events
     atspi_register_device_event_listener(mouse->atspi_listener,
@@ -79,6 +81,8 @@ void mouse_deregister(Mouse *mouse)
     // do nothing if not registered
     if (!mouse->registered)
         return;
+    g_debug("mouse: Deregistering event listener");
+    mouse->registered = FALSE;
 
     // unregister from mouse events
     atspi_deregister_device_event_listener(mouse->atspi_listener, NULL, NULL);

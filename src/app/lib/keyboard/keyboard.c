@@ -70,6 +70,8 @@ void keyboard_register(Keyboard *keyboard)
     // do nothing if registered
     if (keyboard->registered)
         return;
+    g_debug("keyboard: Registering event listener");
+    keyboard->registered = TRUE;
 
     // register to all keyboard events
     for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
@@ -87,6 +89,8 @@ void keyboard_deregister(Keyboard *keyboard)
     // do nothing if not registered
     if (!keyboard->registered)
         return;
+    g_debug("keyboard: Deregistering event listener");
+    keyboard->registered = FALSE;
 
     // unregister from keyboard events
     for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
@@ -95,6 +99,12 @@ void keyboard_deregister(Keyboard *keyboard)
                                             modifiers,
                                             KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
                                             NULL);
+}
+
+// returns the state of event listening
+gboolean keyboard_is_registered(Keyboard *keyboard)
+{
+    return keyboard->registered;
 }
 
 // subscribe a callback to all keyboard events
