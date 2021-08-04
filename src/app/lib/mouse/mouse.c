@@ -25,7 +25,7 @@ typedef struct Subscriber
     gpointer data;
 } Subscriber;
 
-static gboolean atspi_callback(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
+static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
 static MouseResponse notify_subscribers(MouseListener *listener, MouseEvent event);
 static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
@@ -37,8 +37,8 @@ MouseListener *mouse_listener_new()
     // init subscribers
     listener->subscribers = NULL;
 
-    // create listener
-    listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
+    // register listener
+    listener->atspi_listener = atspi_device_listener_new(callback_atspi, listener, NULL);
     atspi_register_device_event_listener(listener->atspi_listener,
                                          MOUSE_EVENT_PRESSED | MOUSE_EVENT_RELEASED,
                                          NULL,
@@ -50,7 +50,7 @@ MouseListener *mouse_listener_new()
 // stops and destroys a mouse listener
 void mouse_listener_destroy(MouseListener *listener)
 {
-    // destroy listener
+    // deregister listener
     atspi_deregister_device_event_listener(listener->atspi_listener, NULL, NULL);
     g_object_unref(listener->atspi_listener);
 
@@ -77,7 +77,7 @@ void mouse_listener_subscribe(MouseListener *listener, MouseCallback callback, g
     listener->subscribers = g_list_append(listener->subscribers, subscriber);
 }
 
-// remove a callback from the subscribers list
+// remove a callback from the subscribers
 void mouse_listener_unsubscribe(MouseListener *listener, MouseCallback callback)
 {
     // find every instance of the callback and remove
@@ -87,7 +87,7 @@ void mouse_listener_unsubscribe(MouseListener *listener, MouseCallback callback)
 }
 
 // callback to handle an atspi mouse event
-static gboolean atspi_callback(AtspiDeviceEvent *atspi_event, gpointer listener_ptr)
+static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr)
 {
     // get event
     MouseEvent event = mouse_event_from_atspi(atspi_event);
