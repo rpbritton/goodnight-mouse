@@ -23,6 +23,9 @@
 #include <glib.h>
 
 #include "app_config.h"
+
+#include "lib/mouse/mouse.h"
+
 #include "background/background.h"
 #include "foreground/foreground.h"
 
@@ -32,6 +35,8 @@ typedef struct App
     guint signal_sighup;
     guint signal_sigint;
     guint signal_sigterm;
+
+    MouseListener *mouse_listener;
 
     Background *background;
     Foreground *foreground;

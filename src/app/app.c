@@ -39,8 +39,11 @@ App *app_new(AppConfig *config)
     app->signal_sigint = g_unix_signal_add(SIGINT, signal_quit, app);
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
+    // create listeners
+    app->mouse_listener = mouse_listener_new();
+
     // create managers
-    app->foreground = foreground_new(config->foreground);
+    app->foreground = foreground_new(config->foreground, app->mouse_listener);
     app->background = background_new(config->background, app->foreground);
 
     return app;
@@ -52,6 +55,9 @@ void app_destroy(App *app)
     // free managers
     background_destroy(app->background);
     foreground_destroy(app->foreground);
+
+    // free listeners
+    mouse_listener_destroy(app->mouse_listener);
 
     // remove signal subscription
     g_source_remove(app->signal_sighup);

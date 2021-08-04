@@ -25,13 +25,14 @@
 // used to subscribe to all events emitted from a mouse
 typedef struct MouseListener
 {
-    MouseCallback callback;
-    gpointer callback_data;
+    GList *subscribers;
 
     AtspiDeviceListener *atspi_listener;
 } MouseListener;
 
-MouseListener *mouse_listener_new(MouseCallback callback, gpointer data);
+MouseListener *mouse_listener_new();
 void mouse_listener_destroy(MouseListener *listener);
+void mouse_listener_subscribe(MouseListener *listener, MouseCallback callback, gpointer data);
+void mouse_listener_unsubscribe(MouseListener *listener, MouseCallback callback);
 
 #endif /* F7E29EBF_1B6F_4049_BF43_6024E4B60EAD */

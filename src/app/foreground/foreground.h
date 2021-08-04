@@ -28,6 +28,8 @@
 #include "codes.h"
 #include "overlay.h"
 
+#include "../lib/mouse/mouse.h"
+
 // a foreground which when run will show an overlay populated with tags with codes.
 // key events will narrow down the codes, an when one code is focused on, that
 // accessible will be executed.
@@ -42,9 +44,11 @@ typedef struct Foreground
     Codes *codes;
     Overlay *overlay;
     Registry *registry;
+
+    MouseListener *mouse_listener;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config);
+Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);

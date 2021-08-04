@@ -21,7 +21,6 @@
 
 #include "../lib/keyboard/keyboard.h"
 #include "../lib/keyboard/modifiers.h"
-#include "../lib/mouse/mouse.h"
 #include "../lib/focus/focus.h"
 #include "../lib/focus/window.h"
 
@@ -35,7 +34,7 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config)
+Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -49,6 +48,9 @@ Foreground *foreground_new(ForegroundConfig *config)
     foreground->codes = codes_new(config->codes);
     foreground->overlay = overlay_new(config->overlay);
     foreground->registry = registry_new();
+
+    // add listener
+    foreground->mouse_listener = mouse_listener;
 
     return foreground;
 }
@@ -101,9 +103,9 @@ void foreground_run(Foreground *foreground)
     while (g_main_context_iteration(NULL, FALSE))
         continue;
 
-    // create listeners
+    // subscribe to listeners
+    mouse_listener_subscribe(foreground->mouse_listener, callback_mouse, foreground);
     KeyboardListener *keyboard_listener = keyboard_listener_new(callback_keyboard, foreground);
-    MouseListener *mouse_listener = mouse_listener_new(callback_mouse, foreground);
     FocusListener *focus_listener = focus_listener_new(callback_focus, foreground);
 
     // run loop
@@ -111,9 +113,9 @@ void foreground_run(Foreground *foreground)
     g_main_loop_run(foreground->loop);
     g_debug("foreground: Stopping loop");
 
-    // destroy listeners
+    // unsubscribe from listeners
+    mouse_listener_unsubscribe(foreground->mouse_listener, callback_mouse);
     keyboard_listener_destroy(keyboard_listener);
-    mouse_listener_destroy(mouse_listener);
     focus_listener_destroy(focus_listener);
 
     // execute control
