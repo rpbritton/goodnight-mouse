@@ -31,9 +31,9 @@ typedef struct Keyboard
 } Keyboard;
 
 Keyboard *keyboard_new();
-void keyboard_destroy(Keyboard *listener);
-void keyboard_subscribe(Keyboard *listener, KeyboardCallback callback, gpointer data);
-void keyboard_subscribe_key(Keyboard *listener, KeyboardEvent event, KeyboardCallback callback, gpointer data);
-void keyboard_unsubscribe(Keyboard *listener, KeyboardCallback callback);
+void keyboard_destroy(Keyboard *keyboard);
+void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
+void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
+void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */

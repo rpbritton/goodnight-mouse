@@ -31,8 +31,8 @@ typedef struct Mouse
 } Mouse;
 
 Mouse *mouse_new();
-void mouse_destroy(Mouse *listener);
-void mouse_subscribe(Mouse *listener, MouseCallback callback, gpointer data);
-void mouse_unsubscribe(Mouse *listener, MouseCallback callback);
+void mouse_destroy(Mouse *mouse);
+void mouse_subscribe(Mouse *mouse, MouseCallback callback, gpointer data);
+void mouse_unsubscribe(Mouse *mouse, MouseCallback callback);
 
 #endif /* F7E29EBF_1B6F_4049_BF43_6024E4B60EAD */

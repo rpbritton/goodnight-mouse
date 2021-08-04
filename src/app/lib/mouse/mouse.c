@@ -26,46 +26,46 @@ typedef struct Subscriber
 } Subscriber;
 
 static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
-static MouseResponse notify_subscribers(Mouse *listener, MouseEvent event);
+static MouseResponse notify_subscribers(Mouse *mouse, MouseEvent event);
 static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
-// creates a new mouse event listener and starts listening
+// creates a new mouse event mouse and starts listening
 Mouse *mouse_new()
 {
-    Mouse *listener = g_new(Mouse, 1);
+    Mouse *mouse = g_new(Mouse, 1);
 
     // init subscribers
-    listener->subscribers = NULL;
+    mouse->subscribers = NULL;
 
-    // register listener
-    listener->atspi_listener = atspi_device_listener_new(callback_atspi, listener, NULL);
-    atspi_register_device_event_listener(listener->atspi_listener,
+    // register mouse
+    mouse->atspi_listener = atspi_device_listener_new(callback_atspi, mouse, NULL);
+    atspi_register_device_event_listener(mouse->atspi_listener,
                                          MOUSE_EVENT_PRESSED | MOUSE_EVENT_RELEASED,
                                          NULL,
                                          NULL);
 
-    return listener;
+    return mouse;
 }
 
-// stops and destroys a mouse listener
-void mouse_destroy(Mouse *listener)
+// stops and destroys a mouse mouse
+void mouse_destroy(Mouse *mouse)
 {
-    // deregister listener
-    atspi_deregister_device_event_listener(listener->atspi_listener, NULL, NULL);
-    g_object_unref(listener->atspi_listener);
+    // deregister mouse
+    atspi_deregister_device_event_listener(mouse->atspi_listener, NULL, NULL);
+    g_object_unref(mouse->atspi_listener);
 
     // free subscribers
-    g_list_free_full(listener->subscribers, g_free);
+    g_list_free_full(mouse->subscribers, g_free);
 
     // free
-    g_free(listener);
+    g_free(mouse);
 }
 
 // subscribe a callback to mouse events
-void mouse_subscribe(Mouse *listener, MouseCallback callback, gpointer data)
+void mouse_subscribe(Mouse *mouse, MouseCallback callback, gpointer data)
 {
     // don't add if subscribed
-    if (g_list_find_custom(listener->subscribers, callback, compare_subscriber_to_callback))
+    if (g_list_find_custom(mouse->subscribers, callback, compare_subscriber_to_callback))
         return;
 
     // create a new subscriber
@@ -74,16 +74,16 @@ void mouse_subscribe(Mouse *listener, MouseCallback callback, gpointer data)
     subscriber->data = data;
 
     // add subscriber
-    listener->subscribers = g_list_append(listener->subscribers, subscriber);
+    mouse->subscribers = g_list_append(mouse->subscribers, subscriber);
 }
 
 // remove a callback from the subscribers
-void mouse_unsubscribe(Mouse *listener, MouseCallback callback)
+void mouse_unsubscribe(Mouse *mouse, MouseCallback callback)
 {
     // find every instance of the callback and remove
     GList *link = NULL;
-    while ((link = g_list_find_custom(listener->subscribers, callback, compare_subscriber_to_callback)))
-        listener->subscribers = g_list_delete_link(listener->subscribers, link);
+    while ((link = g_list_find_custom(mouse->subscribers, callback, compare_subscriber_to_callback)))
+        mouse->subscribers = g_list_delete_link(mouse->subscribers, link);
 }
 
 // callback to handle an atspi mouse event
@@ -98,11 +98,11 @@ static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_
 }
 
 // send an event to all subscribers
-static MouseResponse notify_subscribers(Mouse *listener, MouseEvent event)
+static MouseResponse notify_subscribers(Mouse *mouse, MouseEvent event)
 {
     // it only will take one subscriber to consume the event
     MouseResponse response = MOUSE_EVENT_RELAY;
-    for (GList *link = listener->subscribers; link; link = link->next)
+    for (GList *link = mouse->subscribers; link; link = link->next)
     {
         Subscriber *subscriber = link->data;
         if (subscriber->callback(event, subscriber->data) == MOUSE_EVENT_CONSUME)
