@@ -38,11 +38,9 @@ Mouse *mouse_new()
     mouse->subscribers = NULL;
 
     // register mouse
+    mouse->registered = FALSE;
     mouse->atspi_listener = atspi_device_listener_new(callback_atspi, mouse, NULL);
-    atspi_register_device_event_listener(mouse->atspi_listener,
-                                         MOUSE_EVENT_PRESSED | MOUSE_EVENT_RELEASED,
-                                         NULL,
-                                         NULL);
+    mouse_register(mouse);
 
     return mouse;
 }
@@ -51,7 +49,7 @@ Mouse *mouse_new()
 void mouse_destroy(Mouse *mouse)
 {
     // deregister mouse
-    atspi_deregister_device_event_listener(mouse->atspi_listener, NULL, NULL);
+    mouse_deregister(mouse);
     g_object_unref(mouse->atspi_listener);
 
     // free subscribers
@@ -59,6 +57,37 @@ void mouse_destroy(Mouse *mouse)
 
     // free
     g_free(mouse);
+}
+
+// registers mouse event listening
+void mouse_register(Mouse *mouse)
+{
+    // do nothing if registered
+    if (mouse->registered)
+        return;
+
+    // register to all mouse events
+    atspi_register_device_event_listener(mouse->atspi_listener,
+                                         MOUSE_EVENT_PRESSED | MOUSE_EVENT_RELEASED,
+                                         NULL,
+                                         NULL);
+}
+
+// unregisters mouse event listening
+void mouse_deregister(Mouse *mouse)
+{
+    // do nothing if not registered
+    if (!mouse->registered)
+        return;
+
+    // unregister from mouse events
+    atspi_deregister_device_event_listener(mouse->atspi_listener, NULL, NULL);
+}
+
+// returns the state of event listening
+gboolean mouse_is_registered(Mouse *mouse)
+{
+    return mouse->registered;
 }
 
 // subscribe a callback to mouse events

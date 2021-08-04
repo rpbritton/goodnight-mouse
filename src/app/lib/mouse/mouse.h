@@ -27,11 +27,15 @@ typedef struct Mouse
 {
     GList *subscribers;
 
+    gboolean registered;
     AtspiDeviceListener *atspi_listener;
 } Mouse;
 
 Mouse *mouse_new();
 void mouse_destroy(Mouse *mouse);
+void mouse_register(Mouse *mouse);
+void mouse_deregister(Mouse *mouse);
+gboolean mouse_is_registered(Mouse *mouse);
 void mouse_subscribe(Mouse *mouse, MouseCallback callback, gpointer data);
 void mouse_unsubscribe(Mouse *mouse, MouseCallback callback);
 
