@@ -47,13 +47,13 @@ typedef struct Foreground
     Overlay *overlay;
     Registry *registry;
 
-    KeyboardListener *keyboard_listener;
-    MouseListener *mouse_listener;
-    FocusListener *focus_listener;
+    Keyboard *keyboard;
+    Mouse *mouse;
+    Focus *focus;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config, KeyboardListener *keyboard_listener,
-                           MouseListener *mouse_listener, FocusListener *focus_listener);
+Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
+                           Mouse *mouse, Focus *focus);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);

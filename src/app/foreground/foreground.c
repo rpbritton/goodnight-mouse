@@ -32,8 +32,8 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config, KeyboardListener *keyboard_listener,
-                           MouseListener *mouse_listener, FocusListener *focus_listener)
+Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
+                           Mouse *mouse, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -49,9 +49,9 @@ Foreground *foreground_new(ForegroundConfig *config, KeyboardListener *keyboard_
     foreground->registry = registry_new();
 
     // add listeners
-    foreground->keyboard_listener = keyboard_listener;
-    foreground->mouse_listener = mouse_listener;
-    foreground->focus_listener = focus_listener;
+    foreground->keyboard = keyboard;
+    foreground->mouse = mouse;
+    foreground->focus = focus;
 
     return foreground;
 }
@@ -84,7 +84,7 @@ void foreground_run(Foreground *foreground)
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
-    AtspiAccessible *window = focus_get_window(foreground->focus_listener);
+    AtspiAccessible *window = focus_get_window(foreground->focus);
     if (!window)
     {
         g_warning("foreground: No active window, stopping.");
@@ -102,9 +102,9 @@ void foreground_run(Foreground *foreground)
     overlay_show(foreground->overlay, window);
 
     // subscribe to listeners
-    keyboard_listener_subscribe(foreground->keyboard_listener, callback_keyboard, foreground);
-    mouse_listener_subscribe(foreground->mouse_listener, callback_mouse, foreground);
-    focus_listener_subscribe(foreground->focus_listener, callback_focus, foreground);
+    keyboard_subscribe(foreground->keyboard, callback_keyboard, foreground);
+    mouse_subscribe(foreground->mouse, callback_mouse, foreground);
+    focus_subscribe(foreground->focus, callback_focus, foreground);
 
     // run loop
     g_debug("foreground: Starting loop");
@@ -112,9 +112,9 @@ void foreground_run(Foreground *foreground)
     g_debug("foreground: Stopping loop");
 
     // unsubscribe from listeners
-    keyboard_listener_unsubscribe(foreground->keyboard_listener, callback_keyboard);
-    mouse_listener_unsubscribe(foreground->mouse_listener, callback_mouse);
-    focus_listener_unsubscribe(foreground->focus_listener, callback_focus);
+    keyboard_unsubscribe(foreground->keyboard, callback_keyboard);
+    mouse_unsubscribe(foreground->mouse, callback_mouse);
+    focus_unsubscribe(foreground->focus, callback_focus);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);

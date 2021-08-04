@@ -23,17 +23,17 @@
 #include "event.h"
 
 // used to subscribe to events emitted from a keyboard
-typedef struct KeyboardListener
+typedef struct Keyboard
 {
     GList *subscribers;
 
     AtspiDeviceListener *device_listener;
-} KeyboardListener;
+} Keyboard;
 
-KeyboardListener *keyboard_listener_new();
-void keyboard_listener_destroy(KeyboardListener *listener);
-void keyboard_listener_subscribe(KeyboardListener *listener, KeyboardCallback callback, gpointer data);
-void keyboard_listener_subscribe_key(KeyboardListener *listener, KeyboardEvent event, KeyboardCallback callback, gpointer data);
-void keyboard_listener_unsubscribe(KeyboardListener *listener, KeyboardCallback callback);
+Keyboard *keyboard_new();
+void keyboard_destroy(Keyboard *listener);
+void keyboard_subscribe(Keyboard *listener, KeyboardCallback callback, gpointer data);
+void keyboard_subscribe_key(Keyboard *listener, KeyboardEvent event, KeyboardCallback callback, gpointer data);
+void keyboard_unsubscribe(Keyboard *listener, KeyboardCallback callback);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */

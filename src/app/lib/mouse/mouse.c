@@ -26,13 +26,13 @@ typedef struct Subscriber
 } Subscriber;
 
 static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
-static MouseResponse notify_subscribers(MouseListener *listener, MouseEvent event);
+static MouseResponse notify_subscribers(Mouse *listener, MouseEvent event);
 static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new mouse event listener and starts listening
-MouseListener *mouse_listener_new()
+Mouse *mouse_new()
 {
-    MouseListener *listener = g_new(MouseListener, 1);
+    Mouse *listener = g_new(Mouse, 1);
 
     // init subscribers
     listener->subscribers = NULL;
@@ -48,7 +48,7 @@ MouseListener *mouse_listener_new()
 }
 
 // stops and destroys a mouse listener
-void mouse_listener_destroy(MouseListener *listener)
+void mouse_destroy(Mouse *listener)
 {
     // deregister listener
     atspi_deregister_device_event_listener(listener->atspi_listener, NULL, NULL);
@@ -62,7 +62,7 @@ void mouse_listener_destroy(MouseListener *listener)
 }
 
 // subscribe a callback to mouse events
-void mouse_listener_subscribe(MouseListener *listener, MouseCallback callback, gpointer data)
+void mouse_subscribe(Mouse *listener, MouseCallback callback, gpointer data)
 {
     // don't add if subscribed
     if (g_list_find_custom(listener->subscribers, callback, compare_subscriber_to_callback))
@@ -78,7 +78,7 @@ void mouse_listener_subscribe(MouseListener *listener, MouseCallback callback, g
 }
 
 // remove a callback from the subscribers
-void mouse_listener_unsubscribe(MouseListener *listener, MouseCallback callback)
+void mouse_unsubscribe(Mouse *listener, MouseCallback callback)
 {
     // find every instance of the callback and remove
     GList *link = NULL;
@@ -98,7 +98,7 @@ static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_
 }
 
 // send an event to all subscribers
-static MouseResponse notify_subscribers(MouseListener *listener, MouseEvent event)
+static MouseResponse notify_subscribers(Mouse *listener, MouseEvent event)
 {
     // it only will take one subscriber to consume the event
     MouseResponse response = MOUSE_EVENT_RELAY;

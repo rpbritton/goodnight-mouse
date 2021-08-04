@@ -36,14 +36,14 @@ typedef struct Background
     GMainLoop *loop;
 
     Foreground *foreground;
-    KeyboardListener *keyboard_listener;
-    FocusListener *focus_listener;
+    Keyboard *keyboard;
+    Focus *focus;
 
     KeyboardEvent trigger_event;
 } Background;
 
 Background *background_new(BackgroundConfig *config, Foreground *foreground,
-                           KeyboardListener *keyboard_listener, FocusListener *focus_listener);
+                           Keyboard *keyboard, Focus *focus);
 void background_destroy(Background *background);
 void background_run(Background *background);
 gboolean background_is_running(Background *background);

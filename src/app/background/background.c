@@ -25,7 +25,7 @@ static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
 // creates a background that can be run
 Background *background_new(BackgroundConfig *config, Foreground *foreground,
-                           KeyboardListener *keyboard_listener, FocusListener *focus_listener)
+                           Keyboard *keyboard, Focus *focus)
 {
     Background *background = g_new(Background, 1);
 
@@ -34,8 +34,8 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground,
 
     // add members
     background->foreground = foreground;
-    background->keyboard_listener = keyboard_listener;
-    background->focus_listener = focus_listener;
+    background->keyboard = keyboard;
+    background->focus = focus;
 
     // add trigger event
     background->trigger_event.type = KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED;
@@ -62,9 +62,9 @@ void background_run(Background *background)
         return;
 
     // subscribe to listeners
-    keyboard_listener_subscribe_key(background->keyboard_listener,
-                                    background->trigger_event, callback_keyboard, background);
-    focus_listener_subscribe(background->focus_listener, callback_focus, background);
+    keyboard_subscribe_key(background->keyboard,
+                           background->trigger_event, callback_keyboard, background);
+    focus_subscribe(background->focus, callback_focus, background);
 
     // run loop
     g_debug("background: Starting loop");
@@ -72,8 +72,8 @@ void background_run(Background *background)
     g_debug("background: Stopping loop");
 
     // unsubscribe from listeners
-    keyboard_listener_unsubscribe(background->keyboard_listener, callback_keyboard);
-    focus_listener_unsubscribe(background->focus_listener, callback_focus);
+    keyboard_unsubscribe(background->keyboard, callback_keyboard);
+    focus_unsubscribe(background->focus, callback_focus);
 }
 
 // returns whether the background is running

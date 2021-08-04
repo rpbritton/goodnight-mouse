@@ -38,9 +38,9 @@ typedef struct App
     guint signal_sigint;
     guint signal_sigterm;
 
-    KeyboardListener *keyboard_listener;
-    MouseListener *mouse_listener;
-    FocusListener *focus_listener;
+    Keyboard *keyboard;
+    Mouse *mouse;
+    Focus *focus;
 
     Background *background;
     Foreground *foreground;
