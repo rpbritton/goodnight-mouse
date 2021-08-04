@@ -27,11 +27,15 @@ typedef struct Keyboard
 {
     GList *subscribers;
 
+    gboolean registered;
     AtspiDeviceListener *device_listener;
 } Keyboard;
 
 Keyboard *keyboard_new();
 void keyboard_destroy(Keyboard *keyboard);
+void keyboard_register(Keyboard *keyboard);
+void keyboard_deregister(Keyboard *keyboard);
+gboolean keyboard_is_registered(Keyboard *keyboard);
 void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback);

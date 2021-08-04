@@ -43,14 +43,9 @@ Keyboard *keyboard_new()
     keyboard->subscribers = NULL;
 
     // register keyboard
+    keyboard->registered = FALSE;
     keyboard->device_listener = atspi_device_listener_new(callback_atspi, keyboard, NULL);
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_register_keystroke_listener(keyboard->device_listener,
-                                          NULL,
-                                          modifiers,
-                                          KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
-                                          ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
-                                          NULL);
+    keyboard_register(keyboard);
 
     return keyboard;
 }
@@ -59,12 +54,7 @@ Keyboard *keyboard_new()
 void keyboard_destroy(Keyboard *keyboard)
 {
     // deregister keyboard
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_deregister_keystroke_listener(keyboard->device_listener,
-                                            NULL,
-                                            modifiers,
-                                            KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
-                                            NULL);
+    keyboard_deregister(keyboard);
     g_object_unref(keyboard->device_listener);
 
     // free subscribers
@@ -72,6 +62,39 @@ void keyboard_destroy(Keyboard *keyboard)
 
     // free
     g_free(keyboard);
+}
+
+// registers keyboard event listening
+void keyboard_register(Keyboard *keyboard)
+{
+    // do nothing if registered
+    if (keyboard->registered)
+        return;
+
+    // register to all keyboard events
+    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
+        atspi_register_keystroke_listener(keyboard->device_listener,
+                                          NULL,
+                                          modifiers,
+                                          KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
+                                          ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
+                                          NULL);
+}
+
+// unregisters keyboard event listening
+void keyboard_deregister(Keyboard *keyboard)
+{
+    // do nothing if not registered
+    if (!keyboard->registered)
+        return;
+
+    // unregister from keyboard events
+    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
+        atspi_deregister_keystroke_listener(keyboard->device_listener,
+                                            NULL,
+                                            modifiers,
+                                            KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
+                                            NULL);
 }
 
 // subscribe a callback to all keyboard events
