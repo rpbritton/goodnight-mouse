@@ -100,9 +100,6 @@ void foreground_run(Foreground *foreground)
 
     // show the overlay
     overlay_show(foreground->overlay, window);
-    // flush the main loop to have the window shown before listeners get registered
-    while (g_main_context_iteration(NULL, FALSE))
-        continue;
 
     // subscribe to listeners
     keyboard_listener_subscribe(foreground->keyboard_listener, callback_keyboard, foreground);
@@ -248,7 +245,7 @@ static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foregrou
 // event callback for all mouse events
 static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr)
 {
-    g_debug("foreground: Received mouse button event");
+    g_debug("foreground: Mouse event received, stopping");
 
     // mouse button, quit
     foreground_quit(foreground_ptr);
@@ -258,7 +255,7 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr)
 // event callback for window focus changes
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr)
 {
-    g_debug("foreground: Received window focus change event");
+    g_debug("foreground: Window focus changed, stopping");
 
     // window focus changed, quit
     foreground_quit(foreground_ptr);
