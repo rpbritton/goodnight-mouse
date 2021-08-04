@@ -19,12 +19,13 @@
 
 #include "background.h"
 
-static KeyboardResponse callback_key(KeyboardEvent event, gpointer background_ptr);
+static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
 // creates a background that can be run
-Background *background_new(BackgroundConfig *config, Foreground *foreground, FocusListener *focus_listener)
+Background *background_new(BackgroundConfig *config, Foreground *foreground,
+                           KeyboardListener *keyboard_listener, FocusListener *focus_listener)
 {
     Background *background = g_new(Background, 1);
 
@@ -32,8 +33,9 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground, Foc
     background->loop = g_main_loop_new(NULL, FALSE);
 
     // add members
-    background->focus_listener = focus_listener;
     background->foreground = foreground;
+    background->keyboard_listener = keyboard_listener;
+    background->focus_listener = focus_listener;
 
     // add trigger event
     background->trigger_event.type = KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED;
@@ -60,7 +62,8 @@ void background_run(Background *background)
         return;
 
     // subscribe to listeners
-    KeyListener *trigger_listener = key_listener_new(background->trigger_event, callback_key, background);
+    keyboard_listener_subscribe_key(background->keyboard_listener,
+                                    background->trigger_event, callback_keyboard, background);
     focus_listener_subscribe(background->focus_listener, callback_focus, background);
 
     // run loop
@@ -69,7 +72,7 @@ void background_run(Background *background)
     g_debug("background: Stopping loop");
 
     // unsubscribe from listeners
-    key_listener_destroy(trigger_listener);
+    keyboard_listener_unsubscribe(background->keyboard_listener, callback_keyboard);
     focus_listener_unsubscribe(background->focus_listener, callback_focus);
 }
 
@@ -92,7 +95,7 @@ void background_quit(Background *background)
 
 // callback to handle the hotkey input event by scheduling the foreground
 // to start
-static KeyboardResponse callback_key(KeyboardEvent event, gpointer background_ptr)
+static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr)
 {
     if (event.type == KEYBOARD_EVENT_PRESSED)
     {

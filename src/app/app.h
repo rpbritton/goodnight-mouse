@@ -24,6 +24,7 @@
 
 #include "app_config.h"
 
+#include "lib/keyboard/keyboard.h"
 #include "lib/mouse/mouse.h"
 #include "lib/focus/focus.h"
 
@@ -37,6 +38,7 @@ typedef struct App
     guint signal_sigint;
     guint signal_sigterm;
 
+    KeyboardListener *keyboard_listener;
     MouseListener *mouse_listener;
     FocusListener *focus_listener;
 

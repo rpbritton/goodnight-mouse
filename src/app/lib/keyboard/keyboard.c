@@ -19,40 +19,38 @@
 
 #include "keyboard.h"
 
-#include "../timeout/timeout.h"
+#include "modifiers.h"
+
+typedef struct Subscriber
+{
+    KeyboardCallback callback;
+    gpointer data;
+    gboolean all_events;
+    KeyboardEvent event;
+} Subscriber;
 
 // callback to handle an atspi keyboard event
-static gboolean atspi_callback(AtspiDeviceEvent *atspi_event, gpointer listener_ptr)
-{
-    KeyboardListener *listener = listener_ptr;
-    KeyboardEvent event = keyboard_event_from_atspi(atspi_event);
-    g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
-    return listener->callback(event, listener->callback_data);
-}
+static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
+static KeyboardResponse notify_subscribers(KeyboardListener *listener, KeyboardEvent event);
+static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new keyboard event listener and starts listening
-KeyboardListener *keyboard_listener_new(KeyboardCallback callback, gpointer data)
+KeyboardListener *keyboard_listener_new()
 {
     KeyboardListener *listener = g_new(KeyboardListener, 1);
 
-    // add callback
-    listener->callback = callback;
-    listener->callback_data = data;
+    // init subscribers
+    listener->subscribers = NULL;
 
-    // create listener
-    listener->atspi_listener = atspi_device_listener_new(atspi_callback, listener, NULL);
-    // disable atspi timeout to avoid a deadlock with incoming key events
-    timeout_disable();
     // register listener
+    listener->device_listener = atspi_device_listener_new(callback_atspi, listener, NULL);
     for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_register_keystroke_listener(listener->atspi_listener,
+        atspi_register_keystroke_listener(listener->device_listener,
                                           NULL,
                                           modifiers,
                                           KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
                                           ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
                                           NULL);
-    // reenable the timeout
-    timeout_enable();
 
     return listener;
 }
@@ -60,21 +58,97 @@ KeyboardListener *keyboard_listener_new(KeyboardCallback callback, gpointer data
 // stops and destroys a keyboard listener
 void keyboard_listener_destroy(KeyboardListener *listener)
 {
-    // disable atspi timeout to avoid a deadlock with incoming key events
-    timeout_disable();
     // deregister listener
     for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_deregister_keystroke_listener(listener->atspi_listener,
+        atspi_deregister_keystroke_listener(listener->device_listener,
                                             NULL,
                                             modifiers,
                                             KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
                                             NULL);
-    // reenable the timeout
-    timeout_enable();
+    g_object_unref(listener->device_listener);
 
-    // free members
-    g_object_unref(listener->atspi_listener);
+    // free subscribers
+    g_list_free_full(listener->subscribers, g_free);
 
     // free
     g_free(listener);
+}
+
+// subscribe a callback to all keyboard events
+void keyboard_listener_subscribe(KeyboardListener *listener, KeyboardCallback callback, gpointer data)
+{
+    // create a new subscriber
+    Subscriber *subscriber = g_new(Subscriber, 1);
+    subscriber->callback = callback;
+    subscriber->data = data;
+    subscriber->all_events = TRUE;
+
+    // add subscriber
+    listener->subscribers = g_list_append(listener->subscribers, subscriber);
+}
+
+// subscribe a callback to a particular keyboard event
+void keyboard_listener_subscribe_key(KeyboardListener *listener, KeyboardEvent event, KeyboardCallback callback, gpointer data)
+{
+    // create a new subscriber
+    Subscriber *subscriber = g_new(Subscriber, 1);
+    subscriber->callback = callback;
+    subscriber->data = data;
+    subscriber->all_events = FALSE;
+    subscriber->event.key = event.key;
+    subscriber->event.type = event.type;
+    subscriber->event.modifiers = keyboard_modifiers_map(event.modifiers);
+
+    // add subscriber
+    listener->subscribers = g_list_append(listener->subscribers, subscriber);
+}
+
+// remove a callback from the subscribers
+void keyboard_listener_unsubscribe(KeyboardListener *listener, KeyboardCallback callback)
+{
+    // find every instance of the callback and remove
+    GList *link = NULL;
+    while ((link = g_list_find_custom(listener->subscribers, callback, compare_subscriber_to_callback)))
+        listener->subscribers = g_list_delete_link(listener->subscribers, link);
+}
+
+// callback to handle an atspi keyboard event
+static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr)
+{
+    // get event
+    KeyboardEvent event = keyboard_event_from_atspi(atspi_event);
+    g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
+
+    // notify subscribers
+    return notify_subscribers(listener_ptr, event);
+}
+
+// send an event to subscribers
+static KeyboardResponse notify_subscribers(KeyboardListener *listener, KeyboardEvent event)
+{
+    // it only will take one subscriber to consume the event
+    KeyboardResponse response = KEYBOARD_EVENT_RELAY;
+    for (GList *link = listener->subscribers; link; link = link->next)
+    {
+        Subscriber *subscriber = link->data;
+
+        // check if event matches against subscription
+        if (!subscriber->all_events &&
+            (subscriber->event.key != event.key ||
+             (subscriber->event.type & event.type) == 0 ||
+             subscriber->event.modifiers != event.modifiers))
+            continue;
+
+        // notify subscriber
+        if (subscriber->callback(event, subscriber->data) == KEYBOARD_EVENT_CONSUME)
+            response = KEYBOARD_EVENT_CONSUME;
+    }
+
+    return response;
+}
+
+// check if a subscriber matches a callback, returning 0 if so
+static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr)
+{
+    return !(((Subscriber *)subscriber_ptr)->callback == callback_ptr);
 }

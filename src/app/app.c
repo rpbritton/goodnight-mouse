@@ -40,12 +40,15 @@ App *app_new(AppConfig *config)
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
     // create listeners
+    app->keyboard_listener = keyboard_listener_new();
     app->mouse_listener = mouse_listener_new();
     app->focus_listener = focus_listener_new();
 
     // create managers
-    app->foreground = foreground_new(config->foreground, app->mouse_listener, app->focus_listener);
-    app->background = background_new(config->background, app->foreground, app->focus_listener);
+    app->foreground = foreground_new(config->foreground, app->keyboard_listener,
+                                     app->mouse_listener, app->focus_listener);
+    app->background = background_new(config->background, app->foreground,
+                                     app->keyboard_listener, app->focus_listener);
 
     return app;
 }
@@ -58,6 +61,7 @@ void app_destroy(App *app)
     foreground_destroy(app->foreground);
 
     // free listeners
+    keyboard_listener_destroy(app->keyboard_listener);
     mouse_listener_destroy(app->mouse_listener);
     focus_listener_destroy(app->focus_listener);
 

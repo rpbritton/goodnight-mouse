@@ -25,9 +25,9 @@
 
 #include "background_config.h"
 
-#include "../lib/focus/focus.h"
-#include "../lib/keyboard/key.h"
 #include "../foreground/foreground.h"
+#include "../lib/keyboard/keyboard.h"
+#include "../lib/focus/focus.h"
 
 // background state that can run a g main loop and trigger a foreground
 // when a hotkey is pressed
@@ -35,13 +35,15 @@ typedef struct Background
 {
     GMainLoop *loop;
 
-    FocusListener *focus_listener;
     Foreground *foreground;
+    KeyboardListener *keyboard_listener;
+    FocusListener *focus_listener;
 
     KeyboardEvent trigger_event;
 } Background;
 
-Background *background_new(BackgroundConfig *config, Foreground *foreground, FocusListener *focus_listener);
+Background *background_new(BackgroundConfig *config, Foreground *foreground,
+                           KeyboardListener *keyboard_listener, FocusListener *focus_listener);
 void background_destroy(Background *background);
 void background_run(Background *background);
 gboolean background_is_running(Background *background);

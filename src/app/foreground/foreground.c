@@ -32,7 +32,8 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener, FocusListener *focus_listener)
+Foreground *foreground_new(ForegroundConfig *config, KeyboardListener *keyboard_listener,
+                           MouseListener *mouse_listener, FocusListener *focus_listener)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -48,6 +49,7 @@ Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listen
     foreground->registry = registry_new();
 
     // add listeners
+    foreground->keyboard_listener = keyboard_listener;
     foreground->mouse_listener = mouse_listener;
     foreground->focus_listener = focus_listener;
 
@@ -103,9 +105,9 @@ void foreground_run(Foreground *foreground)
         continue;
 
     // subscribe to listeners
+    keyboard_listener_subscribe(foreground->keyboard_listener, callback_keyboard, foreground);
     mouse_listener_subscribe(foreground->mouse_listener, callback_mouse, foreground);
     focus_listener_subscribe(foreground->focus_listener, callback_focus, foreground);
-    KeyboardListener *keyboard_listener = keyboard_listener_new(callback_keyboard, foreground);
 
     // run loop
     g_debug("foreground: Starting loop");
@@ -113,9 +115,9 @@ void foreground_run(Foreground *foreground)
     g_debug("foreground: Stopping loop");
 
     // unsubscribe from listeners
+    keyboard_listener_unsubscribe(foreground->keyboard_listener, callback_keyboard);
     mouse_listener_unsubscribe(foreground->mouse_listener, callback_mouse);
     focus_listener_unsubscribe(foreground->focus_listener, callback_focus);
-    keyboard_listener_destroy(keyboard_listener);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);

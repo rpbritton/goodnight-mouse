@@ -28,6 +28,7 @@
 #include "codes.h"
 #include "overlay.h"
 
+#include "../lib/keyboard/keyboard.h"
 #include "../lib/mouse/mouse.h"
 #include "../lib/focus/focus.h"
 
@@ -46,11 +47,13 @@ typedef struct Foreground
     Overlay *overlay;
     Registry *registry;
 
+    KeyboardListener *keyboard_listener;
     MouseListener *mouse_listener;
     FocusListener *focus_listener;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener, FocusListener *focus_listener);
+Foreground *foreground_new(ForegroundConfig *config, KeyboardListener *keyboard_listener,
+                           MouseListener *mouse_listener, FocusListener *focus_listener);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
