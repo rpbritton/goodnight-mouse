@@ -17,11 +17,11 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DC8D1073_8C84_4BB1_9DF3_49B95D76178D
-#define DC8D1073_8C84_4BB1_9DF3_49B95D76178D
+#ifndef DBB6F8EF_6641_4E7C_93C1_EA107E542A08
+#define DBB6F8EF_6641_4E7C_93C1_EA107E542A08
 
-#include <atspi/atspi.h>
+#include "mouse.h"
 
-void execute_control(AtspiAccessible *accessible, gboolean shifted);
+gboolean mouse_press(Mouse *mouse, gint x, gint y, guint button);
 
-#endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */
+#endif /* DBB6F8EF_6641_4E7C_93C1_EA107E542A08 */

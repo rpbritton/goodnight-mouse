@@ -27,6 +27,7 @@
 #include "registry.h"
 #include "codes.h"
 #include "overlay.h"
+#include "executor.h"
 
 #include "../lib/keyboard/keyboard.h"
 #include "../lib/mouse/mouse.h"
@@ -43,9 +44,10 @@ typedef struct Foreground
 
     gboolean shifted;
 
+    Registry *registry;
     Codes *codes;
     Overlay *overlay;
-    Registry *registry;
+    Executor *executor;
 
     Keyboard *keyboard;
     Mouse *mouse;

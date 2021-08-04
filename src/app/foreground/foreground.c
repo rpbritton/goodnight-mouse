@@ -19,10 +19,7 @@
 
 #include "foreground.h"
 
-#include "../lib/keyboard/keyboard.h"
 #include "../lib/keyboard/modifiers.h"
-
-#include "execution.h"
 
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
@@ -47,6 +44,7 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
     foreground->codes = codes_new(config->codes);
     foreground->overlay = overlay_new(config->overlay);
     foreground->registry = registry_new();
+    foreground->executor = executor_new(mouse);
 
     // add listeners
     foreground->keyboard = keyboard;
@@ -63,6 +61,7 @@ void foreground_destroy(Foreground *foreground)
     codes_destroy(foreground->codes);
     overlay_destroy(foreground->overlay);
     registry_destroy(foreground->registry);
+    executor_destroy(foreground->executor);
 
     // free tag management
     g_hash_table_unref(foreground->accessible_to_tag);
@@ -121,7 +120,7 @@ void foreground_run(Foreground *foreground)
     if (tag)
     {
         g_debug("foreground: Tag matched, executing control");
-        execute_control(tag->accessible, foreground->shifted);
+        executor_do(foreground->executor, tag->accessible, foreground->shifted);
     }
 
     // clean up members

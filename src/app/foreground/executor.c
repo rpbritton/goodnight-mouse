@@ -17,21 +17,38 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "execution.h"
+#include "executor.h"
 
 #include <gdk/gdk.h>
 
 #include "identify.h"
 
-static gboolean execute_action(AtspiAccessible *accessible, guint index);
-static gboolean execute_modifiers(guint modifiers, gboolean lock);
-static gboolean execute_key(guint key);
-static gboolean execute_mouse(AtspiAccessible *accessible, guint button);
-static gboolean execute_focus(AtspiAccessible *accessible);
-static gboolean execute_press(AtspiAccessible *accessible);
+static gboolean execute_action(Executor *executor, AtspiAccessible *accessible, guint index);
+static gboolean execute_modifiers(Executor *executor, guint modifiers, gboolean lock);
+static gboolean execute_key(Executor *executor, guint key);
+static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button);
+static gboolean execute_focus(Executor *executor, AtspiAccessible *accessible);
+static gboolean execute_press(Executor *executor, AtspiAccessible *accessible);
+
+// creates a new executor
+Executor *executor_new(Mouse *mouse)
+{
+    Executor *executor = g_new(Executor, 1);
+
+    // add members
+    executor->mouse = mouse;
+
+    return executor;
+}
+
+// destroys an executor
+void executor_destroy(Executor *executor)
+{
+    g_free(executor);
+}
 
 // executes an accessible by identifying it's control type, and potentially it's shifted variant
-void execute_control(AtspiAccessible *accessible, gboolean shifted)
+void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shifted)
 {
     // get control type
     ControlType control_type = identify_control(accessible);
@@ -45,41 +62,41 @@ void execute_control(AtspiAccessible *accessible, gboolean shifted)
         break;
 
     case CONTROL_TYPE_PRESS:
-        execute_press(accessible);
+        execute_press(executor, accessible);
         break;
 
     case CONTROL_TYPE_FOCUS:
-        execute_focus(accessible);
+        execute_focus(executor, accessible);
         break;
 
     case CONTROL_TYPE_TAB:
         if (!shifted)
-            execute_press(accessible);
+            execute_press(executor, accessible);
         else
-            execute_mouse(accessible, 2);
+            execute_mouse(executor, accessible, 2);
 
         break;
 
     case CONTROL_TYPE_LINK:
         if (!shifted)
         {
-            execute_press(accessible);
+            execute_press(executor, accessible);
         }
         else
         {
             // todo: doesn't do exactly what I want since shift is active
 
             // attempt using ctrl + return key
-            if (execute_modifiers(GDK_CONTROL_MASK, TRUE) &&
-                execute_focus(accessible) &&
-                execute_key(GDK_KEY_Return) &&
-                execute_modifiers(GDK_CONTROL_MASK, FALSE))
+            if (execute_modifiers(executor, GDK_CONTROL_MASK, TRUE) &&
+                execute_focus(executor, accessible) &&
+                execute_key(executor, GDK_KEY_Return) &&
+                execute_modifiers(executor, GDK_CONTROL_MASK, FALSE))
                 break;
 
             // attempt using ctrl + mouse click
-            if (execute_modifiers(GDK_CONTROL_MASK, TRUE) &&
-                execute_mouse(accessible, 1) &&
-                execute_modifiers(GDK_CONTROL_MASK, FALSE))
+            if (execute_modifiers(executor, GDK_CONTROL_MASK, TRUE) &&
+                execute_mouse(executor, accessible, 1) &&
+                execute_modifiers(executor, GDK_CONTROL_MASK, FALSE))
                 break;
         }
         break;
@@ -95,15 +112,15 @@ void execute_control(AtspiAccessible *accessible, gboolean shifted)
         }
 
         if (n_actions > 0)
-            execute_press(accessible);
+            execute_press(executor, accessible);
         else
-            execute_focus(accessible);
+            execute_focus(executor, accessible);
 
         break;
     }
 }
 
-static gboolean execute_action(AtspiAccessible *accessible, guint index)
+static gboolean execute_action(Executor *executor, AtspiAccessible *accessible, guint index)
 {
     g_debug("execution: Attempting action '%d'", index);
 
@@ -128,7 +145,7 @@ static gboolean execute_action(AtspiAccessible *accessible, guint index)
 }
 
 // lock or unlock a mask of modifiers
-static gboolean execute_modifiers(guint modifiers, gboolean lock)
+static gboolean execute_modifiers(Executor *executor, guint modifiers, gboolean lock)
 {
     if (lock)
         g_debug("execution: Locking modifiers '%d'", modifiers);
@@ -145,7 +162,7 @@ static gboolean execute_modifiers(guint modifiers, gboolean lock)
 }
 
 // presses and releases the given key
-static gboolean execute_key(guint key)
+static gboolean execute_key(Executor *executor, guint key)
 {
     g_debug("execution: Pressing key '%d'", key);
 
@@ -158,44 +175,26 @@ static gboolean execute_key(guint key)
 }
 
 // executes a mouse click of the button into the center of the given accessible
-static gboolean execute_mouse(AtspiAccessible *accessible, guint button)
+static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button)
 {
     g_debug("execution: Clicking mouse '%d'", button);
-
-    // record the current mouse position
-    GdkSeat *seat = gdk_display_get_default_seat(gdk_display_get_default());
-    GdkDevice *mouse = gdk_seat_get_pointer(seat);
-    GdkWindow *window = gdk_display_get_default_group(gdk_display_get_default());
-    gint original_x, original_y;
-    gdk_window_get_device_position(window, mouse, &original_x, &original_y, NULL);
 
     // get position of the center of the accessible
     AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
     if (!component)
         return FALSE;
     AtspiRect *bounds = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
-    gint accessible_x = bounds->x + bounds->width / 2;
-    gint accessible_y = bounds->y + bounds->height / 2;
+    gint x = bounds->x + bounds->width / 2;
+    gint y = bounds->y + bounds->height / 2;
     g_object_unref(component);
     g_free(bounds);
 
-    // move and click the mouse
-    gchar *event_name = g_strdup_printf("b%dc", button);
-    gboolean success = atspi_generate_mouse_event(accessible_x, accessible_y, event_name, NULL);
-    g_free(event_name);
-    if (!success)
-        return FALSE;
-
-    // move the mouse back to original position
-    if (!atspi_generate_mouse_event(original_x, original_y, "abs", NULL))
-        return FALSE;
-
-    // success
-    return TRUE;
+    // return if mouse is successful
+    return mouse_press(executor->mouse, x, y, button);
 }
 
 // grabs the input focus onto the given accessible
-static gboolean execute_focus(AtspiAccessible *accessible)
+static gboolean execute_focus(Executor *executor, AtspiAccessible *accessible)
 {
     g_debug("execution: Focusing accessible");
 
@@ -229,19 +228,19 @@ static gboolean execute_focus(AtspiAccessible *accessible)
 }
 
 // attempt to press an accessible, like lift-clicking with a mouse on a button
-static gboolean execute_press(AtspiAccessible *accessible)
+static gboolean execute_press(Executor *executor, AtspiAccessible *accessible)
 {
     // attempt press using action
-    if (execute_action(accessible, 0))
+    if (execute_action(executor, accessible, 0))
         return TRUE;
 
     // attempt press using return key
-    if (execute_focus(accessible) &&
-        execute_key(GDK_KEY_Return))
+    if (execute_focus(executor, accessible) &&
+        execute_key(executor, GDK_KEY_Return))
         return TRUE;
 
     // attempt press using mouse click
-    if (execute_mouse(accessible, 1))
+    if (execute_mouse(executor, accessible, 1))
         return TRUE;
 
     return FALSE;
