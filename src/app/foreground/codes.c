@@ -103,28 +103,29 @@ Tag *codes_allocate(Codes *codes)
 // creates a new code using a the code generator
 static GArray *codes_new_code(Codes *codes)
 {
-    // wrap code if at end
+    // get the next key
+    guint next_key = g_array_index(codes->keys, guint, codes->key_index);
+
+    // increment the key index
+    codes->key_index++;
     if (codes->key_index == codes->keys->len)
         codes_wrap_code(codes);
 
     // check for no repeat
-    if (codes->consecutive_keys && codes->code_prefix->len > 0)
+    if (!codes->consecutive_keys && codes->code_prefix->len > 0 &&
+        next_key == g_array_index(codes->code_prefix, guint, codes->code_prefix->len - 1))
     {
-        guint next_key = g_array_index(codes->keys, guint, codes->key_index);
-        guint last_key = g_array_index(codes->code_prefix, guint, codes->code_prefix->len - 1);
-        if (next_key == last_key)
-        {
-            codes->key_index++;
+        // get the next key
+        next_key = g_array_index(codes->keys, guint, codes->key_index);
 
-            // wrap code if at end
-            if (codes->key_index == codes->keys->len)
-                codes_wrap_code(codes);
-        }
+        // increment the key index
+        codes->key_index++;
+        if (codes->key_index == codes->keys->len)
+            codes_wrap_code(codes);
     }
 
-    // append key to code prefix
-    return g_array_append_val(g_array_copy(codes->code_prefix),
-                              g_array_index(codes->keys, guint, codes->key_index++));
+    // append next key to code prefix
+    return g_array_append_val(g_array_copy(codes->code_prefix), next_key);
 }
 
 // allocates more available codes by appending to an existing code
