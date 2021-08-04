@@ -24,6 +24,8 @@
 #include <gdk/gdk.h>
 
 #include "background_config.h"
+
+#include "../lib/focus/focus.h"
 #include "../lib/keyboard/key.h"
 #include "../foreground/foreground.h"
 
@@ -33,12 +35,13 @@ typedef struct Background
 {
     GMainLoop *loop;
 
+    FocusListener *focus_listener;
     Foreground *foreground;
 
     KeyboardEvent trigger_event;
 } Background;
 
-Background *background_new(BackgroundConfig *config, Foreground *foreground);
+Background *background_new(BackgroundConfig *config, Foreground *foreground, FocusListener *focus_listener);
 void background_destroy(Background *background);
 void background_run(Background *background);
 gboolean background_is_running(Background *background);

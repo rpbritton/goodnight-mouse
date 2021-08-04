@@ -25,6 +25,7 @@
 #include "app_config.h"
 
 #include "lib/mouse/mouse.h"
+#include "lib/focus/focus.h"
 
 #include "background/background.h"
 #include "foreground/foreground.h"
@@ -37,6 +38,7 @@ typedef struct App
     guint signal_sigterm;
 
     MouseListener *mouse_listener;
+    FocusListener *focus_listener;
 
     Background *background;
     Foreground *foreground;

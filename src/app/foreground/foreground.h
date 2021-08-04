@@ -29,6 +29,7 @@
 #include "overlay.h"
 
 #include "../lib/mouse/mouse.h"
+#include "../lib/focus/focus.h"
 
 // a foreground which when run will show an overlay populated with tags with codes.
 // key events will narrow down the codes, an when one code is focused on, that
@@ -46,9 +47,10 @@ typedef struct Foreground
     Registry *registry;
 
     MouseListener *mouse_listener;
+    FocusListener *focus_listener;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener);
+Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener, FocusListener *focus_listener);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);

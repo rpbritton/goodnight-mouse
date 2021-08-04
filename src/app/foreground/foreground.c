@@ -21,8 +21,6 @@
 
 #include "../lib/keyboard/keyboard.h"
 #include "../lib/keyboard/modifiers.h"
-#include "../lib/focus/focus.h"
-#include "../lib/focus/window.h"
 
 #include "execution.h"
 
@@ -34,7 +32,7 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener)
+Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listener, FocusListener *focus_listener)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -49,8 +47,9 @@ Foreground *foreground_new(ForegroundConfig *config, MouseListener *mouse_listen
     foreground->overlay = overlay_new(config->overlay);
     foreground->registry = registry_new();
 
-    // add listener
+    // add listeners
     foreground->mouse_listener = mouse_listener;
+    foreground->focus_listener = focus_listener;
 
     return foreground;
 }
@@ -83,7 +82,7 @@ void foreground_run(Foreground *foreground)
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
-    AtspiAccessible *window = focus_get_window();
+    AtspiAccessible *window = focus_get_window(foreground->focus_listener);
     if (!window)
     {
         g_warning("foreground: No active window, stopping.");
@@ -105,8 +104,8 @@ void foreground_run(Foreground *foreground)
 
     // subscribe to listeners
     mouse_listener_subscribe(foreground->mouse_listener, callback_mouse, foreground);
+    focus_listener_subscribe(foreground->focus_listener, callback_focus, foreground);
     KeyboardListener *keyboard_listener = keyboard_listener_new(callback_keyboard, foreground);
-    FocusListener *focus_listener = focus_listener_new(callback_focus, foreground);
 
     // run loop
     g_debug("foreground: Starting loop");
@@ -115,8 +114,8 @@ void foreground_run(Foreground *foreground)
 
     // unsubscribe from listeners
     mouse_listener_unsubscribe(foreground->mouse_listener, callback_mouse);
+    focus_listener_unsubscribe(foreground->focus_listener, callback_focus);
     keyboard_listener_destroy(keyboard_listener);
-    focus_listener_destroy(focus_listener);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);

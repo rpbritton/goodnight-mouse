@@ -24,20 +24,27 @@
 #define WINDOW_ACTIVATE_EVENT "window:activate"
 #define WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
+typedef struct Subscriber
+{
+    FocusCallback callback;
+    gpointer data;
+} Subscriber;
+
 static void callback_activation(AtspiEvent *event, gpointer listener_ptr);
 static void callback_deactivation(AtspiEvent *event, gpointer listener_ptr);
+static void notify_subscribers(FocusListener *listener);
+static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new focus listener and starts the listening
-FocusListener *focus_listener_new(FocusCallback callback, gpointer data)
+FocusListener *focus_listener_new()
 {
     FocusListener *listener = g_new(FocusListener, 1);
 
-    // add callback
-    listener->callback = callback;
-    listener->callback_data = data;
+    // init subscribers
+    listener->subscribers = NULL;
 
     // get currently focused window
-    listener->window = focus_get_window();
+    listener->window = focus_get_window_fresh();
 
     // register listeners
     listener->listener_activation = atspi_event_listener_new(callback_activation, listener, NULL);
@@ -57,11 +64,47 @@ void focus_listener_destroy(FocusListener *listener)
     atspi_event_listener_deregister(listener->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
     g_object_unref(listener->listener_deactivation);
 
+    // free subscribers
+    g_list_free_full(listener->subscribers, g_free);
+
     // unref window
     if (listener->window)
         g_object_unref(listener->window);
 
     g_free(listener);
+}
+
+// subscribe a callback to focus events
+void focus_listener_subscribe(FocusListener *listener, FocusCallback callback, gpointer data)
+{
+    // don't add if subscribed
+    if (g_list_find_custom(listener->subscribers, callback, compare_subscriber_to_callback))
+        return;
+
+    // create a new subscriber
+    Subscriber *subscriber = g_new(Subscriber, 1);
+    subscriber->callback = callback;
+    subscriber->data = data;
+
+    // add subscriber
+    listener->subscribers = g_list_append(listener->subscribers, subscriber);
+}
+
+// remove a callback from the subscribers
+void focus_listener_unsubscribe(FocusListener *listener, FocusCallback callback)
+{
+    // find every instance of the callback and remove
+    GList *link = NULL;
+    while ((link = g_list_find_custom(listener->subscribers, callback, compare_subscriber_to_callback)))
+        listener->subscribers = g_list_delete_link(listener->subscribers, link);
+}
+
+// get the currently tracked window in the focus listener
+AtspiAccessible *focus_get_window(FocusListener *listener)
+{
+    if (listener->window)
+        g_object_ref(listener->window);
+    return listener->window;
 }
 
 // handles a window activation event
@@ -81,8 +124,8 @@ static void callback_activation(AtspiEvent *event, gpointer listener_ptr)
         g_object_unref(listener->window);
     listener->window = g_object_ref(event->source);
 
-    // callback with updated window
-    listener->callback(listener->window, listener->callback_data);
+    // notify the subscribers
+    notify_subscribers(listener);
 
     // free event
     g_boxed_free(ATSPI_TYPE_EVENT, event);
@@ -105,9 +148,25 @@ static void callback_deactivation(AtspiEvent *event, gpointer listener_ptr)
         g_object_unref(listener->window);
     listener->window = NULL;
 
-    // callback with updated window
-    listener->callback(listener->window, listener->callback_data);
+    // notify the subscribers
+    notify_subscribers(listener);
 
     // free event
     g_boxed_free(ATSPI_TYPE_EVENT, event);
+}
+
+// send the focused window to all subscribers
+static void notify_subscribers(FocusListener *listener)
+{
+    for (GList *link = listener->subscribers; link; link = link->next)
+    {
+        Subscriber *subscriber = link->data;
+        subscriber->callback(listener->window, subscriber->data);
+    }
+}
+
+// check if a subscriber matches a callback, returning 0 if so
+static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr)
+{
+    return !(((Subscriber *)subscriber_ptr)->callback == callback_ptr);
 }

@@ -29,8 +29,7 @@ typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
 // a window focus listener
 typedef struct FocusListener
 {
-    FocusCallback callback;
-    gpointer callback_data;
+    GList *subscribers;
 
     AtspiAccessible *window;
 
@@ -38,7 +37,10 @@ typedef struct FocusListener
     AtspiEventListener *listener_deactivation;
 } FocusListener;
 
-FocusListener *focus_listener_new(FocusCallback callback, gpointer data);
+FocusListener *focus_listener_new();
 void focus_listener_destroy(FocusListener *listener);
+void focus_listener_subscribe(FocusListener *listener, FocusCallback callback, gpointer data);
+void focus_listener_unsubscribe(FocusListener *listener, FocusCallback callback);
+AtspiAccessible *focus_get_window(FocusListener *listener);
 
 #endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */

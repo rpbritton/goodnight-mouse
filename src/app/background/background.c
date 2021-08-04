@@ -19,14 +19,12 @@
 
 #include "background.h"
 
-#include "../lib/focus/focus.h"
-
 static KeyboardResponse callback_key(KeyboardEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
 // creates a background that can be run
-Background *background_new(BackgroundConfig *config, Foreground *foreground)
+Background *background_new(BackgroundConfig *config, Foreground *foreground, FocusListener *focus_listener)
 {
     Background *background = g_new(Background, 1);
 
@@ -34,6 +32,7 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground)
     background->loop = g_main_loop_new(NULL, FALSE);
 
     // add members
+    background->focus_listener = focus_listener;
     background->foreground = foreground;
 
     // add trigger event
@@ -60,18 +59,18 @@ void background_run(Background *background)
     if (background_is_running(background))
         return;
 
-    // Create listeners
+    // subscribe to listeners
     KeyListener *trigger_listener = key_listener_new(background->trigger_event, callback_key, background);
-    FocusListener *focus_listener = focus_listener_new(callback_focus, background);
+    focus_listener_subscribe(background->focus_listener, callback_focus, background);
 
     // run loop
     g_debug("background: Starting loop");
     g_main_loop_run(background->loop);
     g_debug("background: Stopping loop");
 
-    // destroy trigger listener
+    // unsubscribe from listeners
     key_listener_destroy(trigger_listener);
-    focus_listener_destroy(focus_listener);
+    focus_listener_unsubscribe(background->focus_listener, callback_focus);
 }
 
 // returns whether the background is running
@@ -116,7 +115,7 @@ static gboolean start_foreground(gpointer background_ptr)
     return G_SOURCE_REMOVE;
 }
 
-// listens for focus events, which can cache windows and improve speeds
+// listens for focus events, which can help cache windows and improve speeds
 static void callback_focus(AtspiAccessible *window, gpointer background_ptr)
 {
     if (window)

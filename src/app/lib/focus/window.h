@@ -22,6 +22,6 @@
 
 #include <atspi/atspi.h>
 
-AtspiAccessible *focus_get_window();
+AtspiAccessible *focus_get_window_fresh();
 
 #endif /* FF737B9C_0C65_41F8_B738_5D31ECBCFCAA */
