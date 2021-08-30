@@ -114,23 +114,24 @@ static void callback_activation(AtspiEvent *event, gpointer listener_ptr)
 {
     Focus *focus = listener_ptr;
 
+    // sometimes the event source is wrong
+    AtspiAccessible *window = focus_get_window_fresh();
+    g_boxed_free(ATSPI_TYPE_EVENT, event);
+
     // make sure active window is different
-    if (focus->window == event->source)
+    if (focus->window == window)
     {
-        g_boxed_free(ATSPI_TYPE_EVENT, event);
+        g_object_unref(window);
         return;
     }
 
     // set focused window
     if (focus->window)
         g_object_unref(focus->window);
-    focus->window = g_object_ref(event->source);
+    focus->window = window;
 
     // notify the subscribers
     notify_subscribers(focus);
-
-    // free event
-    g_boxed_free(ATSPI_TYPE_EVENT, event);
 }
 
 // handles a window deactivation event
