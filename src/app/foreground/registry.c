@@ -26,7 +26,7 @@
 #define REGISTRY_REFRESH_INTERVAL (250)
 #define REGISTRY_REFRESH_PAUSE_COUNT (16)
 
-static void registry_refresh(Registry *registry);
+static void registry_refresh(Registry *registry, gboolean quickly);
 static gboolean registry_refresh_loop(gpointer registry_ptr);
 
 static gboolean registry_check_children(Registry *registry, ControlType control_type);
@@ -87,8 +87,13 @@ void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscri
     registry->window = g_object_ref(window);
     registry->subscriber = subscriber;
 
+    // refresh the registry
+    registry_refresh(registry, TRUE);
+
     // start the refresh loop
-    registry_refresh_loop(registry);
+    registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
+                                                registry_refresh_loop,
+                                                registry);
 }
 
 void registry_unwatch(Registry *registry)
@@ -116,7 +121,7 @@ void registry_unwatch(Registry *registry)
     g_source_remove(registry->refresh_source_id);
 }
 
-static void registry_refresh(Registry *registry)
+static void registry_refresh(Registry *registry, gboolean quickly)
 {
     GHashTable *accessibles_to_keep = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
     GArray *accessibles_to_add = g_array_new(FALSE, FALSE, sizeof(AtspiAccessible *));
@@ -127,7 +132,7 @@ static void registry_refresh(Registry *registry)
     while (accessible_queue)
     {
         // check to pause to process other glib events
-        if (++counter % REGISTRY_REFRESH_PAUSE_COUNT == 0)
+        if (++counter % REGISTRY_REFRESH_PAUSE_COUNT == 0 || !quickly)
             while (g_main_context_iteration(NULL, FALSE))
                 continue;
 
@@ -170,7 +175,7 @@ static gboolean registry_refresh_loop(gpointer registry_ptr)
     Registry *registry = registry_ptr;
 
     // refresh the registry
-    registry_refresh(registry);
+    registry_refresh(registry, FALSE);
 
     // add a source to call after interval
     registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
