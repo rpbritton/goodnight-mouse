@@ -49,7 +49,7 @@ Focus *focus_new()
     // register listeners
     focus->listener_activation = atspi_event_listener_new(callback_activation, focus, NULL);
     focus->listener_deactivation = atspi_event_listener_new(callback_deactivation, focus, NULL);
-    g_message("focus: Registering event listener");
+    g_debug("focus: Registering event listener");
     atspi_event_listener_register(focus->listener_activation, WINDOW_ACTIVATE_EVENT, NULL);
     atspi_event_listener_register(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
 
@@ -60,7 +60,7 @@ Focus *focus_new()
 void focus_destroy(Focus *focus)
 {
     // deregister listeners
-    g_message("focus: Deregistering event listener");
+    g_debug("focus: Deregistering event listener");
     atspi_event_listener_deregister(focus->listener_activation, WINDOW_ACTIVATE_EVENT, NULL);
     atspi_event_listener_deregister(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
     g_object_unref(focus->listener_activation);

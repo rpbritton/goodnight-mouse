@@ -45,8 +45,6 @@ Registry *registry_new()
     AtspiStateSet *interactive_states = atspi_state_set_new(NULL);
     atspi_state_set_add(interactive_states, ATSPI_STATE_SHOWING);
     atspi_state_set_add(interactive_states, ATSPI_STATE_VISIBLE);
-    atspi_state_set_add(interactive_states, ATSPI_STATE_ENABLED);
-    atspi_state_set_add(interactive_states, ATSPI_STATE_SENSITIVE);
     registry->match_interactive = atspi_match_rule_new(interactive_states, ATSPI_Collection_MATCH_ALL,
                                                        NULL, ATSPI_Collection_MATCH_NONE,
                                                        NULL, ATSPI_Collection_MATCH_NONE,
