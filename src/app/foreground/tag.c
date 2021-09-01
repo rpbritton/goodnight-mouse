@@ -173,14 +173,18 @@ void tag_reposition(Tag *tag)
     AtspiComponent *component = atspi_accessible_get_component_iface(tag->accessible);
     AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_WINDOW, NULL);
 
-    // put/move location in parent
-    if (gtk_widget_get_parent(tag->wrapper) == GTK_WIDGET(tag->parent))
-        gtk_layout_move(tag->parent, tag->wrapper, rect->x, rect->y);
-    else
-        gtk_layout_put(tag->parent, tag->wrapper, rect->x, rect->y);
+    // put/move location in parent if coordinates are valid
+    if (rect->x != -1 && rect->y != -1)
+    {
+        if (gtk_widget_get_parent(tag->wrapper) == GTK_WIDGET(tag->parent))
+            gtk_layout_move(tag->parent, tag->wrapper, rect->x, rect->y);
+        else
+            gtk_layout_put(tag->parent, tag->wrapper, rect->x, rect->y);
+    }
 
     // set wrapper to cover accessible
-    gtk_widget_set_size_request(tag->wrapper, rect->width, rect->height);
+    if (rect->width != -1 && rect->height != -1)
+        gtk_widget_set_size_request(tag->wrapper, rect->width, rect->height);
 
     // free
     g_object_unref(component);
