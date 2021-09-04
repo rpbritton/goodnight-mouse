@@ -19,7 +19,7 @@
 
 #include "window.h"
 
-#ifdef USE_X11
+#if USE_X11
 #include "X11/Xatom.h"
 #include "X11/Xlib.h"
 #endif
@@ -29,7 +29,7 @@ AtspiAccessible *focus_get_window_fresh()
 {
     AtspiAccessible *active_window = NULL;
 
-#ifdef USE_X11
+#if USE_X11
     Display *display = XOpenDisplay(NULL);
     Window root_window = RootWindow(display, DefaultScreen(display));
 
@@ -83,7 +83,7 @@ AtspiAccessible *focus_get_window_fresh()
         if (!application)
             continue;
 
-#ifdef USE_X11
+#if USE_X11
         if (atspi_accessible_get_process_id(application, NULL) != pid)
         {
             g_object_unref(application);

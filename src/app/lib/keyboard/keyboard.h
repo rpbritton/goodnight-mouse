@@ -22,6 +22,11 @@
 
 #include "event.h"
 
+#if USE_X11
+#include "atspi/atspi-device.h"
+#include "atspi/atspi-device-x11.h"
+#endif
+
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
 {
@@ -29,6 +34,9 @@ typedef struct Keyboard
 
     gboolean registered;
     AtspiDeviceListener *device_listener;
+#if USE_X11
+    AtspiDevice *device;
+#endif
 } Keyboard;
 
 Keyboard *keyboard_new();
