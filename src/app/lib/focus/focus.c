@@ -105,7 +105,16 @@ void focus_unsubscribe(Focus *focus, FocusCallback callback)
 AtspiAccessible *focus_get_window(Focus *focus)
 {
     if (focus->window)
+    {
         g_object_ref(focus->window);
+    }
+    else
+    {
+        // if none it doesn't hurt to check
+        focus->window = focus_get_window_fresh();
+        if (focus->window)
+            g_object_ref(focus->window);
+    }
     return focus->window;
 }
 
