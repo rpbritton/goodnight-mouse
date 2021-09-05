@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 Ryan Britton
+ * Copyright (C) 2021 ryan
  *
  * This file is part of Goodnight Mouse.
  *
@@ -17,28 +17,12 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef C771728F_10C2_4C46_86DE_E96D9E622166
-#define C771728F_10C2_4C46_86DE_E96D9E622166
+#ifndef CE430CE1_2CFE_43A2_A0A2_D08E9FD2AEE0
+#define CE430CE1_2CFE_43A2_A0A2_D08E9FD2AEE0
 
-#include <glib.h>
 #include <atspi/atspi.h>
 
-#include "event.h"
+// a callback for when the currently focused window changes, possibly to NULL
+typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
 
-// a window focus focus
-typedef struct Focus
-{
-    GList *subscribers;
-
-    AtspiAccessible *accessible;
-
-    gpointer backend;
-} Focus;
-
-Focus *focus_new();
-void focus_destroy(Focus *focus);
-void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
-void focus_unsubscribe(Focus *focus, FocusCallback callback);
-AtspiAccessible *focus_get_window(Focus *focus);
-
-#endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */
+#endif /* CE430CE1_2CFE_43A2_A0A2_D08E9FD2AEE0 */

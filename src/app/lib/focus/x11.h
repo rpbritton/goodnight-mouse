@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 Ryan Britton
+ * Copyright (C) 2021 ryan
  *
  * This file is part of Goodnight Mouse.
  *
@@ -17,28 +17,30 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef C771728F_10C2_4C46_86DE_E96D9E622166
-#define C771728F_10C2_4C46_86DE_E96D9E622166
+#ifndef E08E96C5_9A2C_464D_AA33_833B2045A3CF
+#define E08E96C5_9A2C_464D_AA33_833B2045A3CF
 
-#include <glib.h>
+#if USE_X11
+
 #include <atspi/atspi.h>
+#include <X11/Xlib.h>
 
 #include "event.h"
 
-// a window focus focus
-typedef struct Focus
+typedef struct FocusX11
 {
-    GList *subscribers;
+    FocusCallback callback;
+    gpointer data;
 
+    Display *display;
+    Window root_window;
     AtspiAccessible *accessible;
+} FocusX11;
 
-    gpointer backend;
-} Focus;
+FocusX11 *focus_x11_new(FocusCallback callback, gpointer data);
+void focus_x11_destroy(FocusX11 *focus_x11);
+AtspiAccessible *focus_x11_get_window(FocusX11 *focus_x11);
 
-Focus *focus_new();
-void focus_destroy(Focus *focus);
-void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
-void focus_unsubscribe(Focus *focus, FocusCallback callback);
-AtspiAccessible *focus_get_window(Focus *focus);
+#endif /* USE_X11 */
 
-#endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */
+#endif /* E08E96C5_9A2C_464D_AA33_833B2045A3CF */

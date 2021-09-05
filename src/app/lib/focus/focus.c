@@ -19,7 +19,12 @@
 
 #include "focus.h"
 
-#include "window.h"
+#if USE_X11
+#include "x11.h"
+#define focus_backend_new(callback, data) focus_x11_new(callback, data)
+#define focus_backend_destroy(backend) focus_x11_destroy(backend)
+#define focus_backend_get_window(backend) focus_x11_get_window(backend)
+#endif
 
 #define WINDOW_ACTIVATE_EVENT "window:activate"
 #define WINDOW_DEACTIVATE_EVENT "window:deactivate"
@@ -30,9 +35,7 @@ typedef struct Subscriber
     gpointer data;
 } Subscriber;
 
-static void callback_activation(AtspiEvent *event, gpointer listener_ptr);
-static void callback_deactivation(AtspiEvent *event, gpointer listener_ptr);
-static void notify_subscribers(Focus *focus);
+static void set_window(AtspiAccessible *accessible, gpointer focus_ptr);
 static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new focus focus and starts the listening
@@ -43,35 +46,29 @@ Focus *focus_new()
     // init subscribers
     focus->subscribers = NULL;
 
-    // get currently focused window
-    focus->window = focus_get_window_fresh();
-
-    // register listeners
-    focus->listener_activation = atspi_event_listener_new(callback_activation, focus, NULL);
-    focus->listener_deactivation = atspi_event_listener_new(callback_deactivation, focus, NULL);
+    // add backend
     g_debug("focus: Registering event listener");
-    atspi_event_listener_register(focus->listener_activation, WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_register(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
+    focus->backend = focus_backend_new(set_window, focus);
+
+    // get currently focused window
+    focus->accessible = focus_backend_get_window(focus->backend);
 
     return focus;
 }
 
-// destroys a focus focus and stops the listening
+// destroys a focus and stops the listening
 void focus_destroy(Focus *focus)
 {
-    // deregister listeners
+    // free backend
     g_debug("focus: Deregistering event listener");
-    atspi_event_listener_deregister(focus->listener_activation, WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_deregister(focus->listener_deactivation, WINDOW_DEACTIVATE_EVENT, NULL);
-    g_object_unref(focus->listener_activation);
-    g_object_unref(focus->listener_deactivation);
+    focus_backend_destroy(focus->backend);
 
     // free subscribers
     g_list_free_full(focus->subscribers, g_free);
 
     // unref window
-    if (focus->window)
-        g_object_unref(focus->window);
+    if (focus->accessible)
+        g_object_unref(focus->accessible);
 
     g_free(focus);
 }
@@ -101,79 +98,31 @@ void focus_unsubscribe(Focus *focus, FocusCallback callback)
         focus->subscribers = g_list_delete_link(focus->subscribers, link);
 }
 
-// get the currently tracked window in the focus focus
+// get the currently focused window
 AtspiAccessible *focus_get_window(Focus *focus)
 {
-    if (focus->window)
-    {
-        g_object_ref(focus->window);
-    }
-    else
-    {
-        // if none it doesn't hurt to check
-        focus->window = focus_get_window_fresh();
-        if (focus->window)
-            g_object_ref(focus->window);
-    }
-    return focus->window;
+    if (focus->accessible)
+        g_object_ref(focus->accessible);
+    return focus->accessible;
 }
 
-// handles a window activation event
-static void callback_activation(AtspiEvent *event, gpointer listener_ptr)
+// set the focused window and send it to the subscribers
+static void set_window(AtspiAccessible *accessible, gpointer focus_ptr)
 {
-    Focus *focus = listener_ptr;
+    Focus *focus = focus_ptr;
 
-    // sometimes the event source is wrong
-    AtspiAccessible *window = focus_get_window_fresh();
-    g_boxed_free(ATSPI_TYPE_EVENT, event);
-
-    // make sure active window is different
-    if (focus->window == window)
-    {
-        g_object_unref(window);
-        return;
-    }
-
-    // set focused window
-    if (focus->window)
-        g_object_unref(focus->window);
-    focus->window = window;
+    // set the new window
+    if (focus->accessible)
+        g_object_unref(focus->accessible);
+    if (accessible)
+        g_object_ref(accessible);
+    focus->accessible = accessible;
 
     // notify the subscribers
-    notify_subscribers(focus);
-}
-
-// handles a window deactivation event
-static void callback_deactivation(AtspiEvent *event, gpointer listener_ptr)
-{
-    Focus *focus = listener_ptr;
-
-    // make sure deactivating window is the same
-    if (focus->window != event->source)
-    {
-        g_boxed_free(ATSPI_TYPE_EVENT, event);
-        return;
-    }
-
-    // set focused window
-    if (focus->window)
-        g_object_unref(focus->window);
-    focus->window = NULL;
-
-    // notify the subscribers
-    notify_subscribers(focus);
-
-    // free event
-    g_boxed_free(ATSPI_TYPE_EVENT, event);
-}
-
-// send the focused window to all subscribers
-static void notify_subscribers(Focus *focus)
-{
     for (GList *link = focus->subscribers; link; link = link->next)
     {
         Subscriber *subscriber = link->data;
-        subscriber->callback(focus->window, subscriber->data);
+        subscriber->callback(focus->accessible, subscriber->data);
     }
 }
 
