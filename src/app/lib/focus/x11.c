@@ -23,7 +23,8 @@
 
 #include "X11/Xatom.h"
 
-static Window get_active_window(FocusX11 *focus_x11);
+static Window get_active_window_by_input(FocusX11 *focus_x11);
+static Window get_active_window_by_property(FocusX11 *focus_x11);
 static guint get_window_pid(FocusX11 *focus_x11, Window window);
 static void set_active_window(FocusX11 *focus_x11);
 static void set_window(FocusX11 *focus_x11, AtspiAccessible *accessible);
@@ -67,7 +68,21 @@ AtspiAccessible *focus_x11_get_window(FocusX11 *focus_x11)
     return focus_x11->accessible;
 }
 
-static Window get_active_window(FocusX11 *focus_x11)
+static Window get_active_window_by_input(FocusX11 *focus_x11)
+{
+    // get the window with input focus
+    Window window;
+    int revert_to;
+    XGetInputFocus(focus_x11->display, &window, &revert_to);
+
+    // no window focus
+    if (window == PointerRoot || window == None)
+        return None;
+
+    return window;
+}
+
+static Window get_active_window_by_property(FocusX11 *focus_x11)
 {
     // get active window property
     Atom window_atom = XInternAtom(focus_x11->display, "_NET_ACTIVE_WINDOW", TRUE);
@@ -83,7 +98,7 @@ static Window get_active_window(FocusX11 *focus_x11)
                                 &actual_type, &actual_format,
                                 &nitems, &bytes_after, &data);
     if (status != Success || !data)
-        return focus_x11->root_window;
+        return None;
 
     // return the window
     Window window = ((Window *)data)[0];
@@ -118,8 +133,8 @@ static guint get_window_pid(FocusX11 *focus_x11, Window window)
 static void set_active_window(FocusX11 *focus_x11)
 {
     // get active window
-    Window active_window = get_active_window(focus_x11);
-    if (active_window == focus_x11->root_window)
+    Window active_window = get_active_window_by_input(focus_x11);
+    if (active_window == None)
     {
         // no window found
         set_window(focus_x11, NULL);
@@ -128,6 +143,12 @@ static void set_active_window(FocusX11 *focus_x11)
 
     // get active window pid
     guint pid = get_window_pid(focus_x11, active_window);
+    if (pid == 0)
+    {
+        // no application found found
+        set_window(focus_x11, NULL);
+        return;
+    }
 
     // get the (only) desktop
     AtspiAccessible *desktop = atspi_get_desktop(0);
