@@ -191,9 +191,11 @@ static void set_active_window(FocusX11 *focus_x11)
 
 static void set_window(FocusX11 *focus_x11, AtspiAccessible *accessible)
 {
-    // set the window
+    // do nothing if already set
     if (accessible == focus_x11->accessible)
         return;
+
+    // set the window
     if (focus_x11->accessible)
         g_object_unref(focus_x11->accessible);
     if (accessible)
@@ -203,8 +205,6 @@ static void set_window(FocusX11 *focus_x11, AtspiAccessible *accessible)
     // notify subscriber
     if (!focus_x11->callback)
         return;
-    if (focus_x11->accessible)
-        g_object_ref(focus_x11->accessible);
     focus_x11->callback(focus_x11->accessible, focus_x11->data);
 }
 
