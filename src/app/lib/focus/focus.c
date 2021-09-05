@@ -24,6 +24,11 @@
 #define focus_backend_new(callback, data) focus_x11_new(callback, data)
 #define focus_backend_destroy(backend) focus_x11_destroy(backend)
 #define focus_backend_get_window(backend) focus_x11_get_window(backend)
+#else
+#include "legacy.h"
+#define focus_backend_new(callback, data) focus_legacy_new(callback, data)
+#define focus_backend_destroy(backend) focus_legacy_destroy(backend)
+#define focus_backend_get_window(backend) focus_legacy_get_window(backend)
 #endif
 
 #define WINDOW_ACTIVATE_EVENT "window:activate"
