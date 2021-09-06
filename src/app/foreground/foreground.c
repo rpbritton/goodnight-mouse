@@ -111,7 +111,7 @@ void foreground_run(Foreground *foreground)
     g_debug("foreground: Stopping loop");
 
     // unsubscribe from listeners
-    keyboard_unsubscribe(foreground->keyboard, callback_keyboard);
+    keyboard_unsubscribe(foreground->keyboard, callback_keyboard, foreground);
     mouse_unsubscribe(foreground->mouse, callback_mouse);
     focus_unsubscribe(foreground->focus, callback_focus, foreground);
 

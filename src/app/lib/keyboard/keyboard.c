@@ -32,7 +32,6 @@ typedef struct Subscriber
 // callback to handle an atspi keyboard event
 static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
 static KeyboardResponse notify_subscribers(Keyboard *keyboard, KeyboardEvent event);
-static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new keyboard event keyboard and starts listening
 Keyboard *keyboard_new()
@@ -120,6 +119,27 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 }
 
+// remove keyboard event subscription
+void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data)
+{
+    // remove the first matching subscriber
+    for (GList *link = keyboard->subscribers; link; link = link->next)
+    {
+        Subscriber *subscriber = link->data;
+
+        // check if subscriber matches
+        if (subscriber->all_events == TRUE &&
+            subscriber->callback == callback &&
+            subscriber->data == data)
+        {
+            // remove subscriber
+            g_free(subscriber);
+            keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
+            return;
+        }
+    }
+}
+
 // subscribe a callback to a particular keyboard event
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
@@ -136,13 +156,31 @@ void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCal
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 }
 
-// remove a callback from the subscribers
-void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback)
+// removes a key subscription
+void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
-    // find every instance of the callback and remove
-    GList *link = NULL;
-    while ((link = g_list_find_custom(keyboard->subscribers, callback, compare_subscriber_to_callback)))
-        keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
+    // map modifiers
+    event.modifiers = keyboard_modifiers_map(event.modifiers);
+
+    // remove the first matching subscriber
+    for (GList *link = keyboard->subscribers; link; link = link->next)
+    {
+        Subscriber *subscriber = link->data;
+
+        // check if subscriber matches
+        if (subscriber->all_events == FALSE &&
+            subscriber->event.key == event.key &&
+            subscriber->event.type == event.type &&
+            subscriber->event.modifiers == event.modifiers &&
+            subscriber->callback == callback &&
+            subscriber->data == data)
+        {
+            // remove subscriber
+            g_free(subscriber);
+            keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
+            return;
+        }
+    }
 }
 
 // callback to handle an atspi keyboard event
@@ -178,10 +216,4 @@ static KeyboardResponse notify_subscribers(Keyboard *keyboard, KeyboardEvent eve
     }
 
     return response;
-}
-
-// check if a subscriber matches a callback, returning 0 if so
-static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr)
-{
-    return !(((Subscriber *)subscriber_ptr)->callback == callback_ptr);
 }

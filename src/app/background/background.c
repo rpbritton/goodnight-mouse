@@ -62,8 +62,8 @@ void background_run(Background *background)
         return;
 
     // subscribe to listeners
-    keyboard_subscribe_key(background->keyboard,
-                           background->trigger_event, callback_keyboard, background);
+    keyboard_subscribe_key(background->keyboard, background->trigger_event,
+                           callback_keyboard, background);
     focus_subscribe(background->focus, callback_focus, background);
 
     // run loop
@@ -72,7 +72,8 @@ void background_run(Background *background)
     g_debug("background: Stopping loop");
 
     // unsubscribe from listeners
-    keyboard_unsubscribe(background->keyboard, callback_keyboard);
+    keyboard_unsubscribe_key(background->keyboard, background->trigger_event,
+                             callback_keyboard, background);
     focus_unsubscribe(background->focus, callback_focus, background);
 }
 
