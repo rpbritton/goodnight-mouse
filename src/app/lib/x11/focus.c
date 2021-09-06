@@ -23,8 +23,7 @@
 
 #include "X11/Xatom.h"
 
-static Window get_active_window_by_input(BackendX11Focus *focus);
-static Window get_active_window_by_property(BackendX11Focus *focus);
+static Window get_active_window(BackendX11Focus *focus);
 static guint get_window_pid(BackendX11Focus *focus, Window window);
 static void set_active_window(BackendX11Focus *focus);
 static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible);
@@ -76,21 +75,7 @@ AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus)
     return focus->accessible;
 }
 
-static Window get_active_window_by_input(BackendX11Focus *focus)
-{
-    // get the window with input focus
-    Window window;
-    int revert_to;
-    XGetInputFocus(focus->display, &window, &revert_to);
-
-    // no window focus
-    if (window == PointerRoot || window == None)
-        return None;
-
-    return window;
-}
-
-static Window get_active_window_by_property(BackendX11Focus *focus)
+static Window get_active_window(BackendX11Focus *focus)
 {
     // get active window property
     Atom window_atom = XInternAtom(focus->display, "_NET_ACTIVE_WINDOW", TRUE);
@@ -141,7 +126,7 @@ static guint get_window_pid(BackendX11Focus *focus, Window window)
 static void set_active_window(BackendX11Focus *focus)
 {
     // get active window
-    Window active_window = get_active_window_by_input(focus);
+    Window active_window = get_active_window(focus);
     if (active_window == None)
     {
         // no window found
