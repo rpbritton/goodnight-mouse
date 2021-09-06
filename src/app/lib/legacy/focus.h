@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 Ryan Britton
+ * Copyright (C) 2021 ryan
  *
  * This file is part of Goodnight Mouse.
  *
@@ -17,29 +17,30 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef C771728F_10C2_4C46_86DE_E96D9E622166
-#define C771728F_10C2_4C46_86DE_E96D9E622166
+#ifndef A9931399_E0BF_4011_A403_586AD57B1A31
+#define A9931399_E0BF_4011_A403_586AD57B1A31
 
-#include <glib.h>
 #include <atspi/atspi.h>
 
+#include "backend.h"
+
 // a callback for when the currently focused window changes, possibly to NULL
-typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
+typedef void (*BackendLegacyFocusCallback)(AtspiAccessible *window, gpointer data);
 
-// a window focus focus
-typedef struct Focus
+// focus listener that uses built in at-spi tools to watch
+typedef struct BackendLegacyFocus
 {
-    gpointer backend;
+    BackendLegacy *backend;
 
-    GList *subscribers;
+    BackendLegacyFocusCallback callback;
+    gpointer data;
 
+    AtspiEventListener *listener;
     AtspiAccessible *accessible;
-} Focus;
+} BackendLegacyFocus;
 
-Focus *focus_new(gpointer backend);
-void focus_destroy(Focus *focus);
-void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
-void focus_unsubscribe(Focus *focus, FocusCallback callback);
-AtspiAccessible *focus_get_window(Focus *focus);
+BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendLegacyFocusCallback callback, gpointer data);
+void backend_legacy_focus_destroy(BackendLegacyFocus *focus);
+AtspiAccessible *backend_legacy_focus_get_window(BackendLegacyFocus *focus);
 
-#endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */
+#endif /* A9931399_E0BF_4011_A403_586AD57B1A31 */

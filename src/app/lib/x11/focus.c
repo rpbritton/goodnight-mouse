@@ -19,61 +19,62 @@
 
 #if USE_X11
 
-#include "x11.h"
+#include "focus.h"
 
 #include "X11/Xatom.h"
 
-static Window get_active_window_by_input(FocusX11 *focus_x11);
-static Window get_active_window_by_property(FocusX11 *focus_x11);
-static guint get_window_pid(FocusX11 *focus_x11, Window window);
-static void set_active_window(FocusX11 *focus_x11);
-static void set_window(FocusX11 *focus_x11, AtspiAccessible *accessible);
+static Window get_active_window_by_input(BackendX11Focus *focus);
+static Window get_active_window_by_property(BackendX11Focus *focus);
+static guint get_window_pid(BackendX11Focus *focus, Window window);
+static void set_active_window(BackendX11Focus *focus);
+static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible);
 
-FocusX11 *focus_x11_new(FocusCallback callback, gpointer data)
+BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data)
 {
-    FocusX11 *focus_x11 = g_new(FocusX11, 1);
+    BackendX11Focus *focus = g_new(BackendX11Focus, 1);
+
+    // add backend
+    focus->backend = backend;
 
     // add callback
-    focus_x11->callback = callback;
-    focus_x11->data = data;
+    focus->callback = callback;
+    focus->data = data;
 
-    // open x connection
-    focus_x11->display = XOpenDisplay(NULL);
-    focus_x11->root_window = RootWindow(focus_x11->display, DefaultScreen(focus_x11->display));
+    // add x connection
+    focus->display = backend_x11_get_display(focus->backend);
+    focus->root_window = RootWindow(focus->display, DefaultScreen(focus->display));
 
     // set active window
-    focus_x11->accessible = NULL;
-    set_active_window(focus_x11);
+    focus->accessible = NULL;
+    set_active_window(focus);
 
-    return focus_x11;
+    // return
+    return focus;
 }
 
-void focus_x11_destroy(FocusX11 *focus_x11)
+void backend_x11_focus_destroy(BackendX11Focus *focus)
 {
-    // close display
-    XCloseDisplay(focus_x11->display);
-
     // free accessible
-    if (focus_x11->accessible)
-        g_object_unref(focus_x11->accessible);
+    if (focus->accessible)
+        g_object_unref(focus->accessible);
 
     // free
-    g_free(focus_x11);
+    g_free(focus);
 }
 
-AtspiAccessible *focus_x11_get_window(FocusX11 *focus_x11)
+AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus)
 {
-    if (focus_x11->accessible)
-        g_object_ref(focus_x11->accessible);
-    return focus_x11->accessible;
+    if (focus->accessible)
+        g_object_ref(focus->accessible);
+    return focus->accessible;
 }
 
-static Window get_active_window_by_input(FocusX11 *focus_x11)
+static Window get_active_window_by_input(BackendX11Focus *focus)
 {
     // get the window with input focus
     Window window;
     int revert_to;
-    XGetInputFocus(focus_x11->display, &window, &revert_to);
+    XGetInputFocus(focus->display, &window, &revert_to);
 
     // no window focus
     if (window == PointerRoot || window == None)
@@ -82,17 +83,17 @@ static Window get_active_window_by_input(FocusX11 *focus_x11)
     return window;
 }
 
-static Window get_active_window_by_property(FocusX11 *focus_x11)
+static Window get_active_window_by_property(BackendX11Focus *focus)
 {
     // get active window property
-    Atom window_atom = XInternAtom(focus_x11->display, "_NET_ACTIVE_WINDOW", TRUE);
+    Atom window_atom = XInternAtom(focus->display, "_NET_ACTIVE_WINDOW", TRUE);
     int status;
     Atom actual_type;
     int actual_format;
     unsigned long nitems;
     unsigned long bytes_after;
     unsigned char *data;
-    status = XGetWindowProperty(focus_x11->display, focus_x11->root_window, window_atom,
+    status = XGetWindowProperty(focus->display, focus->root_window, window_atom,
                                 0, 1,
                                 FALSE, XA_WINDOW,
                                 &actual_type, &actual_format,
@@ -106,17 +107,17 @@ static Window get_active_window_by_property(FocusX11 *focus_x11)
     return window;
 }
 
-static guint get_window_pid(FocusX11 *focus_x11, Window window)
+static guint get_window_pid(BackendX11Focus *focus, Window window)
 {
     // get window pid
-    Atom pid_atom = XInternAtom(focus_x11->display, "_NET_WM_PID", TRUE);
+    Atom pid_atom = XInternAtom(focus->display, "_NET_WM_PID", TRUE);
     int status;
     Atom actual_type;
     int actual_format;
     unsigned long nitems;
     unsigned long bytes_after;
     unsigned char *data;
-    status = XGetWindowProperty(focus_x11->display, window, pid_atom,
+    status = XGetWindowProperty(focus->display, window, pid_atom,
                                 0, 1,
                                 FALSE, XA_CARDINAL,
                                 &actual_type, &actual_format,
@@ -130,23 +131,23 @@ static guint get_window_pid(FocusX11 *focus_x11, Window window)
     return pid;
 }
 
-static void set_active_window(FocusX11 *focus_x11)
+static void set_active_window(BackendX11Focus *focus)
 {
     // get active window
-    Window active_window = get_active_window_by_input(focus_x11);
+    Window active_window = get_active_window_by_input(focus);
     if (active_window == None)
     {
         // no window found
-        set_window(focus_x11, NULL);
+        set_window(focus, NULL);
         return;
     }
 
     // get active window pid
-    guint pid = get_window_pid(focus_x11, active_window);
+    guint pid = get_window_pid(focus, active_window);
     if (pid == 0)
     {
         // no application found found
-        set_window(focus_x11, NULL);
+        set_window(focus, NULL);
         return;
     }
 
@@ -206,27 +207,27 @@ static void set_active_window(FocusX11 *focus_x11)
     g_object_unref(desktop);
 
     // set the window
-    set_window(focus_x11, accessible);
+    set_window(focus, accessible);
     g_object_unref(accessible);
 }
 
-static void set_window(FocusX11 *focus_x11, AtspiAccessible *accessible)
+static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible)
 {
     // do nothing if already set
-    if (accessible == focus_x11->accessible)
+    if (accessible == focus->accessible)
         return;
 
     // set the window
-    if (focus_x11->accessible)
-        g_object_unref(focus_x11->accessible);
+    if (focus->accessible)
+        g_object_unref(focus->accessible);
     if (accessible)
         g_object_ref(accessible);
-    focus_x11->accessible = accessible;
+    focus->accessible = accessible;
 
     // notify subscriber
-    if (!focus_x11->callback)
+    if (!focus->callback)
         return;
-    focus_x11->callback(focus_x11->accessible, focus_x11->data);
+    focus->callback(focus->accessible, focus->data);
 }
 
 #endif /* USE_X11 */

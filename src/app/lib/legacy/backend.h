@@ -17,30 +17,15 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef E08E96C5_9A2C_464D_AA33_833B2045A3CF
-#define E08E96C5_9A2C_464D_AA33_833B2045A3CF
+#ifndef A03BEFE9_3C77_44AD_A573_8478248026DA
+#define A03BEFE9_3C77_44AD_A573_8478248026DA
 
-#if USE_X11
-
-#include <atspi/atspi.h>
-#include <X11/Xlib.h>
-
-#include "event.h"
-
-typedef struct FocusX11
+typedef struct BackendLegacy
 {
-    FocusCallback callback;
-    gpointer data;
 
-    Display *display;
-    Window root_window;
-    AtspiAccessible *accessible;
-} FocusX11;
+} BackendLegacy;
 
-FocusX11 *focus_x11_new(FocusCallback callback, gpointer data);
-void focus_x11_destroy(FocusX11 *focus_x11);
-AtspiAccessible *focus_x11_get_window(FocusX11 *focus_x11);
+BackendLegacy *backend_legacy_new();
+void backend_legacy_destroy(BackendLegacy *backend);
 
-#endif /* USE_X11 */
-
-#endif /* E08E96C5_9A2C_464D_AA33_833B2045A3CF */
+#endif /* A03BEFE9_3C77_44AD_A573_8478248026DA */

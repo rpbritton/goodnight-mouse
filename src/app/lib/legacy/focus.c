@@ -17,62 +17,65 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "legacy.h"
+#include "focus.h"
 
 #define WINDOW_ACTIVATE_EVENT "window:activate"
 #define WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
-static void set_active_window(FocusLegacy *focus_legacy);
-static void set_window(FocusLegacy *focus_legacy, AtspiAccessible *accessible);
-static void callback_focus(AtspiEvent *event, gpointer focus_legacy_ptr);
+static void set_active_window(BackendLegacyFocus *focus);
+static void set_window(BackendLegacyFocus *focus, AtspiAccessible *accessible);
+static void callback_focus(AtspiEvent *event, gpointer focus_ptr);
 
 // create a new legacy focus listener
-FocusLegacy *focus_legacy_new(FocusCallback callback, gpointer data)
+BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendLegacyFocusCallback callback, gpointer data)
 {
-    FocusLegacy *focus_legacy = g_new(FocusLegacy, 1);
+    BackendLegacyFocus *focus = g_new(BackendLegacyFocus, 1);
+
+    // add backend
+    focus->backend = backend;
 
     // add callback
-    focus_legacy->callback = callback;
-    focus_legacy->data = data;
+    focus->callback = callback;
+    focus->data = data;
 
     // set active window
-    focus_legacy->accessible = NULL;
-    set_active_window(focus_legacy);
+    focus->accessible = NULL;
+    set_active_window(focus);
 
     // register listeners
-    focus_legacy->listener = atspi_event_listener_new(callback_focus, focus_legacy, NULL);
-    atspi_event_listener_register(focus_legacy->listener, WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_register(focus_legacy->listener, WINDOW_DEACTIVATE_EVENT, NULL);
+    focus->listener = atspi_event_listener_new(callback_focus, focus, NULL);
+    atspi_event_listener_register(focus->listener, WINDOW_ACTIVATE_EVENT, NULL);
+    atspi_event_listener_register(focus->listener, WINDOW_DEACTIVATE_EVENT, NULL);
 
-    return focus_legacy;
+    return focus;
 }
 
 // destroy the focus listener
-void focus_legacy_destroy(FocusLegacy *focus_legacy)
+void backend_legacy_focus_destroy(BackendLegacyFocus *focus)
 {
     // deregister listeners
-    atspi_event_listener_deregister(focus_legacy->listener, WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_deregister(focus_legacy->listener, WINDOW_DEACTIVATE_EVENT, NULL);
-    g_object_unref(focus_legacy->listener);
+    atspi_event_listener_deregister(focus->listener, WINDOW_ACTIVATE_EVENT, NULL);
+    atspi_event_listener_deregister(focus->listener, WINDOW_DEACTIVATE_EVENT, NULL);
+    g_object_unref(focus->listener);
 
     // free accessible
-    if (focus_legacy->accessible)
-        g_object_unref(focus_legacy->accessible);
+    if (focus->accessible)
+        g_object_unref(focus->accessible);
 
     // free
-    g_free(focus_legacy);
+    g_free(focus);
 }
 
 // get the currently cached focused window
-AtspiAccessible *focus_legacy_get_window(FocusLegacy *focus_legacy)
+AtspiAccessible *backend_legacy_focus_get_window(BackendLegacyFocus *focus)
 {
-    if (focus_legacy->accessible)
-        g_object_ref(focus_legacy->accessible);
-    return focus_legacy->accessible;
+    if (focus->accessible)
+        g_object_ref(focus->accessible);
+    return focus->accessible;
 }
 
 // get and set the active window
-static void set_active_window(FocusLegacy *focus_legacy)
+static void set_active_window(BackendLegacyFocus *focus)
 {
     // get the (only) desktop
     AtspiAccessible *desktop = atspi_get_desktop(0);
@@ -123,38 +126,38 @@ static void set_active_window(FocusLegacy *focus_legacy)
     g_object_unref(desktop);
 
     // set the window
-    set_window(focus_legacy, accessible);
+    set_window(focus, accessible);
     if (accessible)
         g_object_unref(accessible);
 }
 
 // set the focused window and notify the listeners
-static void set_window(FocusLegacy *focus_legacy, AtspiAccessible *accessible)
+static void set_window(BackendLegacyFocus *focus, AtspiAccessible *accessible)
 {
     // do nothing if already set
-    if (accessible == focus_legacy->accessible)
+    if (accessible == focus->accessible)
         return;
 
     // set the window
-    if (focus_legacy->accessible)
-        g_object_unref(focus_legacy->accessible);
+    if (focus->accessible)
+        g_object_unref(focus->accessible);
     if (accessible)
         g_object_ref(accessible);
-    focus_legacy->accessible = accessible;
+    focus->accessible = accessible;
 
     // notify subscriber
-    if (!focus_legacy->callback)
+    if (!focus->callback)
         return;
-    focus_legacy->callback(focus_legacy->accessible, focus_legacy->data);
+    focus->callback(focus->accessible, focus->data);
 }
 
 // handles a window activation and deactivation event
-static void callback_focus(AtspiEvent *event, gpointer focus_legacy_ptr)
+static void callback_focus(AtspiEvent *event, gpointer focus_ptr)
 {
-    FocusLegacy *focus_legacy = focus_legacy_ptr;
+    BackendLegacyFocus *focus = focus_ptr;
 
     // set the active window
-    set_active_window(focus_legacy);
+    set_active_window(focus);
 
     // free the event
     g_boxed_free(ATSPI_TYPE_EVENT, event);

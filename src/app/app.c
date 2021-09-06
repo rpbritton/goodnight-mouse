@@ -23,6 +23,12 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
+#if USE_X11
+#include "lib/x11/backend.h"
+#else
+#include "lib/legacy/backend.h"
+#endif
+
 static gboolean signal_quit(gpointer app_ptr);
 
 // create a new app from the configuration
@@ -39,10 +45,17 @@ App *app_new(AppConfig *config)
     app->signal_sigint = g_unix_signal_add(SIGINT, signal_quit, app);
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
+    // create backend
+#if USE_X11
+    app->backend = backend_x11_new();
+#else
+    app->backend = backend_legacy_new();
+#endif
+
     // create listeners
     app->keyboard = keyboard_new();
     app->mouse = mouse_new();
-    app->focus = focus_new();
+    app->focus = focus_new(app->backend);
 
     // create managers
     app->foreground = foreground_new(config->foreground, app->keyboard,

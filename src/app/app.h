@@ -38,6 +38,8 @@ typedef struct App
     guint signal_sigint;
     guint signal_sigterm;
 
+    gpointer backend;
+
     Keyboard *keyboard;
     Mouse *mouse;
     Focus *focus;

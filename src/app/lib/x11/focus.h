@@ -17,25 +17,35 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D86F09E1_2490_4135_A2CE_ABFD20432EBA
-#define D86F09E1_2490_4135_A2CE_ABFD20432EBA
+#ifndef A2EF5F11_2529_4652_BC50_4EEE3926B412
+#define A2EF5F11_2529_4652_BC50_4EEE3926B412
+
+#if USE_X11
 
 #include <atspi/atspi.h>
+#include <X11/Xlib.h>
 
-#include "event.h"
+#include "backend.h"
 
-// focus listener that uses built in at-spi tools to watch
-typedef struct FocusLegacy
+// a callback for when the currently focused window changes, possibly to NULL
+typedef void (*BackendX11FocusCallback)(AtspiAccessible *window, gpointer data);
+
+typedef struct BackendX11Focus
 {
-    FocusCallback callback;
+    BackendX11 *backend;
+
+    BackendX11FocusCallback callback;
     gpointer data;
 
+    Display *display;
+    Window root_window;
     AtspiAccessible *accessible;
-    AtspiEventListener *listener;
-} FocusLegacy;
+} BackendX11Focus;
 
-FocusLegacy *focus_legacy_new(FocusCallback callback, gpointer data);
-void focus_legacy_destroy(FocusLegacy *focus_legacy);
-AtspiAccessible *focus_legacy_get_window(FocusLegacy *focus_legacy);
+BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data);
+void backend_x11_focus_destroy(BackendX11Focus *focus);
+AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus);
 
-#endif /* D86F09E1_2490_4135_A2CE_ABFD20432EBA */
+#endif /* USE_X11 */
+
+#endif /* A2EF5F11_2529_4652_BC50_4EEE3926B412 */

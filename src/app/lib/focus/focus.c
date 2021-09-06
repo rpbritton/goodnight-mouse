@@ -20,15 +20,11 @@
 #include "focus.h"
 
 #if USE_X11
-#include "x11.h"
-#define focus_backend_new(callback, data) focus_x11_new(callback, data)
-#define focus_backend_destroy(backend) focus_x11_destroy(backend)
-#define focus_backend_get_window(backend) focus_x11_get_window(backend)
+#include "../x11/focus.h"
+#define BACKEND(F) backend_x11_##F
 #else
-#include "legacy.h"
-#define focus_backend_new(callback, data) focus_legacy_new(callback, data)
-#define focus_backend_destroy(backend) focus_legacy_destroy(backend)
-#define focus_backend_get_window(backend) focus_legacy_get_window(backend)
+#include "../legacy/focus.h"
+#define BACKEND(F) backend_legacy_##F
 #endif
 
 #define WINDOW_ACTIVATE_EVENT "window:activate"
@@ -44,7 +40,7 @@ static void set_window(AtspiAccessible *accessible, gpointer focus_ptr);
 static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new focus focus and starts the listening
-Focus *focus_new()
+Focus *focus_new(gpointer backend)
 {
     Focus *focus = g_new(Focus, 1);
 
@@ -52,11 +48,8 @@ Focus *focus_new()
     focus->subscribers = NULL;
 
     // add backend
-    g_debug("focus: Registering event listener");
-    focus->backend = focus_backend_new(set_window, focus);
-
-    // get currently focused window
-    focus->accessible = focus_backend_get_window(focus->backend);
+    focus->accessible = NULL;
+    focus->backend = BACKEND(focus_new(backend, set_window, focus));
 
     return focus;
 }
@@ -65,8 +58,7 @@ Focus *focus_new()
 void focus_destroy(Focus *focus)
 {
     // free backend
-    g_debug("focus: Deregistering event listener");
-    focus_backend_destroy(focus->backend);
+    BACKEND(focus_destroy(focus->backend));
 
     // free subscribers
     g_list_free_full(focus->subscribers, g_free);

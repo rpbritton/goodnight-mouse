@@ -17,12 +17,25 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CE430CE1_2CFE_43A2_A0A2_D08E9FD2AEE0
-#define CE430CE1_2CFE_43A2_A0A2_D08E9FD2AEE0
+#ifndef D581DDBD_8977_4761_88A1_CC3A73C94115
+#define D581DDBD_8977_4761_88A1_CC3A73C94115
 
-#include <atspi/atspi.h>
+#if USE_X11
 
-// a callback for when the currently focused window changes, possibly to NULL
-typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
+#include <X11/Xlib.h>
 
-#endif /* CE430CE1_2CFE_43A2_A0A2_D08E9FD2AEE0 */
+typedef struct BackendX11
+{
+    Display *display;
+} BackendX11;
+
+BackendX11 *backend_x11_new();
+void backend_x11_destroy(BackendX11 *backend);
+// todo: allow to subscribe to event types
+// keyboard will subscribe to focus events directly, getting the window id
+
+Display *backend_x11_get_display(BackendX11 *backend);
+
+#endif /* USE_X11 */
+
+#endif /* D581DDBD_8977_4761_88A1_CC3A73C94115 */
