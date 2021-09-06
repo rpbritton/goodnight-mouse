@@ -73,7 +73,7 @@ void background_run(Background *background)
 
     // unsubscribe from listeners
     keyboard_unsubscribe(background->keyboard, callback_keyboard);
-    focus_unsubscribe(background->focus, callback_focus);
+    focus_unsubscribe(background->focus, callback_focus, background);
 }
 
 // returns whether the background is running

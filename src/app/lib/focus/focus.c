@@ -37,7 +37,6 @@ typedef struct Subscriber
 } Subscriber;
 
 static void set_window(AtspiAccessible *accessible, gpointer focus_ptr);
-static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new focus focus and starts the listening
 Focus *focus_new(gpointer backend)
@@ -73,10 +72,6 @@ void focus_destroy(Focus *focus)
 // subscribe a callback to focus events
 void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data)
 {
-    // don't add if subscribed
-    if (g_list_find_custom(focus->subscribers, callback, compare_subscriber_to_callback))
-        return;
-
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->callback = callback;
@@ -87,12 +82,23 @@ void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data)
 }
 
 // remove a callback from the subscribers
-void focus_unsubscribe(Focus *focus, FocusCallback callback)
+void focus_unsubscribe(Focus *focus, FocusCallback callback, gpointer data)
 {
-    // find every instance of the callback and remove
-    GList *link = NULL;
-    while ((link = g_list_find_custom(focus->subscribers, callback, compare_subscriber_to_callback)))
-        focus->subscribers = g_list_delete_link(focus->subscribers, link);
+    // remove the first matching subscriber
+    for (GList *link = focus->subscribers; link; link = link->next)
+    {
+        Subscriber *subscriber = link->data;
+
+        // check if subscriber matches
+        if (subscriber->callback == callback &&
+            subscriber->data == data)
+        {
+            // remove subscriber
+            g_free(subscriber);
+            focus->subscribers = g_list_delete_link(focus->subscribers, link);
+            return;
+        }
+    }
 }
 
 // get the currently focused window
@@ -121,10 +127,4 @@ static void set_window(AtspiAccessible *accessible, gpointer focus_ptr)
         Subscriber *subscriber = link->data;
         subscriber->callback(focus->accessible, subscriber->data);
     }
-}
-
-// check if a subscriber matches a callback, returning 0 if so
-static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr)
-{
-    return !(((Subscriber *)subscriber_ptr)->callback == callback_ptr);
 }

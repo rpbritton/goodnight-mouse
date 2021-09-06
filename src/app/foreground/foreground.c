@@ -113,7 +113,7 @@ void foreground_run(Foreground *foreground)
     // unsubscribe from listeners
     keyboard_unsubscribe(foreground->keyboard, callback_keyboard);
     mouse_unsubscribe(foreground->mouse, callback_mouse);
-    focus_unsubscribe(foreground->focus, callback_focus);
+    focus_unsubscribe(foreground->focus, callback_focus, foreground);
 
     // execute control
     Tag *tag = codes_matched_tag(foreground->codes);
