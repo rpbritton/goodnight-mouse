@@ -78,6 +78,13 @@ void app_destroy(App *app)
     mouse_destroy(app->mouse);
     focus_destroy(app->focus);
 
+    // free backend
+#if USE_X11
+    backend_x11_destroy(app->backend);
+#else
+    backend_legacy_destroy(app->backend);
+#endif
+
     // remove signal subscription
     g_source_remove(app->signal_sighup);
     g_source_remove(app->signal_sigint);

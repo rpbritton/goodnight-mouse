@@ -21,7 +21,11 @@
 
 #include "backend.h"
 
-#include <glib.h>
+#include <X11/extensions/XInput2.h>
+
+#include "source.h"
+
+static gboolean process_events(gpointer backend_ptr);
 
 BackendX11 *backend_x11_new()
 {
@@ -29,6 +33,28 @@ BackendX11 *backend_x11_new()
 
     // open x connection
     backend->display = XOpenDisplay(NULL);
+
+    // select x11 events
+    XSelectInput(backend->display, XDefaultRootWindow(backend->display), PropertyChangeMask);
+
+    // select xinput events
+    unsigned char events[XIMaskLen(XI_LASTEVENT)] = {0};
+    XISetMask(events, XI_KeyPress);
+    XISetMask(events, XI_KeyRelease);
+    XISetMask(events, XI_ButtonPress);
+    XISetMask(events, XI_ButtonRelease);
+
+    XIEventMask event_mask = {
+        .deviceid = XIAllDevices,
+        .mask_len = sizeof(events),
+        .mask = events,
+    };
+    XISelectEvents(backend->display, XDefaultRootWindow(backend->display), &event_mask, 1);
+
+    // add the x11 source
+    backend->source = x11_source_new(backend->display);
+    g_source_set_callback(backend->source, process_events, backend, NULL);
+    g_source_attach(backend->source, NULL);
 
     // return
     return backend;
@@ -46,6 +72,27 @@ void backend_x11_destroy(BackendX11 *backend)
 Display *backend_x11_get_display(BackendX11 *backend)
 {
     return backend->display;
+}
+
+static gboolean process_events(gpointer backend_ptr)
+{
+    BackendX11 *backend = backend_ptr;
+
+    // process all the events
+    while (XPending(backend->display))
+    {
+        XEvent event;
+        XNextEvent(backend->display, &event);
+        g_message("whoo got event %d", event.type);
+        switch (event.type)
+        {
+        default:
+            //XFilterEvent() todo?
+            break;
+        }
+    }
+
+    return G_SOURCE_CONTINUE;
 }
 
 #endif /* USE_X11 */

@@ -17,27 +17,16 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D581DDBD_8977_4761_88A1_CC3A73C94115
-#define D581DDBD_8977_4761_88A1_CC3A73C94115
+#ifndef F8B6723E_EF60_47AB_A1E9_AE5D77A7896E
+#define F8B6723E_EF60_47AB_A1E9_AE5D77A7896E
 
 #if USE_X11
 
 #include <glib.h>
 #include <X11/Xlib.h>
 
-typedef struct BackendX11
-{
-    Display *display;
-    GSource *source;
-} BackendX11;
-
-BackendX11 *backend_x11_new();
-void backend_x11_destroy(BackendX11 *backend);
-// todo: allow to subscribe to event types
-// keyboard will subscribe to focus events directly, getting the window id
-
-Display *backend_x11_get_display(BackendX11 *backend);
+GSource *x11_source_new(Display *display);
 
 #endif /* USE_X11 */
 
-#endif /* D581DDBD_8977_4761_88A1_CC3A73C94115 */
+#endif /* F8B6723E_EF60_47AB_A1E9_AE5D77A7896E */
