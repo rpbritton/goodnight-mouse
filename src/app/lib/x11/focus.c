@@ -28,6 +28,7 @@ static Window get_active_window_by_property(BackendX11Focus *focus);
 static guint get_window_pid(BackendX11Focus *focus, Window window);
 static void set_active_window(BackendX11Focus *focus);
 static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible);
+static void event_callback(XEvent *event, gpointer focus_ptr);
 
 BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data)
 {
@@ -48,12 +49,18 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallb
     focus->accessible = NULL;
     set_active_window(focus);
 
+    // subscribe to focus events
+    backend_x11_subscribe(focus->backend, PropertyNotify, event_callback, focus);
+
     // return
     return focus;
 }
 
 void backend_x11_focus_destroy(BackendX11Focus *focus)
 {
+    // unsubscribe to focus events
+    backend_x11_unsubscribe(focus->backend, PropertyNotify, event_callback, focus);
+
     // free accessible
     if (focus->accessible)
         g_object_unref(focus->accessible);
@@ -229,6 +236,11 @@ static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible)
     if (!focus->callback)
         return;
     focus->callback(focus->accessible, focus->data);
+}
+
+static void event_callback(XEvent *event, gpointer focus_ptr)
+{
+    g_message("got property changed event");
 }
 
 #endif /* USE_X11 */
