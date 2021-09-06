@@ -27,7 +27,6 @@ typedef struct Subscriber
 
 static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
 static MouseResponse notify_subscribers(Mouse *mouse, MouseEvent event);
-static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr);
 
 // creates a new mouse event mouse and starts listening
 Mouse *mouse_new()
@@ -97,10 +96,6 @@ gboolean mouse_is_registered(Mouse *mouse)
 // subscribe a callback to mouse events
 void mouse_subscribe(Mouse *mouse, MouseCallback callback, gpointer data)
 {
-    // don't add if subscribed
-    if (g_list_find_custom(mouse->subscribers, callback, compare_subscriber_to_callback))
-        return;
-
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->callback = callback;
@@ -111,12 +106,23 @@ void mouse_subscribe(Mouse *mouse, MouseCallback callback, gpointer data)
 }
 
 // remove a callback from the subscribers
-void mouse_unsubscribe(Mouse *mouse, MouseCallback callback)
+void mouse_unsubscribe(Mouse *mouse, MouseCallback callback, gpointer data)
 {
-    // find every instance of the callback and remove
-    GList *link = NULL;
-    while ((link = g_list_find_custom(mouse->subscribers, callback, compare_subscriber_to_callback)))
-        mouse->subscribers = g_list_delete_link(mouse->subscribers, link);
+    // remove the first matching subscriber
+    for (GList *link = mouse->subscribers; link; link = link->next)
+    {
+        Subscriber *subscriber = link->data;
+
+        // check if subscriber matches
+        if (subscriber->callback == callback &&
+            subscriber->data == data)
+        {
+            // remove subscriber
+            g_free(subscriber);
+            mouse->subscribers = g_list_delete_link(mouse->subscribers, link);
+            return;
+        }
+    }
 }
 
 // callback to handle an atspi mouse event
@@ -143,10 +149,4 @@ static MouseResponse notify_subscribers(Mouse *mouse, MouseEvent event)
     }
 
     return response;
-}
-
-// check if a subscriber matches a callback, returning 0 if so
-static gint compare_subscriber_to_callback(gconstpointer subscriber_ptr, gconstpointer callback_ptr)
-{
-    return !(((Subscriber *)subscriber_ptr)->callback == callback_ptr);
 }

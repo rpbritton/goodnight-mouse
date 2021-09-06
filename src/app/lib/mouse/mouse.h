@@ -37,6 +37,6 @@ void mouse_register(Mouse *mouse);
 void mouse_deregister(Mouse *mouse);
 gboolean mouse_is_registered(Mouse *mouse);
 void mouse_subscribe(Mouse *mouse, MouseCallback callback, gpointer data);
-void mouse_unsubscribe(Mouse *mouse, MouseCallback callback);
+void mouse_unsubscribe(Mouse *mouse, MouseCallback callback, gpointer data);
 
 #endif /* F7E29EBF_1B6F_4049_BF43_6024E4B60EAD */

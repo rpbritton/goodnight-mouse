@@ -112,7 +112,7 @@ void foreground_run(Foreground *foreground)
 
     // unsubscribe from listeners
     keyboard_unsubscribe(foreground->keyboard, callback_keyboard, foreground);
-    mouse_unsubscribe(foreground->mouse, callback_mouse);
+    mouse_unsubscribe(foreground->mouse, callback_mouse, foreground);
     focus_unsubscribe(foreground->focus, callback_focus, foreground);
 
     // execute control
