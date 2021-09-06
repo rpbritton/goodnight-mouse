@@ -42,7 +42,7 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallb
 
     // add x connection
     focus->display = backend_x11_get_display(focus->backend);
-    focus->root_window = RootWindow(focus->display, DefaultScreen(focus->display));
+    focus->root_window = XDefaultRootWindow(focus->display);
 
     // set active window
     focus->accessible = NULL;
@@ -208,7 +208,8 @@ static void set_active_window(BackendX11Focus *focus)
 
     // set the window
     set_window(focus, accessible);
-    g_object_unref(accessible);
+    if (accessible)
+        g_object_unref(accessible);
 }
 
 static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible)
