@@ -37,7 +37,7 @@ typedef struct Subscriber
     gpointer data;
 } Subscriber;
 
-static void set_window(AtspiAccessible *accessible, gpointer focus_ptr);
+static void callback_focus_changed(gpointer focus_ptr);
 
 // creates a new focus focus and starts the listening
 Focus *focus_new(gpointer backend)
@@ -48,8 +48,10 @@ Focus *focus_new(gpointer backend)
     focus->subscribers = NULL;
 
     // add backend
-    focus->accessible = NULL;
-    focus->backend = backend_focus_new(backend, set_window, focus);
+    focus->backend = backend_focus_new(backend, callback_focus_changed, focus);
+
+    // set the current window
+    focus->accessible = backend_focus_get_window(focus->backend);
 
     return focus;
 }
@@ -111,15 +113,22 @@ AtspiAccessible *focus_get_window(Focus *focus)
 }
 
 // set the focused window and send it to the subscribers
-static void set_window(AtspiAccessible *accessible, gpointer focus_ptr)
+static void callback_focus_changed(gpointer focus_ptr)
 {
     Focus *focus = focus_ptr;
+
+    // get the current window
+    AtspiAccessible *accessible = backend_focus_get_window(focus->backend);
+    if (accessible == focus->accessible)
+    {
+        if (accessible)
+            g_object_unref(accessible);
+        return;
+    }
 
     // set the new window
     if (focus->accessible)
         g_object_unref(focus->accessible);
-    if (accessible)
-        g_object_ref(accessible);
     focus->accessible = accessible;
 
     // notify the subscribers

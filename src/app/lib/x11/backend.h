@@ -25,12 +25,17 @@
 #include <glib.h>
 #include <X11/Xlib.h>
 
+#include "../legacy/backend.h"
+
 typedef void (*BackendX11Callback)(XEvent *event, gpointer data);
 
 typedef struct BackendX11
 {
     Display *display;
     GSource *source;
+
+    BackendLegacy *legacy;
+
     GList *subscribers;
 } BackendX11;
 
@@ -40,6 +45,7 @@ void backend_x11_destroy(BackendX11 *backend);
 void backend_x11_subscribe(BackendX11 *backend, int event_type, BackendX11Callback callback, gpointer data);
 void backend_x11_unsubscribe(BackendX11 *backend, int event_type, BackendX11Callback callback, gpointer data);
 Display *backend_x11_get_display(BackendX11 *backend);
+BackendLegacy *backend_x11_get_legacy(BackendX11 *backend);
 
 #endif /* USE_X11 */
 

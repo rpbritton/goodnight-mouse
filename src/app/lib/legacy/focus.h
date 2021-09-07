@@ -24,10 +24,10 @@
 
 #include "backend.h"
 
-// a callback for when the currently focused window changes, possibly to NULL
-typedef void (*BackendLegacyFocusCallback)(AtspiAccessible *window, gpointer data);
+// a callback for when window focus changes
+typedef void (*BackendLegacyFocusCallback)(gpointer data);
 
-// focus listener that uses built in at-spi tools to watch
+// backend for focus that uses pure atspi
 typedef struct BackendLegacyFocus
 {
     BackendLegacy *backend;
@@ -36,7 +36,6 @@ typedef struct BackendLegacyFocus
     gpointer data;
 
     AtspiEventListener *listener;
-    AtspiAccessible *accessible;
 } BackendLegacyFocus;
 
 BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendLegacyFocusCallback callback, gpointer data);

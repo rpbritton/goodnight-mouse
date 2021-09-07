@@ -63,6 +63,9 @@ BackendX11 *backend_x11_new()
     g_source_set_callback(backend->source, process_events, backend, NULL);
     g_source_attach(backend->source, NULL);
 
+    // create legacy backend
+    backend->legacy = backend_legacy_new();
+
     // init the subscribers
     backend->subscribers = NULL;
 
@@ -74,6 +77,9 @@ void backend_x11_destroy(BackendX11 *backend)
 {
     // close display
     XCloseDisplay(backend->display);
+
+    // free legacy backend
+    backend_legacy_destroy(backend->legacy);
 
     // free subscribers
     g_list_free_full(backend->subscribers, g_free);
@@ -145,6 +151,11 @@ static gboolean process_events(gpointer backend_ptr)
     }
 
     return G_SOURCE_CONTINUE;
+}
+
+BackendLegacy *backend_x11_get_legacy(BackendX11 *backend)
+{
+    return backend->legacy;
 }
 
 #endif /* USE_X11 */

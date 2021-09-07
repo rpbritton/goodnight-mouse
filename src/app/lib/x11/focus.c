@@ -25,15 +25,11 @@
 
 #define WINDOW_PROPERTY_ACTIVE_WINDOW "_NET_ACTIVE_WINDOW"
 #define WINDOW_PROPERTY_WINDOW_PID "_NET_WM_PID"
-#define ATSPI_WINDOW_ACTIVATE_EVENT "window:activate"
-#define ATSPI_WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
 static Window get_active_window(BackendX11Focus *focus);
 static guint get_window_pid(BackendX11Focus *focus, Window window);
-static void set_active_window(BackendX11Focus *focus);
-static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible);
 static void callback_property_notify(XEvent *event, gpointer focus_ptr);
-static void callback_atspi_window_event(AtspiEvent *event, gpointer focus_ptr);
+static void callback_backend_legacy(gpointer focus_ptr);
 
 // create a new x11 based focus event backend
 BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data)
@@ -51,17 +47,11 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallb
     focus->display = backend_x11_get_display(focus->backend);
     focus->root_window = XDefaultRootWindow(focus->display);
 
-    // set active window
-    focus->accessible = NULL;
-    set_active_window(focus);
+    // add legacy backend (sometimes x11 events are too fast)
+    focus->legacy = backend_legacy_focus_new(backend_x11_get_legacy(focus->backend), callback_backend_legacy, focus);
 
     // subscribe to x11 focus events
     backend_x11_subscribe(focus->backend, PropertyNotify, callback_property_notify, focus);
-
-    // subscribe to atspi focus events (sometimes x11 events are too fast)
-    focus->listener = atspi_event_listener_new(callback_atspi_window_event, focus, NULL);
-    atspi_event_listener_register(focus->listener, ATSPI_WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_register(focus->listener, ATSPI_WINDOW_DEACTIVATE_EVENT, NULL);
 
     // return
     return focus;
@@ -73,14 +63,8 @@ void backend_x11_focus_destroy(BackendX11Focus *focus)
     // unsubscribe to x11 focus events
     backend_x11_unsubscribe(focus->backend, PropertyNotify, callback_property_notify, focus);
 
-    // unsubscribe to atspi events
-    atspi_event_listener_deregister(focus->listener, ATSPI_WINDOW_ACTIVATE_EVENT, NULL);
-    atspi_event_listener_deregister(focus->listener, ATSPI_WINDOW_DEACTIVATE_EVENT, NULL);
-    g_object_unref(focus->listener);
-
-    // free accessible
-    if (focus->accessible)
-        g_object_unref(focus->accessible);
+    // free legacy backend
+    backend_legacy_focus_destroy(focus->legacy);
 
     // free
     g_free(focus);
@@ -89,61 +73,15 @@ void backend_x11_focus_destroy(BackendX11Focus *focus)
 // get the currently focused window
 AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus)
 {
-    if (focus->accessible)
-        g_object_ref(focus->accessible);
-    return focus->accessible;
-}
-
-// get the focused x11 window using the window property
-static Window get_active_window(BackendX11Focus *focus)
-{
-    // get property
-    unsigned char *data = get_window_property(focus->display, focus->root_window,
-                                              WINDOW_PROPERTY_ACTIVE_WINDOW, XA_WINDOW);
-    if (!data)
-        return None;
-
-    // parse window
-    Window window = ((Window *)data)[0];
-    XFree(data);
-    return window;
-}
-
-// get the pid of the owner of a window using the window property
-static guint get_window_pid(BackendX11Focus *focus, Window window)
-{
-    // get property
-    unsigned char *data = get_window_property(focus->display, window,
-                                              WINDOW_PROPERTY_WINDOW_PID, XA_CARDINAL);
-    if (!data)
-        return 0;
-
-    // parse pid
-    guint pid = ((guint *)data)[0];
-    XFree(data);
-    return pid;
-}
-
-// gets and sets the currently focused window
-static void set_active_window(BackendX11Focus *focus)
-{
     // get active window
     Window active_window = get_active_window(focus);
     if (active_window == None)
-    {
-        // no window found
-        set_window(focus, NULL);
-        return;
-    }
+        return NULL;
 
     // get active window pid
     guint pid = get_window_pid(focus, active_window);
     if (pid == 0)
-    {
-        // no application found found
-        set_window(focus, NULL);
-        return;
-    }
+        return NULL;
 
     // get the (only) desktop
     AtspiAccessible *desktop = atspi_get_desktop(0);
@@ -200,30 +138,38 @@ static void set_active_window(BackendX11Focus *focus)
 
     g_object_unref(desktop);
 
-    // set the window
-    set_window(focus, accessible);
-    if (accessible)
-        g_object_unref(accessible);
+    // return the window
+    return accessible;
 }
 
-// set the window and notify the subscriber
-static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible)
+// get the focused x11 window using the window property
+static Window get_active_window(BackendX11Focus *focus)
 {
-    // do nothing if already set
-    if (accessible == focus->accessible)
-        return;
+    // get property
+    unsigned char *data = get_window_property(focus->display, focus->root_window,
+                                              WINDOW_PROPERTY_ACTIVE_WINDOW, XA_WINDOW);
+    if (!data)
+        return None;
 
-    // set the window
-    if (focus->accessible)
-        g_object_unref(focus->accessible);
-    if (accessible)
-        g_object_ref(accessible);
-    focus->accessible = accessible;
+    // parse window
+    Window window = ((Window *)data)[0];
+    XFree(data);
+    return window;
+}
 
-    // notify subscriber
-    if (!focus->callback)
-        return;
-    focus->callback(focus->accessible, focus->data);
+// get the pid of the owner of a window using the window property
+static guint get_window_pid(BackendX11Focus *focus, Window window)
+{
+    // get property
+    unsigned char *data = get_window_property(focus->display, window,
+                                              WINDOW_PROPERTY_WINDOW_PID, XA_CARDINAL);
+    if (!data)
+        return 0;
+
+    // parse pid
+    guint pid = ((guint *)data)[0];
+    XFree(data);
+    return pid;
 }
 
 // callback for window property changes
@@ -238,20 +184,17 @@ static void callback_property_notify(XEvent *event, gpointer focus_ptr)
     if (!is_active_window_property)
         return;
 
-    // set the active window
-    set_active_window(focus);
+    // send a notification
+    focus->callback(focus->data);
 }
 
-// callback for atspi event window activations and deactivations
-static void callback_atspi_window_event(AtspiEvent *event, gpointer focus_ptr)
+// callback for legacy backend events (useful for when x11 events are faster than atspi)
+static void callback_backend_legacy(gpointer focus_ptr)
 {
     BackendX11Focus *focus = focus_ptr;
 
-    // set the active window
-    set_active_window(focus);
-
-    // free the event
-    g_boxed_free(ATSPI_TYPE_EVENT, event);
+    // send a notification
+    focus->callback(focus->data);
 }
 
 #endif /* USE_X11 */
