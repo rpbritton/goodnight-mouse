@@ -24,8 +24,8 @@
 
 #if USE_X11
 
-#include "../x11/backend.h"
-#include "../x11/focus.h"
+#include "x11/backend.h"
+#include "x11/focus.h"
 
 #ifndef BACKEND
 #define BACKEND(f) backend_x11_##f
@@ -33,8 +33,8 @@
 
 #else
 
-#include "../legacy/backend.h"
-#include "../legacy/focus.h"
+#include "legacy/backend.h"
+#include "legacy/focus.h"
 
 #ifndef BACKEND
 #define BACKEND(f) backend_legacy_##f
