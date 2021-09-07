@@ -25,8 +25,12 @@
 
 #if USE_X11
 #include "lib/x11/backend.h"
+#define backend_new backend_x11_new
+#define backend_destroy backend_x11_destroy
 #else
 #include "lib/legacy/backend.h"
+#define backend_new backend_legacy_new
+#define backend_destroy backend_legacy_destroy
 #endif
 
 static gboolean signal_quit(gpointer app_ptr);
@@ -45,12 +49,8 @@ App *app_new(AppConfig *config)
     app->signal_sigint = g_unix_signal_add(SIGINT, signal_quit, app);
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
-    // create backend
-#if USE_X11
-    app->backend = backend_x11_new();
-#else
-    app->backend = backend_legacy_new();
-#endif
+    // create the backend
+    app->backend = backend_new();
 
     // create listeners
     app->keyboard = keyboard_new();

@@ -21,12 +21,15 @@
 
 #if USE_X11
 #include "../x11/focus.h"
+#define backend_focus_new backend_x11_focus_new
+#define backend_focus_destroy backend_x11_focus_destroy
+#define backend_focus_get_window backend_x11_focus_get_window
 #else
 #include "../legacy/focus.h"
+#define backend_focus_new backend_legacy_focus_new
+#define backend_focus_destroy backend_legacy_focus_destroy
+#define backend_focus_get_window backend_legacy_focus_get_window
 #endif
-
-#define WINDOW_ACTIVATE_EVENT "window:activate"
-#define WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
 typedef struct Subscriber
 {
