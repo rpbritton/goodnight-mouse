@@ -24,6 +24,10 @@
 
 #include "backend.h"
 
+#define backend_focus_new backend_legacy_focus_new
+#define backend_focus_destroy backend_legacy_focus_destroy
+#define backend_focus_get_window backend_legacy_focus_get_window
+
 // a callback for when the currently focused window changes, possibly to NULL
 typedef void (*BackendLegacyFocusCallback)(AtspiAccessible *window, gpointer data);
 

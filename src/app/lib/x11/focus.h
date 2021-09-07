@@ -27,6 +27,10 @@
 
 #include "backend.h"
 
+#define backend_focus_new backend_x11_focus_new
+#define backend_focus_destroy backend_x11_focus_destroy
+#define backend_focus_get_window backend_x11_focus_get_window
+
 // a callback for when the currently focused window changes, possibly to NULL
 typedef void (*BackendX11FocusCallback)(AtspiAccessible *window, gpointer data);
 

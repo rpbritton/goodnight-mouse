@@ -21,10 +21,8 @@
 
 #if USE_X11
 #include "../x11/focus.h"
-#define BACKEND(F) backend_x11_##F
 #else
 #include "../legacy/focus.h"
-#define BACKEND(F) backend_legacy_##F
 #endif
 
 #define WINDOW_ACTIVATE_EVENT "window:activate"
@@ -48,7 +46,7 @@ Focus *focus_new(gpointer backend)
 
     // add backend
     focus->accessible = NULL;
-    focus->backend = BACKEND(focus_new(backend, set_window, focus));
+    focus->backend = backend_focus_new(backend, set_window, focus);
 
     return focus;
 }
@@ -57,7 +55,7 @@ Focus *focus_new(gpointer backend)
 void focus_destroy(Focus *focus)
 {
     // free backend
-    BACKEND(focus_destroy(focus->backend));
+    backend_focus_destroy(focus->backend);
 
     // free subscribers
     g_list_free_full(focus->subscribers, g_free);
