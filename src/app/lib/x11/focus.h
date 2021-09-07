@@ -39,6 +39,7 @@ typedef struct BackendX11Focus
 
     Display *display;
     Window root_window;
+    AtspiEventListener *listener;
     AtspiAccessible *accessible;
 } BackendX11Focus;
 

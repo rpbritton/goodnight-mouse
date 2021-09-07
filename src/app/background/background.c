@@ -111,7 +111,7 @@ static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer backgrou
 // completion
 static gboolean start_foreground(gpointer background_ptr)
 {
-    Background *background = (Background *)background_ptr;
+    Background *background = background_ptr;
 
     // run foreground
     foreground_run(background->foreground);
