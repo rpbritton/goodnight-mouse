@@ -21,13 +21,16 @@
 
 #include "focus.h"
 
-#include "X11/Xatom.h"
+#include "utils.h"
 
 static Window get_active_window(BackendX11Focus *focus);
 static guint get_window_pid(BackendX11Focus *focus, Window window);
 static void set_active_window(BackendX11Focus *focus);
 static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible);
-static void event_callback(XEvent *event, gpointer focus_ptr);
+static void callback_property_notify(XEvent *event, gpointer focus_ptr);
+
+static const char *window_property_active_window = "_NET_ACTIVE_WINDOW";
+static const char *window_property_window_pid = "_NET_WM_PID";
 
 BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data)
 {
@@ -49,7 +52,7 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallb
     set_active_window(focus);
 
     // subscribe to focus events
-    backend_x11_subscribe(focus->backend, PropertyNotify, event_callback, focus);
+    backend_x11_subscribe(focus->backend, PropertyNotify, callback_property_notify, focus);
 
     // return
     return focus;
@@ -58,7 +61,7 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallb
 void backend_x11_focus_destroy(BackendX11Focus *focus)
 {
     // unsubscribe to focus events
-    backend_x11_unsubscribe(focus->backend, PropertyNotify, event_callback, focus);
+    backend_x11_unsubscribe(focus->backend, PropertyNotify, callback_property_notify, focus);
 
     // free accessible
     if (focus->accessible)
@@ -77,23 +80,13 @@ AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus)
 
 static Window get_active_window(BackendX11Focus *focus)
 {
-    // get active window property
-    Atom window_atom = XInternAtom(focus->display, "_NET_ACTIVE_WINDOW", TRUE);
-    int status;
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems;
-    unsigned long bytes_after;
-    unsigned char *data;
-    status = XGetWindowProperty(focus->display, focus->root_window, window_atom,
-                                0, 1,
-                                FALSE, XA_WINDOW,
-                                &actual_type, &actual_format,
-                                &nitems, &bytes_after, &data);
-    if (status != Success || !data)
+    // get property
+    unsigned char *data = get_window_property(focus->display, focus->root_window,
+                                              window_property_active_window, XA_WINDOW);
+    if (!data)
         return None;
 
-    // return the window
+    // parse window
     Window window = ((Window *)data)[0];
     XFree(data);
     return window;
@@ -101,23 +94,13 @@ static Window get_active_window(BackendX11Focus *focus)
 
 static guint get_window_pid(BackendX11Focus *focus, Window window)
 {
-    // get window pid
-    Atom pid_atom = XInternAtom(focus->display, "_NET_WM_PID", TRUE);
-    int status;
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems;
-    unsigned long bytes_after;
-    unsigned char *data;
-    status = XGetWindowProperty(focus->display, window, pid_atom,
-                                0, 1,
-                                FALSE, XA_CARDINAL,
-                                &actual_type, &actual_format,
-                                &nitems, &bytes_after, &data);
-    if (status != Success || !data)
+    // get property
+    unsigned char *data = get_window_property(focus->display, window,
+                                              window_property_window_pid, XA_CARDINAL);
+    if (!data)
         return 0;
 
-    // return the pid
+    // parse pid
     guint pid = ((guint *)data)[0];
     XFree(data);
     return pid;
@@ -223,9 +206,11 @@ static void set_window(BackendX11Focus *focus, AtspiAccessible *accessible)
     focus->callback(focus->accessible, focus->data);
 }
 
-static void event_callback(XEvent *event, gpointer focus_ptr)
+static void callback_property_notify(XEvent *event, gpointer focus_ptr)
 {
-    g_message("got property changed event");
+    BackendX11Focus *focus = focus_ptr;
+
+    //
 }
 
 #endif /* USE_X11 */
