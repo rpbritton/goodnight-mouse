@@ -36,10 +36,10 @@ Focus *focus_new(Backend *backend)
     focus->subscribers = NULL;
 
     // add backend
-    focus->backend = BACKEND(focus_new(backend, callback_focus_changed, focus));
+    focus->backend = backend_focus_new(backend, callback_focus_changed, focus);
 
     // set the current window
-    focus->accessible = BACKEND(focus_get_window(focus->backend));
+    focus->accessible = backend_focus_get_window(focus->backend);
 
     return focus;
 }
@@ -48,7 +48,7 @@ Focus *focus_new(Backend *backend)
 void focus_destroy(Focus *focus)
 {
     // free backend
-    BACKEND(focus_destroy(focus->backend));
+    backend_focus_destroy(focus->backend);
 
     // free subscribers
     g_list_free_full(focus->subscribers, g_free);
@@ -106,7 +106,7 @@ static void callback_focus_changed(gpointer focus_ptr)
     Focus *focus = focus_ptr;
 
     // get the current window
-    AtspiAccessible *accessible = BACKEND(focus_get_window(focus->backend));
+    AtspiAccessible *accessible = backend_focus_get_window(focus->backend);
     if (accessible == focus->accessible)
     {
         if (accessible)

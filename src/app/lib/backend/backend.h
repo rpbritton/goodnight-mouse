@@ -25,20 +25,24 @@
 #if USE_X11
 
 #include "x11/backend.h"
-#include "x11/focus.h"
+#define backend_new backend_x11_new
+#define backend_destroy backend_x11_destroy
 
-#ifndef BACKEND
-#define BACKEND(f) backend_x11_##f
-#endif
+#include "x11/focus.h"
+#define backend_focus_new backend_x11_focus_new
+#define backend_focus_destroy backend_x11_focus_destroy
+#define backend_focus_get_window backend_x11_focus_get_window
 
 #else
 
 #include "legacy/backend.h"
-#include "legacy/focus.h"
+#define backend_new backend_legacy_new
+#define backend_destroy backend_legacy_destroy
 
-#ifndef BACKEND
-#define BACKEND(f) backend_legacy_##f
-#endif
+#include "legacy/focus.h"
+#define backend_focus_new backend_legacy_focus_new
+#define backend_focus_destroy backend_legacy_focus_destroy
+#define backend_focus_get_window backend_legacy_focus_get_window
 
 #endif
 

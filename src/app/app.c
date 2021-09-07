@@ -40,7 +40,7 @@ App *app_new(AppConfig *config)
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
     // create the backend
-    app->backend = BACKEND(new ());
+    app->backend = backend_new();
 
     // create listeners
     app->keyboard = keyboard_new();
@@ -69,7 +69,7 @@ void app_destroy(App *app)
     focus_destroy(app->focus);
 
     // free backend
-    BACKEND(destroy(app->backend));
+    backend_destroy(app->backend);
 
     // remove signal subscription
     g_source_remove(app->signal_sighup);
