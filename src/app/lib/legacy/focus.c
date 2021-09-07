@@ -25,7 +25,7 @@
 static void callback_focus_changed(AtspiEvent *event, gpointer focus_ptr);
 
 // create a new legacy focus listener
-BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendLegacyFocusCallback callback, gpointer data)
+BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendFocusCallback callback, gpointer data)
 {
     BackendLegacyFocus *focus = g_new(BackendLegacyFocus, 1);
 

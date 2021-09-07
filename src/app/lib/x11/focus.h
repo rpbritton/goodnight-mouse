@@ -25,18 +25,16 @@
 #include <atspi/atspi.h>
 #include <X11/Xlib.h>
 
+#include "../backend/common.h"
 #include "backend.h"
 #include "../legacy/focus.h"
-
-// a callback for when window focus changes
-typedef void (*BackendX11FocusCallback)(gpointer data);
 
 // backend for focus that uses x11
 typedef struct BackendX11Focus
 {
     BackendX11 *backend;
 
-    BackendX11FocusCallback callback;
+    BackendFocusCallback callback;
     gpointer data;
 
     Display *display;
@@ -45,7 +43,7 @@ typedef struct BackendX11Focus
     BackendLegacyFocus *legacy;
 } BackendX11Focus;
 
-BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data);
+BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendFocusCallback callback, gpointer data);
 void backend_x11_focus_destroy(BackendX11Focus *focus);
 AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus);
 

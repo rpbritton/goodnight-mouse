@@ -23,16 +23,6 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
-#if USE_X11
-#include "lib/x11/backend.h"
-#define backend_new backend_x11_new
-#define backend_destroy backend_x11_destroy
-#else
-#include "lib/legacy/backend.h"
-#define backend_new backend_legacy_new
-#define backend_destroy backend_legacy_destroy
-#endif
-
 static gboolean signal_quit(gpointer app_ptr);
 
 // create a new app from the configuration
@@ -50,7 +40,7 @@ App *app_new(AppConfig *config)
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
 
     // create the backend
-    app->backend = backend_new();
+    app->backend = BACKEND(new ());
 
     // create listeners
     app->keyboard = keyboard_new();
@@ -79,11 +69,7 @@ void app_destroy(App *app)
     focus_destroy(app->focus);
 
     // free backend
-#if USE_X11
-    backend_x11_destroy(app->backend);
-#else
-    backend_legacy_destroy(app->backend);
-#endif
+    BACKEND(destroy(app->backend));
 
     // remove signal subscription
     g_source_remove(app->signal_sighup);

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 ryan
+ * Copyright (C) 2021 Ryan Britton
  *
  * This file is part of Goodnight Mouse.
  *
@@ -17,27 +17,29 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef A9931399_E0BF_4011_A403_586AD57B1A31
-#define A9931399_E0BF_4011_A403_586AD57B1A31
+#ifndef C9468050_1653_4C80_B8A8_A79F04F64BF7
+#define C9468050_1653_4C80_B8A8_A79F04F64BF7
 
-#include <atspi/atspi.h>
+#include "common.h"
 
-#include "../backend/common.h"
-#include "backend.h"
+#if USE_X11
 
-// backend for focus that uses pure atspi
-typedef struct BackendLegacyFocus
-{
-    BackendLegacy *backend;
+#include "../x11/backend.h"
+#include "../x11/focus.h"
 
-    BackendFocusCallback callback;
-    gpointer data;
+#ifndef BACKEND
+#define BACKEND(f) backend_x11_##f
+#endif
 
-    AtspiEventListener *listener;
-} BackendLegacyFocus;
+#else
 
-BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendFocusCallback callback, gpointer data);
-void backend_legacy_focus_destroy(BackendLegacyFocus *focus);
-AtspiAccessible *backend_legacy_focus_get_window(BackendLegacyFocus *focus);
+#include "../legacy/backend.h"
+#include "../legacy/focus.h"
 
-#endif /* A9931399_E0BF_4011_A403_586AD57B1A31 */
+#ifndef BACKEND
+#define BACKEND(f) backend_legacy_##f
+#endif
+
+#endif
+
+#endif /* C9468050_1653_4C80_B8A8_A79F04F64BF7 */

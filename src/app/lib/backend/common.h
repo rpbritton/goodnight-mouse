@@ -17,31 +17,15 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef C771728F_10C2_4C46_86DE_E96D9E622166
-#define C771728F_10C2_4C46_86DE_E96D9E622166
+#ifndef D84F4314_A2A6_45ED_B95B_B2CE4BC43D8F
+#define D84F4314_A2A6_45ED_B95B_B2CE4BC43D8F
 
 #include <glib.h>
-#include <atspi/atspi.h>
 
-#include "../backend/backend.h"
+// backend type name
+typedef void Backend;
 
-// a callback for when the currently focused window changes, possibly to NULL
-typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);
+// a callback for when window focus changes
+typedef void (*BackendFocusCallback)(gpointer data);
 
-// a window focus focus
-typedef struct Focus
-{
-    Backend *backend;
-
-    GList *subscribers;
-
-    AtspiAccessible *accessible;
-} Focus;
-
-Focus *focus_new(Backend *backend);
-void focus_destroy(Focus *focus);
-void focus_subscribe(Focus *focus, FocusCallback callback, gpointer data);
-void focus_unsubscribe(Focus *focus, FocusCallback callback, gpointer data);
-AtspiAccessible *focus_get_window(Focus *focus);
-
-#endif /* C771728F_10C2_4C46_86DE_E96D9E622166 */
+#endif /* D84F4314_A2A6_45ED_B95B_B2CE4BC43D8F */

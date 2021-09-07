@@ -19,18 +19,6 @@
 
 #include "focus.h"
 
-#if USE_X11
-#include "../x11/focus.h"
-#define backend_focus_new backend_x11_focus_new
-#define backend_focus_destroy backend_x11_focus_destroy
-#define backend_focus_get_window backend_x11_focus_get_window
-#else
-#include "../legacy/focus.h"
-#define backend_focus_new backend_legacy_focus_new
-#define backend_focus_destroy backend_legacy_focus_destroy
-#define backend_focus_get_window backend_legacy_focus_get_window
-#endif
-
 typedef struct Subscriber
 {
     FocusCallback callback;
@@ -40,7 +28,7 @@ typedef struct Subscriber
 static void callback_focus_changed(gpointer focus_ptr);
 
 // creates a new focus focus and starts the listening
-Focus *focus_new(gpointer backend)
+Focus *focus_new(Backend *backend)
 {
     Focus *focus = g_new(Focus, 1);
 
@@ -48,10 +36,10 @@ Focus *focus_new(gpointer backend)
     focus->subscribers = NULL;
 
     // add backend
-    focus->backend = backend_focus_new(backend, callback_focus_changed, focus);
+    focus->backend = BACKEND(focus_new(backend, callback_focus_changed, focus));
 
     // set the current window
-    focus->accessible = backend_focus_get_window(focus->backend);
+    focus->accessible = BACKEND(focus_get_window(focus->backend));
 
     return focus;
 }
@@ -60,7 +48,7 @@ Focus *focus_new(gpointer backend)
 void focus_destroy(Focus *focus)
 {
     // free backend
-    backend_focus_destroy(focus->backend);
+    BACKEND(focus_destroy(focus->backend));
 
     // free subscribers
     g_list_free_full(focus->subscribers, g_free);
@@ -118,7 +106,7 @@ static void callback_focus_changed(gpointer focus_ptr)
     Focus *focus = focus_ptr;
 
     // get the current window
-    AtspiAccessible *accessible = backend_focus_get_window(focus->backend);
+    AtspiAccessible *accessible = BACKEND(focus_get_window(focus->backend));
     if (accessible == focus->accessible)
     {
         if (accessible)

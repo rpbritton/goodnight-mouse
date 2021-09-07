@@ -32,7 +32,7 @@ static void callback_property_notify(XEvent *event, gpointer focus_ptr);
 static void callback_backend_legacy(gpointer focus_ptr);
 
 // create a new x11 based focus event backend
-BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendX11FocusCallback callback, gpointer data)
+BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendFocusCallback callback, gpointer data)
 {
     BackendX11Focus *focus = g_new(BackendX11Focus, 1);
 
