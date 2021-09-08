@@ -22,7 +22,7 @@
 
 #include <gdk/gdk.h>
 
-#include "backend.h"
+#include "legacy.h"
 
 // backend for keyboard modifiers
 typedef struct BackendLegacyModifiers

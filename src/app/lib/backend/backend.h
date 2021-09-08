@@ -22,7 +22,7 @@
 
 #if USE_X11
 
-#include "x11/backend.h"
+#include "x11/x11.h"
 #define backend_new backend_x11_new
 #define backend_destroy backend_x11_destroy
 
@@ -47,7 +47,7 @@
 
 #else
 
-#include "legacy/backend.h"
+#include "legacy/legacy.h"
 #define backend_new backend_legacy_new
 #define backend_destroy backend_legacy_destroy
 

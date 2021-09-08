@@ -19,7 +19,7 @@
 
 #if USE_X11
 
-#include "backend.h"
+#include "x11.h"
 
 #include <X11/extensions/XInput2.h>
 
