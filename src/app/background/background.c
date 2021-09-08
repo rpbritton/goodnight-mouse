@@ -19,7 +19,7 @@
 
 #include "background.h"
 
-static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr);
+static void callback_keyboard(KeyboardEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
@@ -38,8 +38,8 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground,
     background->focus = focus;
 
     // add trigger event
+    background->trigger_event.keysym = config->key;
     background->trigger_event.type = KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED;
-    background->trigger_event.key = config->key;
     background->trigger_event.modifiers = config->modifiers;
 
     return background;
@@ -96,15 +96,14 @@ void background_quit(Background *background)
 
 // callback to handle the hotkey input event by scheduling the foreground
 // to start
-static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr)
+static void callback_keyboard(KeyboardEvent event, gpointer background_ptr)
 {
-    if (event.type == KEYBOARD_EVENT_PRESSED)
-    {
-        g_debug("background: Input hotkey triggered");
-        g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
-    }
+    // only check press events
+    if (event.type != KEYBOARD_EVENT_PRESSED)
+        return;
 
-    return KEYBOARD_EVENT_CONSUME;
+    g_debug("background: Input hotkey triggered");
+    g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
 }
 
 // starts the foreground from inside a source, which will be removed on foreground

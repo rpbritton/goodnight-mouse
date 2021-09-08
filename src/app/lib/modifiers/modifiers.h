@@ -17,15 +17,22 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D84F4314_A2A6_45ED_B95B_B2CE4BC43D8F
-#define D84F4314_A2A6_45ED_B95B_B2CE4BC43D8F
+#ifndef DA946D1E_BC44_472D_8E6D_2165617DE963
+#define DA946D1E_BC44_472D_8E6D_2165617DE963
 
 #include <glib.h>
 
-// backend type name
-typedef void Backend;
+#include "../backend/backend.h"
 
-// a callback for when window focus changes
-typedef void (*BackendFocusCallback)(gpointer data);
+// a window modifiers
+typedef struct Modifiers
+{
+    Backend *backend;
+} Modifiers;
 
-#endif /* D84F4314_A2A6_45ED_B95B_B2CE4BC43D8F */
+Modifiers *modifiers_new(Backend *backend);
+void modifiers_destroy(Modifiers *modifiers);
+guint modifiers_get(Modifiers *modifiers);
+guint modifiers_map(Modifiers *modifiers, guint mods);
+
+#endif /* DA946D1E_BC44_472D_8E6D_2165617DE963 */

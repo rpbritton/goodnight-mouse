@@ -17,17 +17,12 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "event.h"
+#ifndef C79AC8EB_CC44_4DCD_922C_E20A77A0B829
+#define C79AC8EB_CC44_4DCD_922C_E20A77A0B829
 
-#include "modifiers.h"
+#include <glib.h>
 
-// convert an atspi device event into a keyboard event
-KeyboardEvent keyboard_event_from_atspi(AtspiDeviceEvent *atspi_event)
-{
-    KeyboardEvent event = {
-        .type = (1 << atspi_event->type),
-        .key = atspi_event->id,
-        .modifiers = keyboard_modifiers_map(atspi_event->modifiers),
-    };
-    return event;
-}
+// callback for when window focus changes
+typedef void (*BackendFocusCallback)(gpointer data);
+
+#endif /* C79AC8EB_CC44_4DCD_922C_E20A77A0B829 */

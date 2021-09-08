@@ -19,18 +19,16 @@
 
 #include "foreground.h"
 
-#include "../lib/keyboard/modifiers.h"
-
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
-static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
+static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
 static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
 Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
-                           Mouse *mouse, Focus *focus)
+                           Modifiers *modifiers, Mouse *mouse, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -48,6 +46,7 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
 
     // add listeners
     foreground->keyboard = keyboard;
+    foreground->modifiers = modifiers;
     foreground->mouse = mouse;
     foreground->focus = focus;
 
@@ -79,7 +78,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground->shifted = !!(keyboard_modifiers() & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    foreground->shifted = !!(modifiers_get(foreground->modifiers) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
@@ -184,12 +183,12 @@ static void callback_accessible_remove(AtspiAccessible *accessible, gpointer for
 }
 
 // event callback for all keyboard events
-static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
+static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
     // modifiers are not set in the modifier key event, so get fresh set
-    guint current_modifiers = keyboard_modifiers();
+    guint current_modifiers = modifiers_get(foreground->modifiers);
 
     // check if shift state changed
     if (!!(current_modifiers & (GDK_SHIFT_MASK | GDK_LOCK_MASK)) != foreground->shifted)
@@ -200,15 +199,15 @@ static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foregrou
 
     // don't use key if modifiers other than shift or lock are held
     if (current_modifiers & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK))
-        return KEYBOARD_EVENT_CONSUME;
+        return;
 
     // only check presses
     if (event.type != KEYBOARD_EVENT_PRESSED)
-        return KEYBOARD_EVENT_CONSUME;
+        return;
 
     // process key type
-    g_debug("foreground: Checking key press event for '%s'", gdk_keyval_name(event.key));
-    switch (event.key)
+    g_debug("foreground: Checking key press event for '%s'", gdk_keyval_name(event.keysym));
+    switch (event.keysym)
     {
     case GDK_KEY_Escape:
         // quit on escape
@@ -223,22 +222,21 @@ static KeyboardResponse callback_keyboard(KeyboardEvent event, gpointer foregrou
     case GDK_KEY_Home:
     case GDK_KEY_End:
         // pass these keys through to the window below
-        return KEYBOARD_EVENT_RELAY;
-        break;
+        return; // todo: send emulation
     case GDK_KEY_BackSpace:
         // remove the last key
         codes_pop_key(foreground->codes);
         break;
     default:
         // add this pressed key
-        codes_add_key(foreground->codes, event.key);
+        codes_add_key(foreground->codes, event.keysym);
         // quit if matched
         if (codes_matched_tag(foreground->codes))
             foreground_quit(foreground);
         break;
     }
 
-    return KEYBOARD_EVENT_CONSUME;
+    return;
 }
 
 // event callback for all mouse events

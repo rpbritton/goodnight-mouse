@@ -30,6 +30,7 @@
 #include "executor.h"
 
 #include "../lib/keyboard/keyboard.h"
+#include "../lib/modifiers/modifiers.h"
 #include "../lib/mouse/mouse.h"
 #include "../lib/focus/focus.h"
 
@@ -50,12 +51,13 @@ typedef struct Foreground
     Executor *executor;
 
     Keyboard *keyboard;
+    Modifiers *modifiers;
     Mouse *mouse;
     Focus *focus;
 } Foreground;
 
 Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
-                           Mouse *mouse, Focus *focus);
+                           Modifiers *modifiers, Mouse *mouse, Focus *focus);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);

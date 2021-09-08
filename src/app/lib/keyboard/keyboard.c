@@ -19,8 +19,7 @@
 
 #include "keyboard.h"
 
-#include "modifiers.h"
-
+// subscriber of keyboard events
 typedef struct Subscriber
 {
     KeyboardCallback callback;
@@ -30,21 +29,21 @@ typedef struct Subscriber
 } Subscriber;
 
 // callback to handle an atspi keyboard event
-static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr);
-static KeyboardResponse notify_subscribers(Keyboard *keyboard, KeyboardEvent event);
+static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
 
 // creates a new keyboard event keyboard and starts listening
-Keyboard *keyboard_new()
+Keyboard *keyboard_new(Backend *backend, Modifiers *modifiers)
 {
     Keyboard *keyboard = g_new(Keyboard, 1);
 
     // init subscribers
     keyboard->subscribers = NULL;
 
-    // register keyboard
-    keyboard->registered = FALSE;
-    keyboard->device_listener = atspi_device_listener_new(callback_atspi, keyboard, NULL);
-    keyboard_register(keyboard);
+    // add backend
+    keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
+
+    // add modifiers
+    keyboard->modifiers = modifiers;
 
     return keyboard;
 }
@@ -52,58 +51,14 @@ Keyboard *keyboard_new()
 // stops and destroys a keyboard keyboard
 void keyboard_destroy(Keyboard *keyboard)
 {
-    // deregister keyboard
-    keyboard_deregister(keyboard);
-    g_object_unref(keyboard->device_listener);
+    // free backend
+    backend_keyboard_destroy(keyboard->backend);
 
     // free subscribers
     g_list_free_full(keyboard->subscribers, g_free);
 
     // free
     g_free(keyboard);
-}
-
-// registers keyboard event listening
-void keyboard_register(Keyboard *keyboard)
-{
-    // do nothing if registered
-    if (keyboard->registered)
-        return;
-    g_debug("keyboard: Registering event listener");
-    keyboard->registered = TRUE;
-
-    // register to all keyboard events
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_register_keystroke_listener(keyboard->device_listener,
-                                          NULL,
-                                          modifiers,
-                                          KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
-                                          ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
-                                          NULL);
-}
-
-// unregisters keyboard event listening
-void keyboard_deregister(Keyboard *keyboard)
-{
-    // do nothing if not registered
-    if (!keyboard->registered)
-        return;
-    g_debug("keyboard: Deregistering event listener");
-    keyboard->registered = FALSE;
-
-    // unregister from keyboard events
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-        atspi_deregister_keystroke_listener(keyboard->device_listener,
-                                            NULL,
-                                            modifiers,
-                                            KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED,
-                                            NULL);
-}
-
-// returns the state of event listening
-gboolean keyboard_is_registered(Keyboard *keyboard)
-{
-    return keyboard->registered;
 }
 
 // subscribe a callback to all keyboard events
@@ -117,6 +72,9 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
 
     // add subscriber
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
+
+    // grab the keyboard
+    backend_keyboard_grab(keyboard->backend);
 }
 
 // remove keyboard event subscription
@@ -128,39 +86,53 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
         Subscriber *subscriber = link->data;
 
         // check if subscriber matches
-        if (subscriber->all_events == TRUE &&
-            subscriber->callback == callback &&
-            subscriber->data == data)
-        {
-            // remove subscriber
-            g_free(subscriber);
-            keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
-            return;
-        }
+        if (!((subscriber->callback == callback) &&
+              (subscriber->data == data) &&
+              (subscriber->all_events == TRUE)))
+            continue;
+
+        // remove subscriber
+        g_free(subscriber);
+        keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
+
+        // ungrab the keyboard
+        backend_keyboard_ungrab(keyboard->backend);
+
+        return;
     }
 }
 
 // subscribe a callback to a particular keyboard event
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
+    // sanitize modifier input
+    event.modifiers = modifiers_map(keyboard->modifiers, event.modifiers);
+
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->callback = callback;
     subscriber->data = data;
     subscriber->all_events = FALSE;
-    subscriber->event.key = event.key;
-    subscriber->event.type = event.type;
-    subscriber->event.modifiers = keyboard_modifiers_map(event.modifiers);
+    subscriber->event = event;
 
     // add subscriber
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
+
+    // grab the key
+    BackendKeyboardEvent backend_event = {
+        .keysym = event.keysym,
+        .type = ((event.type & KEYBOARD_EVENT_PRESSED) ? BACKEND_KEYBOARD_EVENT_PRESSED : 0) |
+                ((event.type & KEYBOARD_EVENT_RELEASED) ? BACKEND_KEYBOARD_EVENT_RELEASED : 0),
+        .modifiers = event.modifiers,
+    };
+    backend_keyboard_grab_key(keyboard->backend, backend_event);
 }
 
 // removes a key subscription
 void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
-    // map modifiers
-    event.modifiers = keyboard_modifiers_map(event.modifiers);
+    // sanitize modifier input
+    event.modifiers = modifiers_map(keyboard->modifiers, event.modifiers);
 
     // remove the first matching subscriber
     for (GList *link = keyboard->subscribers; link; link = link->next)
@@ -168,52 +140,57 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardC
         Subscriber *subscriber = link->data;
 
         // check if subscriber matches
-        if (subscriber->all_events == FALSE &&
-            subscriber->event.key == event.key &&
-            subscriber->event.type == event.type &&
-            subscriber->event.modifiers == event.modifiers &&
-            subscriber->callback == callback &&
-            subscriber->data == data)
-        {
-            // remove subscriber
-            g_free(subscriber);
-            keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
-            return;
-        }
+        if (!((subscriber->callback == callback) &&
+              (subscriber->data == data) &&
+              (subscriber->all_events == FALSE) &&
+              (subscriber->event.keysym == event.keysym) &&
+              (subscriber->event.type == event.type) &&
+              (subscriber->event.modifiers == event.modifiers)))
+            continue;
+
+        // remove subscriber
+        g_free(subscriber);
+        keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
+
+        // ungrab the key// map event
+        BackendKeyboardEvent backend_event = {
+            .keysym = event.keysym,
+            .type = (event.type == KEYBOARD_EVENT_PRESSED) ? BACKEND_KEYBOARD_EVENT_PRESSED
+                                                           : BACKEND_KEYBOARD_EVENT_RELEASED,
+            .modifiers = event.modifiers,
+        };
+        backend_keyboard_ungrab_key(keyboard->backend, backend_event);
+
+        return;
     }
 }
 
 // callback to handle an atspi keyboard event
-static gboolean callback_atspi(AtspiDeviceEvent *atspi_event, gpointer listener_ptr)
+static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr)
 {
-    // get event
-    KeyboardEvent event = keyboard_event_from_atspi(atspi_event);
-    g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
+    Keyboard *keyboard = keyboard_ptr;
+
+    // map event
+    KeyboardEvent event = {
+        .keysym = backend_event.keysym,
+        .type = (backend_event.type == BACKEND_KEYBOARD_EVENT_PRESSED) ? KEYBOARD_EVENT_PRESSED
+                                                                       : KEYBOARD_EVENT_RELEASED,
+        .modifiers = modifiers_map(keyboard->modifiers, backend_event.modifiers),
+    };
 
     // notify subscribers
-    return notify_subscribers(listener_ptr, event);
-}
-
-// send an event to subscribers
-static KeyboardResponse notify_subscribers(Keyboard *keyboard, KeyboardEvent event)
-{
-    // it only will take one subscriber to consume the event
-    KeyboardResponse response = KEYBOARD_EVENT_RELAY;
     for (GList *link = keyboard->subscribers; link; link = link->next)
     {
         Subscriber *subscriber = link->data;
 
         // check if event matches against subscription
-        if (!subscriber->all_events &&
-            (subscriber->event.key != event.key ||
-             (subscriber->event.type & event.type) == 0 ||
-             subscriber->event.modifiers != event.modifiers))
+        if (!((subscriber->all_events) ||
+              ((subscriber->event.keysym == event.keysym) &&
+               (subscriber->event.type & event.type) &&
+               (subscriber->event.modifiers == event.modifiers))))
             continue;
 
         // notify subscriber
-        if (subscriber->callback(event, subscriber->data) == KEYBOARD_EVENT_CONSUME)
-            response = KEYBOARD_EVENT_CONSUME;
+        subscriber->callback(event, subscriber->data);
     }
-
-    return response;
 }

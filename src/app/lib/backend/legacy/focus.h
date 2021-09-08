@@ -22,8 +22,8 @@
 
 #include <atspi/atspi.h>
 
-#include "../common.h"
 #include "backend.h"
+#include "../common/focus.h"
 
 // backend for focus that uses pure atspi
 typedef struct BackendLegacyFocus

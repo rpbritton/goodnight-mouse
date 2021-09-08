@@ -20,30 +20,39 @@
 #ifndef D102CB85_DF5A_44CB_80DC_B281855A12AB
 #define D102CB85_DF5A_44CB_80DC_B281855A12AB
 
-#include "event.h"
+#include "../backend/backend.h"
+#include "../modifiers/modifiers.h"
 
-#if USE_X11
-#include "atspi/atspi-device.h"
-#include "atspi/atspi-device-x11.h"
-#endif
+// state change of a key in an event
+typedef enum KeyboardEventType
+{
+    KEYBOARD_EVENT_PRESSED = (1 << 0),
+    KEYBOARD_EVENT_RELEASED = (1 << 1),
+} KeyboardEventType;
+
+// a keyboard event
+typedef struct KeyboardEvent
+{
+    guint keysym;
+    KeyboardEventType type;
+    guint modifiers;
+} KeyboardEvent;
+
+// callback type used to notify on subscribed keyboard event
+typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
 {
-    GList *subscribers;
+    Backend *backend;
 
-    gboolean registered;
-    AtspiDeviceListener *device_listener;
-#if USE_X11
-    AtspiDevice *device;
-#endif
+    Modifiers *modifiers;
+
+    GList *subscribers;
 } Keyboard;
 
-Keyboard *keyboard_new();
+Keyboard *keyboard_new(Backend *backend, Modifiers *modifiers);
 void keyboard_destroy(Keyboard *keyboard);
-void keyboard_register(Keyboard *keyboard);
-void keyboard_deregister(Keyboard *keyboard);
-gboolean keyboard_is_registered(Keyboard *keyboard);
 void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);

@@ -14,18 +14,19 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
+' * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "focus.h"
 
+// subscriber of focus events
 typedef struct Subscriber
 {
     FocusCallback callback;
     gpointer data;
 } Subscriber;
 
-static void callback_focus_changed(gpointer focus_ptr);
+static void callback_focus(gpointer focus_ptr);
 
 // creates a new focus focus and starts the listening
 Focus *focus_new(Backend *backend)
@@ -36,7 +37,7 @@ Focus *focus_new(Backend *backend)
     focus->subscribers = NULL;
 
     // add backend
-    focus->backend = backend_focus_new(backend, callback_focus_changed, focus);
+    focus->backend = backend_focus_new(backend, callback_focus, focus);
 
     // set the current window
     focus->accessible = backend_focus_get_window(focus->backend);
@@ -81,14 +82,14 @@ void focus_unsubscribe(Focus *focus, FocusCallback callback, gpointer data)
         Subscriber *subscriber = link->data;
 
         // check if subscriber matches
-        if (subscriber->callback == callback &&
-            subscriber->data == data)
-        {
-            // remove subscriber
-            g_free(subscriber);
-            focus->subscribers = g_list_delete_link(focus->subscribers, link);
-            return;
-        }
+        if (!((subscriber->callback == callback) &&
+              (subscriber->data == data)))
+            continue;
+
+        // remove subscriber
+        g_free(subscriber);
+        focus->subscribers = g_list_delete_link(focus->subscribers, link);
+        return;
     }
 }
 
@@ -101,7 +102,7 @@ AtspiAccessible *focus_get_window(Focus *focus)
 }
 
 // set the focused window and send it to the subscribers
-static void callback_focus_changed(gpointer focus_ptr)
+static void callback_focus(gpointer focus_ptr)
 {
     Focus *focus = focus_ptr;
 

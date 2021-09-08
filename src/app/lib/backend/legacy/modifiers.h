@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 Ryan Britton
+ * Copyright (C) 2021 ryan
  *
  * This file is part of Goodnight Mouse.
  *
@@ -17,22 +17,24 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "modifiers.h"
+#ifndef A8059ECD_A36D_4711_8AD9_1B6C15406061
+#define A8059ECD_A36D_4711_8AD9_1B6C15406061
 
 #include <gdk/gdk.h>
 
-// get the current keyboard modifier state
-guint keyboard_modifiers()
-{
-    GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
-    guint modifiers = gdk_keymap_get_modifier_state(keymap);
-    return keyboard_modifiers_map(modifiers);
-}
+#include "backend.h"
 
-// map all modifiers to the eight real ones
-guint keyboard_modifiers_map(guint modifiers)
+// backend for keyboard modifiers
+typedef struct BackendLegacyModifiers
 {
-    GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
-    gdk_keymap_map_virtual_modifiers(keymap, &modifiers);
-    return modifiers & 0xFF;
-}
+    BackendLegacy *backend;
+
+    GdkKeymap *keymap;
+} BackendLegacyModifiers;
+
+BackendLegacyModifiers *backend_legacy_modifiers_new(BackendLegacy *backend);
+void backend_legacy_modifiers_destroy(BackendLegacyModifiers *modifiers);
+guint backend_legacy_modifiers_get(BackendLegacyModifiers *modifiers);
+guint backend_legacy_modifiers_map(BackendLegacyModifiers *modifiers, guint mods);
+
+#endif /* A8059ECD_A36D_4711_8AD9_1B6C15406061 */

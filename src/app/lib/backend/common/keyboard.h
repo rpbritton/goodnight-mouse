@@ -17,12 +17,29 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef E7CEDCB5_8525_4FE2_9618_A2D3EA2C6065
-#define E7CEDCB5_8525_4FE2_9618_A2D3EA2C6065
+#ifndef C34EFBD7_588C_4399_8DEF_C92876EB3C3D
+#define C34EFBD7_588C_4399_8DEF_C92876EB3C3D
 
 #include <glib.h>
 
-guint keyboard_modifiers();
-guint keyboard_modifiers_map(guint modifiers);
+// type of key event
+typedef enum BackendKeyboardEventType
+{
+    BACKEND_KEYBOARD_EVENT_PRESSED = (1 << 0),
+    BACKEND_KEYBOARD_EVENT_RELEASED = (1 << 1),
+} BackendKeyboardEventType;
 
-#endif /* E7CEDCB5_8525_4FE2_9618_A2D3EA2C6065 */
+// event representing a key action
+typedef struct BackendKeyboardEvent
+{
+    guint keysym;
+    BackendKeyboardEventType type;
+    guint modifiers;
+} BackendKeyboardEvent;
+
+// callback used for keyboard events
+typedef void (*BackendKeyboardCallback)(BackendKeyboardEvent event, gpointer data);
+
+void backend_keyboard_sanitize_event(BackendKeyboardEvent *event);
+
+#endif /* C34EFBD7_588C_4399_8DEF_C92876EB3C3D */

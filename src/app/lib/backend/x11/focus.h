@@ -25,8 +25,8 @@
 #include <atspi/atspi.h>
 #include <X11/Xlib.h>
 
-#include "../common.h"
 #include "backend.h"
+#include "../common/focus.h"
 #include "../legacy/focus.h"
 
 // backend for focus that uses x11
