@@ -32,18 +32,16 @@ typedef struct Subscriber
 static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
 
 // creates a new keyboard event keyboard and starts listening
-Keyboard *keyboard_new(Backend *backend, Modifiers *modifiers)
+Keyboard *keyboard_new(Backend *backend)
 {
     Keyboard *keyboard = g_new(Keyboard, 1);
 
     // init subscribers
     keyboard->subscribers = NULL;
 
-    // add backend
-    keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
-
-    // add modifiers
-    keyboard->modifiers = modifiers;
+    // add backends
+    keyboard->keyboard = backend_keyboard_new(backend, callback_keyboard, keyboard);
+    keyboard->modifiers = backend_modifiers_new(backend);
 
     return keyboard;
 }
@@ -51,8 +49,9 @@ Keyboard *keyboard_new(Backend *backend, Modifiers *modifiers)
 // stops and destroys a keyboard keyboard
 void keyboard_destroy(Keyboard *keyboard)
 {
-    // free backend
-    backend_keyboard_destroy(keyboard->backend);
+    // free backends
+    backend_keyboard_destroy(keyboard->keyboard);
+    backend_modifiers_destroy(keyboard->modifiers);
 
     // free subscribers
     g_list_free_full(keyboard->subscribers, g_free);
@@ -74,7 +73,7 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the keyboard
-    backend_keyboard_grab(keyboard->backend);
+    backend_keyboard_grab(keyboard->keyboard);
 }
 
 // remove keyboard event subscription
@@ -96,7 +95,7 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
 
         // ungrab the keyboard
-        backend_keyboard_ungrab(keyboard->backend);
+        backend_keyboard_ungrab(keyboard->keyboard);
 
         return;
     }
@@ -106,7 +105,7 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
     // sanitize modifier input
-    event.modifiers = modifiers_map(keyboard->modifiers, event.modifiers);
+    event.modifiers = keyboard_modifiers_map(keyboard, event.modifiers);
 
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
@@ -125,14 +124,14 @@ void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCal
                 ((event.type & KEYBOARD_EVENT_RELEASED) ? BACKEND_KEYBOARD_EVENT_RELEASED : 0),
         .modifiers = event.modifiers,
     };
-    backend_keyboard_grab_key(keyboard->backend, backend_event);
+    backend_keyboard_grab_key(keyboard->keyboard, backend_event);
 }
 
 // removes a key subscription
 void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
     // sanitize modifier input
-    event.modifiers = modifiers_map(keyboard->modifiers, event.modifiers);
+    event.modifiers = keyboard_modifiers_map(keyboard, event.modifiers);
 
     // remove the first matching subscriber
     for (GList *link = keyboard->subscribers; link; link = link->next)
@@ -159,7 +158,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardC
                                                            : BACKEND_KEYBOARD_EVENT_RELEASED,
             .modifiers = event.modifiers,
         };
-        backend_keyboard_ungrab_key(keyboard->backend, backend_event);
+        backend_keyboard_ungrab_key(keyboard->keyboard, backend_event);
 
         return;
     }
@@ -175,7 +174,7 @@ static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keybo
         .keysym = backend_event.keysym,
         .type = (backend_event.type == BACKEND_KEYBOARD_EVENT_PRESSED) ? KEYBOARD_EVENT_PRESSED
                                                                        : KEYBOARD_EVENT_RELEASED,
-        .modifiers = modifiers_map(keyboard->modifiers, backend_event.modifiers),
+        .modifiers = keyboard_modifiers_map(keyboard, backend_event.modifiers),
     };
 
     // notify subscribers
@@ -193,4 +192,16 @@ static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keybo
         // notify subscriber
         subscriber->callback(event, subscriber->data);
     }
+}
+
+// get the current modifiers
+guint keyboard_modifiers_get(Keyboard *keyboard)
+{
+    return backend_modifiers_get(keyboard->modifiers);
+}
+
+// map the given modifiers
+guint keyboard_modifiers_map(Keyboard *keyboard, guint mods)
+{
+    return backend_modifiers_map(keyboard->modifiers, mods);
 }

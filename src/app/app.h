@@ -26,7 +26,6 @@
 
 #include "lib/backend/backend.h"
 #include "lib/keyboard/keyboard.h"
-#include "lib/modifiers/modifiers.h"
 #include "lib/mouse/mouse.h"
 #include "lib/focus/focus.h"
 
@@ -43,7 +42,6 @@ typedef struct App
     Backend *backend;
 
     Keyboard *keyboard;
-    Modifiers *modifiers;
     Mouse *mouse;
     Focus *focus;
 

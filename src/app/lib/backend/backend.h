@@ -72,7 +72,10 @@
 
 #endif
 
-// backend type name
+// backend type names
 typedef void Backend;
+typedef void BackendFocus;
+typedef void BackendKeyboard;
+typedef void BackendModifiers;
 
 #endif /* C9468050_1653_4C80_B8A8_A79F04F64BF7 */

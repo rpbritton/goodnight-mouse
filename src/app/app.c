@@ -43,14 +43,13 @@ App *app_new(AppConfig *config)
     app->backend = backend_new();
 
     // create listeners
-    app->modifiers = modifiers_new(app->backend);
-    app->keyboard = keyboard_new(app->backend, app->modifiers);
+    app->keyboard = keyboard_new(app->backend);
     app->mouse = mouse_new();
     app->focus = focus_new(app->backend);
 
     // create managers
     app->foreground = foreground_new(config->foreground, app->keyboard,
-                                     app->modifiers, app->mouse, app->focus);
+                                     app->mouse, app->focus);
     app->background = background_new(config->background, app->foreground,
                                      app->keyboard, app->focus);
 
@@ -66,7 +65,6 @@ void app_destroy(App *app)
 
     // free listeners
     keyboard_destroy(app->keyboard);
-    modifiers_destroy(app->modifiers);
     mouse_destroy(app->mouse);
     focus_destroy(app->focus);
 

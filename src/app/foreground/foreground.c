@@ -28,7 +28,7 @@ static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
 Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
-                           Modifiers *modifiers, Mouse *mouse, Focus *focus)
+                           Mouse *mouse, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -46,7 +46,6 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
 
     // add listeners
     foreground->keyboard = keyboard;
-    foreground->modifiers = modifiers;
     foreground->mouse = mouse;
     foreground->focus = focus;
 
@@ -78,7 +77,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground->shifted = !!(modifiers_get(foreground->modifiers) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    foreground->shifted = !!(keyboard_modifiers_get(foreground->keyboard) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
@@ -188,7 +187,7 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
     Foreground *foreground = foreground_ptr;
 
     // modifiers are not set in the modifier key event, so get fresh set
-    guint current_modifiers = modifiers_get(foreground->modifiers);
+    guint current_modifiers = keyboard_modifiers_get(foreground->keyboard);
 
     // check if shift state changed
     if (!!(current_modifiers & (GDK_SHIFT_MASK | GDK_LOCK_MASK)) != foreground->shifted)

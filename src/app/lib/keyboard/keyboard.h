@@ -21,7 +21,6 @@
 #define D102CB85_DF5A_44CB_80DC_B281855A12AB
 
 #include "../backend/backend.h"
-#include "../modifiers/modifiers.h"
 
 // state change of a key in an event
 typedef enum KeyboardEventType
@@ -44,18 +43,19 @@ typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
 {
-    Backend *backend;
-
-    Modifiers *modifiers;
+    BackendKeyboard *keyboard;
+    BackendModifiers *modifiers;
 
     GList *subscribers;
 } Keyboard;
 
-Keyboard *keyboard_new(Backend *backend, Modifiers *modifiers);
+Keyboard *keyboard_new(Backend *backend);
 void keyboard_destroy(Keyboard *keyboard);
 void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
+guint keyboard_modifiers_get(Keyboard *keyboard);
+guint keyboard_modifiers_map(Keyboard *keyboard, guint mods);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */
