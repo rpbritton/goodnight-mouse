@@ -22,21 +22,6 @@
 
 #include "../backend/backend.h"
 
-// state change of a key in an event
-typedef enum KeyboardEventType
-{
-    KEYBOARD_EVENT_PRESSED = (1 << 0),
-    KEYBOARD_EVENT_RELEASED = (1 << 1),
-} KeyboardEventType;
-
-// a keyboard event
-typedef struct KeyboardEvent
-{
-    guint keysym;
-    KeyboardEventType type;
-    guint modifiers;
-} KeyboardEvent;
-
 // callback type used to notify on subscribed keyboard event
 typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 

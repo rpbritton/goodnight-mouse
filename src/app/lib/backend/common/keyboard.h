@@ -23,23 +23,23 @@
 #include <glib.h>
 
 // type of key event
-typedef enum BackendKeyboardEventType
+typedef enum KeyboardEventType
 {
-    BACKEND_KEYBOARD_EVENT_PRESSED = (1 << 0),
-    BACKEND_KEYBOARD_EVENT_RELEASED = (1 << 1),
-} BackendKeyboardEventType;
+    KEYBOARD_EVENT_PRESSED = (1 << 0),
+    KEYBOARD_EVENT_RELEASED = (1 << 1),
+} KeyboardEventType;
 
 // event representing a key action
-typedef struct BackendKeyboardEvent
+typedef struct KeyboardEvent
 {
     guint keysym;
-    BackendKeyboardEventType type;
+    KeyboardEventType type;
     guint modifiers;
-} BackendKeyboardEvent;
+} KeyboardEvent;
 
 // callback used for keyboard events
-typedef void (*BackendKeyboardCallback)(BackendKeyboardEvent event, gpointer data);
+typedef void (*BackendKeyboardCallback)(KeyboardEvent event, gpointer data);
 
-void backend_keyboard_sanitize_event(BackendKeyboardEvent *event);
+void backend_keyboard_sanitize_event(KeyboardEvent *event);
 
 #endif /* C34EFBD7_588C_4399_8DEF_C92876EB3C3D */

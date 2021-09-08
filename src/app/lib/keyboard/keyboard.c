@@ -29,7 +29,7 @@ typedef struct Subscriber
 } Subscriber;
 
 // callback to handle an atspi keyboard event
-static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
+static void callback_keyboard(KeyboardEvent event, gpointer keyboard_ptr);
 
 // creates a new keyboard event keyboard and starts listening
 Keyboard *keyboard_new(Backend *backend)
@@ -118,13 +118,7 @@ void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCal
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the key
-    BackendKeyboardEvent backend_event = {
-        .keysym = event.keysym,
-        .type = ((event.type & KEYBOARD_EVENT_PRESSED) ? BACKEND_KEYBOARD_EVENT_PRESSED : 0) |
-                ((event.type & KEYBOARD_EVENT_RELEASED) ? BACKEND_KEYBOARD_EVENT_RELEASED : 0),
-        .modifiers = event.modifiers,
-    };
-    backend_keyboard_grab_key(keyboard->keyboard, backend_event);
+    backend_keyboard_grab_key(keyboard->keyboard, event);
 }
 
 // removes a key subscription
@@ -151,31 +145,17 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardC
         g_free(subscriber);
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
 
-        // ungrab the key// map event
-        BackendKeyboardEvent backend_event = {
-            .keysym = event.keysym,
-            .type = (event.type == KEYBOARD_EVENT_PRESSED) ? BACKEND_KEYBOARD_EVENT_PRESSED
-                                                           : BACKEND_KEYBOARD_EVENT_RELEASED,
-            .modifiers = event.modifiers,
-        };
-        backend_keyboard_ungrab_key(keyboard->keyboard, backend_event);
+        // ungrab the key
+        backend_keyboard_ungrab_key(keyboard->keyboard, event);
 
         return;
     }
 }
 
 // callback to handle an atspi keyboard event
-static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr)
+static void callback_keyboard(KeyboardEvent event, gpointer keyboard_ptr)
 {
     Keyboard *keyboard = keyboard_ptr;
-
-    // map event
-    KeyboardEvent event = {
-        .keysym = backend_event.keysym,
-        .type = (backend_event.type == BACKEND_KEYBOARD_EVENT_PRESSED) ? KEYBOARD_EVENT_PRESSED
-                                                                       : KEYBOARD_EVENT_RELEASED,
-        .modifiers = keyboard_modifiers_map(keyboard, backend_event.modifiers),
-    };
 
     // notify subscribers
     for (GList *link = keyboard->subscribers; link; link = link->next)
