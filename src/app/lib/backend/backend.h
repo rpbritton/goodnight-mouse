@@ -39,11 +39,11 @@
 #define backend_keyboard_grab_key backend_x11_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_x11_keyboard_ungrab_key
 
-#include "legacy/modifiers.h"
-#define backend_modifiers_new backend_legacy_modifiers_new
-#define backend_modifiers_destroy backend_legacy_modifiers_destroy
-#define backend_modifiers_get backend_legacy_modifiers_get
-#define backend_modifiers_map backend_legacy_modifiers_map
+#include "x11/modifiers.h"
+#define backend_modifiers_new backend_x11_modifiers_new
+#define backend_modifiers_destroy backend_x11_modifiers_destroy
+#define backend_modifiers_get backend_x11_modifiers_get
+#define backend_modifiers_map backend_x11_modifiers_map
 
 #else
 
