@@ -62,12 +62,6 @@ void backend_x11_xinput_destroy(BackendX11XInput *xinput)
     g_free(xinput);
 }
 
-// static int handler(Display *display, XErrorEvent *error)
-// {
-//     g_message("WOW got an error %d", error->error_code);
-//     return 0;
-// }
-
 static void callback_x11(XEvent *x11_event, gpointer xinput_ptr)
 {
     BackendX11XInput *xinput = xinput_ptr;
@@ -81,23 +75,6 @@ static void callback_x11(XEvent *x11_event, gpointer xinput_ptr)
 
     // callback subscriber
     xinput->callback(x11_event->xcookie.data, xinput->data);
-
-    // XSetErrorHandler(handler);
-    // XIDeviceEvent *device_event = x11_event->xcookie.data;
-
-    // int deviceid;
-    // g_message("prior deviceid: %d", deviceid);
-    // Bool value = XIGetClientPointer(xinput->display, None, &deviceid);
-    // g_message("value %d, deviceid %d", value, deviceid);
-
-    // Window root, child;
-    // double root_x, root_y, win_x, win_y;
-    // XIButtonState buttons;
-    // XIModifierState mods;
-    // XIGroupState group;
-    // g_message("prior mods %d", mods.effective);
-    // XIQueryPointer(xinput->display, deviceid, XDefaultRootWindow(xinput->display), &root, &child, &root_x, &root_y, &win_x, &win_y, &buttons, &mods, &group);
-    // g_message("value: %d, event mods: %d, pointer mods %d", value, device_event->mods.effective, mods.effective);
 
     // free
     XFreeEventData(xinput->display, &x11_event->xcookie);
