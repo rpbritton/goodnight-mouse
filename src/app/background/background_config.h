@@ -26,7 +26,7 @@
 typedef struct BackgroundConfig
 {
     guint key;
-    guint modifiers;
+    GdkModifierType modifiers;
 } BackgroundConfig;
 
 BackgroundConfig *background_new_config(GKeyFile *key_file);

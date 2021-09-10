@@ -43,6 +43,7 @@ typedef struct Foreground
     GHashTable *accessible_to_tag;
 
     gboolean shifted;
+    Modifiers shift_mods;
 
     Registry *registry;
     Codes *codes;

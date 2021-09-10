@@ -20,6 +20,8 @@
 #ifndef D102CB85_DF5A_44CB_80DC_B281855A12AB
 #define D102CB85_DF5A_44CB_80DC_B281855A12AB
 
+#include <gdk/gdk.h>
+
 #include "../backend/backend.h"
 
 // callback type used to notify on subscribed keyboard event
@@ -28,8 +30,9 @@ typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
 {
-    BackendKeyboard *keyboard;
-    BackendModifiers *modifiers;
+    BackendKeyboard *backend;
+
+    GdkKeymap *keymap;
 
     GList *subscribers;
 } Keyboard;
@@ -40,7 +43,7 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
 void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
-guint keyboard_modifiers_get(Keyboard *keyboard);
-guint keyboard_modifiers_map(Keyboard *keyboard, guint mods);
+Modifiers keyboard_get_modifiers(Keyboard *keyboard);
+Modifiers keyboard_map_modifiers(Keyboard *keyboard, GdkModifierType mods);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */

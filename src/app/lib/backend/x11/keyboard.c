@@ -39,10 +39,10 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
 
     // add x connection
     keyboard->display = backend_x11_get_display(keyboard->backend);
+    keyboard->root_window = XDefaultRootWindow(keyboard->display);
 
-    // add dependencies
+    // add xinput
     keyboard->xinput = backend_x11_xinput_new(backend, callback_xinput, keyboard);
-    keyboard->modifiers = backend_x11_modifiers_new(backend);
 
     return keyboard;
 }
@@ -50,9 +50,8 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
 // destroy the keyboard listener
 void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
 {
-    // destroy dependencies
+    // destroy xinput
     backend_x11_xinput_destroy(keyboard->xinput);
-    backend_x11_modifiers_destroy(keyboard->modifiers);
 
     // free
     g_free(keyboard);
@@ -71,15 +70,29 @@ void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard)
 // grab input of a specific key
 void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, KeyboardEvent event)
 {
-    // sanitize modifier input
-    event.modifiers = backend_x11_modifiers_map(keyboard->modifiers, event.modifiers);
 }
 
 // ungrab input of a specific key
 void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, KeyboardEvent event)
 {
-    // sanitize modifier input
-    event.modifiers = backend_x11_modifiers_map(keyboard->modifiers, event.modifiers);
+}
+
+Modifiers backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
+{
+    // get pointer device
+    int device_id;
+    XIGetClientPointer(keyboard->display, None, &device_id);
+
+    // get modifier state
+    Window root, child;
+    double root_x, root_y, win_x, win_y;
+    XIButtonState buttons;
+    XIModifierState mods;
+    XIGroupState group;
+    XIQueryPointer(keyboard->display, device_id, keyboard->root_window,
+                   &root, &child, &root_x, &root_y, &win_x, &win_y, &buttons, &mods, &group);
+
+    return mods.effective;
 }
 
 static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr)
@@ -107,7 +120,7 @@ static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr)
     event.type = (xinput_event->evtype == XI_KeyPress) ? KEYBOARD_EVENT_PRESSED : KEYBOARD_EVENT_RELEASED;
 
     // get modifiers
-    event.modifiers = backend_x11_modifiers_map(keyboard->modifiers, xinput_event->mods.effective);
+    event.modifiers = xinput_event->mods.effective;
 
     // callback the event
     keyboard->callback(event, keyboard->data);

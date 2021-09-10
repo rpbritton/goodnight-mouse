@@ -39,9 +39,11 @@ Keyboard *keyboard_new(Backend *backend)
     // init subscribers
     keyboard->subscribers = NULL;
 
-    // add backends
-    keyboard->keyboard = backend_keyboard_new(backend, callback_keyboard, keyboard);
-    keyboard->modifiers = backend_modifiers_new(backend);
+    // get keymap
+    keyboard->keymap = gdk_keymap_get_for_display(gdk_display_get_default());
+
+    // add backend
+    keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
 
     return keyboard;
 }
@@ -49,9 +51,8 @@ Keyboard *keyboard_new(Backend *backend)
 // stops and destroys a keyboard keyboard
 void keyboard_destroy(Keyboard *keyboard)
 {
-    // free backends
-    backend_keyboard_destroy(keyboard->keyboard);
-    backend_modifiers_destroy(keyboard->modifiers);
+    // free backend
+    backend_keyboard_destroy(keyboard->backend);
 
     // free subscribers
     g_list_free_full(keyboard->subscribers, g_free);
@@ -73,7 +74,7 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the keyboard
-    backend_keyboard_grab(keyboard->keyboard);
+    backend_keyboard_grab(keyboard->backend);
 }
 
 // remove keyboard event subscription
@@ -95,7 +96,7 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
 
         // ungrab the keyboard
-        backend_keyboard_ungrab(keyboard->keyboard);
+        backend_keyboard_ungrab(keyboard->backend);
 
         return;
     }
@@ -104,9 +105,6 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
 // subscribe a callback to a particular keyboard event
 void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
-    // sanitize modifier input
-    event.modifiers = keyboard_modifiers_map(keyboard, event.modifiers);
-
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->callback = callback;
@@ -118,15 +116,12 @@ void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCal
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the key
-    backend_keyboard_grab_key(keyboard->keyboard, event);
+    backend_keyboard_grab_key(keyboard->backend, event);
 }
 
 // removes a key subscription
 void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
 {
-    // sanitize modifier input
-    event.modifiers = keyboard_modifiers_map(keyboard, event.modifiers);
-
     // remove the first matching subscriber
     for (GList *link = keyboard->subscribers; link; link = link->next)
     {
@@ -146,7 +141,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardC
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
 
         // ungrab the key
-        backend_keyboard_ungrab_key(keyboard->keyboard, event);
+        backend_keyboard_ungrab_key(keyboard->backend, event);
 
         return;
     }
@@ -175,13 +170,14 @@ static void callback_keyboard(KeyboardEvent event, gpointer keyboard_ptr)
 }
 
 // get the current modifiers
-guint keyboard_modifiers_get(Keyboard *keyboard)
+Modifiers keyboard_get_modifiers(Keyboard *keyboard)
 {
-    return backend_modifiers_get(keyboard->modifiers);
+    return backend_keyboard_get_modifiers(keyboard->backend);
 }
 
-// map the given modifiers
-guint keyboard_modifiers_map(Keyboard *keyboard, guint mods)
+// map virtual gdk modifiers into 8-bits
+Modifiers keyboard_map_modifiers(Keyboard *keyboard, GdkModifierType mods)
 {
-    return backend_modifiers_map(keyboard->modifiers, mods);
+    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &mods);
+    return mods & 0xFF;
 }

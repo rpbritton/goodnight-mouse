@@ -38,12 +38,12 @@ BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, Backe
     // add backend
     keyboard->backend = backend;
 
-    // add modifiers
-    keyboard->modifiers = backend_legacy_modifiers_new(backend);
-
     // add callback
     keyboard->callback = callback;
     keyboard->data = data;
+
+    // get keymap
+    keyboard->keymap = gdk_keymap_get_for_display(gdk_display_get_default());
 
     // register listener
     keyboard->registered = FALSE;
@@ -67,9 +67,6 @@ void backend_legacy_keyboard_destroy(BackendLegacyKeyboard *keyboard)
     // free grabs
     g_list_free_full(keyboard->key_grabs, g_free);
 
-    // destroy modifiers
-    backend_legacy_modifiers_destroy(keyboard->modifiers);
-
     // free
     g_free(keyboard);
 }
@@ -92,9 +89,6 @@ void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard)
 // grab input of a specific key
 void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, KeyboardEvent event)
 {
-    // sanitize modifier input
-    event.modifiers = backend_legacy_modifiers_map(keyboard->modifiers, event.modifiers);
-
     // create grab
     KeyboardEvent *grab = g_new(KeyboardEvent, 1);
     *grab = event;
@@ -106,9 +100,6 @@ void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, KeyboardE
 // ungrab input of a specific key
 void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, KeyboardEvent event)
 {
-    // sanitize modifier input
-    event.modifiers = backend_legacy_modifiers_map(keyboard->modifiers, event.modifiers);
-
     // remove the first instance of the grab
     for (GList *link = keyboard->key_grabs; link; link = link->next)
     {
@@ -125,6 +116,11 @@ void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, Keyboar
         keyboard->key_grabs = g_list_delete_link(keyboard->key_grabs, link);
         return;
     }
+}
+
+Modifiers backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard)
+{
+    return gdk_keymap_get_modifier_state(keyboard->keymap);
 }
 
 static void listener_register(BackendLegacyKeyboard *keyboard)
@@ -173,7 +169,7 @@ static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboa
         .keysym = atspi_event->id,
         .type = (atspi_event->type == ATSPI_KEY_PRESSED_EVENT) ? KEYBOARD_EVENT_PRESSED
                                                                : KEYBOARD_EVENT_RELEASED,
-        .modifiers = backend_legacy_modifiers_map(keyboard->modifiers, atspi_event->modifiers),
+        .modifiers = atspi_event->modifiers,
     };
     keyboard->callback(event, keyboard->data);
 

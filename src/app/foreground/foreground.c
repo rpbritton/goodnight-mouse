@@ -49,6 +49,9 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
     foreground->mouse = mouse;
     foreground->focus = focus;
 
+    // set shift mods
+    foreground->shift_mods = keyboard_map_modifiers(foreground->keyboard, GDK_SHIFT_MASK | GDK_LOCK_MASK);
+
     return foreground;
 }
 
@@ -77,7 +80,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground->shifted = !!(keyboard_modifiers_get(foreground->keyboard) & (GDK_SHIFT_MASK | GDK_LOCK_MASK));
+    foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & foreground->shift_mods);
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
@@ -187,18 +190,18 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
     Foreground *foreground = foreground_ptr;
 
     // modifiers are not set in the modifier key event, so get fresh set
-    guint current_mods = keyboard_modifiers_get(foreground->keyboard);
+    guint current_mods = keyboard_get_modifiers(foreground->keyboard);
     g_message("event mods: %d, current mods: %d", event.modifiers, current_mods);
 
     // check if shift state changed
-    if (!!(current_mods & (GDK_SHIFT_MASK | GDK_LOCK_MASK)) != foreground->shifted)
+    if (!!(current_mods & foreground->shift_mods) != foreground->shifted)
     {
         foreground->shifted = !foreground->shifted;
         overlay_shifted(foreground->overlay, foreground->shifted);
     }
 
-    // don't use key if modifiers other than shift or lock are held
-    if (current_mods & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK))
+    // don't use key if modifiers other than the shift mods are held
+    if (current_mods & ~foreground->shift_mods)
         return;
 
     // only check presses

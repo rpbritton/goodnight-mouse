@@ -29,12 +29,15 @@ typedef enum KeyboardEventType
     KEYBOARD_EVENT_RELEASED = (1 << 1),
 } KeyboardEventType;
 
+// type for representing modifiers
+typedef guchar Modifiers;
+
 // event representing a key action
 typedef struct KeyboardEvent
 {
     guint keysym;
     KeyboardEventType type;
-    guint modifiers;
+    Modifiers modifiers;
 } KeyboardEvent;
 
 // callback used for keyboard events

@@ -40,7 +40,7 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground,
     // add trigger event
     background->trigger_event.keysym = config->key;
     background->trigger_event.type = KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED;
-    background->trigger_event.modifiers = config->modifiers;
+    background->trigger_event.modifiers = keyboard_map_modifiers(background->keyboard, config->modifiers);
 
     return background;
 }

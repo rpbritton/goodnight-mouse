@@ -25,7 +25,6 @@
 #include "x11.h"
 #include "xinput.h"
 #include "../common/keyboard.h"
-#include "modifiers.h"
 
 // backend for keyboard events that uses pure atspi
 typedef struct BackendX11Keyboard
@@ -33,12 +32,12 @@ typedef struct BackendX11Keyboard
     BackendX11 *backend;
 
     BackendX11XInput *xinput;
-    BackendX11Modifiers *modifiers;
 
     BackendKeyboardCallback callback;
     gpointer data;
 
     Display *display;
+    Window root_window;
 } BackendX11Keyboard;
 
 BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboardCallback callback, gpointer data);
@@ -47,6 +46,7 @@ void backend_x11_keyboard_grab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, KeyboardEvent event);
 void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, KeyboardEvent event);
+Modifiers backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard);
 
 #endif /* USE_X11 */
 
