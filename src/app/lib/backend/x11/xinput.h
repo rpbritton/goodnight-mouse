@@ -17,34 +17,33 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D4B246E4_2214_427B_B7DF_D273ED9A7D6B
-#define D4B246E4_2214_427B_B7DF_D273ED9A7D6B
+#ifndef D7077F17_9E49_4050_AB22_C32909066663
+#define D7077F17_9E49_4050_AB22_C32909066663
 
 #if USE_X11
 
+#include <X11/extensions/XInput2.h>
+
 #include "x11.h"
 
-#include <X11/extensions/XInput2.h>
-//#include <X11/XKBlib.h>
+// callback for when window focus changes
+typedef void (*BackendX11XInputCallback)(XIDeviceEvent *event, gpointer data);
 
-// backend for keyboard modifiers using x11
-typedef struct BackendX11Modifiers
+// xinput wrapper for the x11 backend
+typedef struct BackendX11XInput
 {
     BackendX11 *backend;
 
+    BackendX11XInputCallback callback;
+    gpointer data;
+
     Display *display;
-    Window root_window;
+    int opcode;
+} BackendX11XInput;
 
-    int device_id;
-
-    //XkbDescPtr virt_mods_map;
-} BackendX11Modifiers;
-
-BackendX11Modifiers *backend_x11_modifiers_new(BackendX11 *backend);
-void backend_x11_modifiers_destroy(BackendX11Modifiers *modifiers);
-guint backend_x11_modifiers_get(BackendX11Modifiers *modifiers);
-guint backend_x11_modifiers_map(BackendX11Modifiers *modifiers, guint mods);
+BackendX11XInput *backend_x11_xinput_new(BackendX11 *backend, BackendX11XInputCallback callback, gpointer data);
+void backend_x11_xinput_destroy(BackendX11XInput *xinput);
 
 #endif /* USE_X11 */
 
-#endif /* D4B246E4_2214_427B_B7DF_D273ED9A7D6B */
+#endif /* D7077F17_9E49_4050_AB22_C32909066663 */

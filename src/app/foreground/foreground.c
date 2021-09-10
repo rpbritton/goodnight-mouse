@@ -187,17 +187,18 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
     Foreground *foreground = foreground_ptr;
 
     // modifiers are not set in the modifier key event, so get fresh set
-    guint current_modifiers = keyboard_modifiers_get(foreground->keyboard);
+    guint current_mods = keyboard_modifiers_get(foreground->keyboard);
+    g_message("event mods: %d, current mods: %d", event.modifiers, current_mods);
 
     // check if shift state changed
-    if (!!(current_modifiers & (GDK_SHIFT_MASK | GDK_LOCK_MASK)) != foreground->shifted)
+    if (!!(current_mods & (GDK_SHIFT_MASK | GDK_LOCK_MASK)) != foreground->shifted)
     {
         foreground->shifted = !foreground->shifted;
         overlay_shifted(foreground->overlay, foreground->shifted);
     }
 
     // don't use key if modifiers other than shift or lock are held
-    if (current_modifiers & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK))
+    if (current_mods & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK))
         return;
 
     // only check presses

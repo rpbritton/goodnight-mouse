@@ -25,7 +25,7 @@
 #include <glib.h>
 #include <X11/Xlib.h>
 
-#include "../legacy/backend.h"
+#include "../legacy/legacy.h"
 
 typedef void (*BackendX11Callback)(XEvent *event, gpointer data);
 
@@ -33,6 +33,7 @@ typedef struct BackendX11
 {
     Display *display;
     GSource *source;
+    int xi_opcode; // todo: probably not here but in keyboard, or make a helper class <--
 
     BackendLegacy *legacy;
 
