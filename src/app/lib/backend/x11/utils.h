@@ -28,6 +28,8 @@
 unsigned char *get_window_property(Display *display, Window window,
                                    const char *window_property, Atom req_type);
 
+int get_device_id(Display *display, int device_type);
+
 #endif /* USE_X11 */
 
 #endif /* F92D88D4_DF91_4479_A6AE_EAF82551118E */

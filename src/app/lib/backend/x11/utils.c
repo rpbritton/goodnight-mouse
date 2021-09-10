@@ -22,11 +22,18 @@
 #include "utils.h"
 
 #include <glib.h>
+#include <X11/extensions/XInput2.h>
 
+// get a window property.
+// return NULL if error.
+// must call XFree on returned value.
 unsigned char *get_window_property(Display *display, Window window,
                                    const char *window_property, Atom req_type)
 {
+    // get window property atom
     Atom atom = XInternAtom(display, window_property, TRUE);
+
+    // query window property
     int status;
     Atom actual_type;
     int actual_format;
@@ -42,6 +49,40 @@ unsigned char *get_window_property(Display *display, Window window,
         return NULL;
 
     return data;
+}
+
+// get the first device id of the given type. returns -1 if not found
+int get_device_id(Display *display, int device_type)
+{
+    // get device id query from type
+    int device_id;
+    if (device_type == XIMasterKeyboard || device_type == XIMasterPointer)
+        device_id = XIAllMasterDevices;
+    else
+        device_id = XIAllDevices;
+
+    // query devices
+    int num_devices;
+    XIDeviceInfo *device_info = XIQueryDevice(display, device_id, &num_devices);
+
+    // find device id
+    device_id = -1;
+    for (int index = 0; index < num_devices; index++)
+    {
+        g_message("checking device %s", device_info[index].name);
+
+        if (device_info[index].use != device_type)
+            continue;
+
+        device_id = device_info[index].deviceid;
+        break;
+    }
+
+    // free device into
+    XIFreeDeviceInfo(device_info);
+
+    // return device id
+    return device_id;
 }
 
 #endif /* USE_X11 */
