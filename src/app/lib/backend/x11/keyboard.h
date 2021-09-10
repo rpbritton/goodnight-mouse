@@ -31,13 +31,16 @@ typedef struct BackendX11Keyboard
 {
     BackendX11 *backend;
 
-    BackendX11XInput *xinput;
-
     BackendKeyboardCallback callback;
     gpointer data;
 
     Display *display;
     Window root_window;
+
+    int keyboard_id;
+    int pointer_id;
+
+    BackendX11XInput *xinput;
 } BackendX11Keyboard;
 
 BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboardCallback callback, gpointer data);

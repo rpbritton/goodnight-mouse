@@ -23,6 +23,8 @@
 
 #include <X11/Xutil.h>
 
+#include "utils.h"
+
 static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr);
 
 // create a new keyboard listener
@@ -40,6 +42,10 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     // add x connection
     keyboard->display = backend_x11_get_display(keyboard->backend);
     keyboard->root_window = XDefaultRootWindow(keyboard->display);
+
+    // get device ids
+    keyboard->keyboard_id = get_device_id(keyboard->display, XIMasterKeyboard);
+    keyboard->pointer_id = get_device_id(keyboard->display, XIMasterPointer);
 
     // add xinput
     keyboard->xinput = backend_x11_xinput_new(backend, callback_xinput, keyboard);
@@ -79,17 +85,13 @@ void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, KeyboardEvent
 
 Modifiers backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
 {
-    // get pointer device
-    int device_id;
-    XIGetClientPointer(keyboard->display, None, &device_id);
-
     // get modifier state
     Window root, child;
     double root_x, root_y, win_x, win_y;
     XIButtonState buttons;
     XIModifierState mods;
     XIGroupState group;
-    XIQueryPointer(keyboard->display, device_id, keyboard->root_window,
+    XIQueryPointer(keyboard->display, keyboard->pointer_id, keyboard->root_window,
                    &root, &child, &root_x, &root_y, &win_x, &win_y, &buttons, &mods, &group);
 
     return mods.effective;
