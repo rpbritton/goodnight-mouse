@@ -48,17 +48,15 @@ typedef struct BackendX11Keyboard
 
     BackendX11Focus *focus;
     Window grab_window;
-
-    GdkKeymap *keymap;
 } BackendX11Keyboard;
 
 BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboardCallback callback, gpointer data);
 void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_grab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard);
-void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, guint keysym, GdkModifierType modifiers);
-void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, guint keysym, GdkModifierType modifiers);
-GdkModifierType backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard);
+void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
+void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
+BackendKeyboardState backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard);
 
 #endif /* USE_X11 */
 

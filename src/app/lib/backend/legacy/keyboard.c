@@ -19,6 +19,8 @@
 
 #include "keyboard.h"
 
+#include <gdk/gdk.h>
+
 #define KEY_EVENTS ((1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_PRESSED_EVENT))
 
 // whether event should be passed on
@@ -27,13 +29,6 @@ typedef enum KeyboardEventResponse
     KEYBOARD_EVENT_RELAY = FALSE,
     KEYBOARD_EVENT_CONSUME = TRUE,
 } KeyboardEventResponse;
-
-// key grab
-typedef struct KeyGrab
-{
-    guint keysym;
-    GdkModifierType modifiers;
-} KeyGrab;
 
 static void listener_register(BackendLegacyKeyboard *keyboard);
 static void listener_deregister(BackendLegacyKeyboard *keyboard);
@@ -50,9 +45,6 @@ BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, Backe
     // add callback
     keyboard->callback = callback;
     keyboard->data = data;
-
-    // get keymap
-    keyboard->keymap = gdk_keymap_get_for_display(gdk_display_get_default());
 
     // register listener
     keyboard->registered = FALSE;
@@ -96,36 +88,26 @@ void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard)
 }
 
 // grab input of a specific key
-void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, guint keysym, GdkModifierType modifiers)
+void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event)
 {
-    // sanitize modifiers
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &modifiers);
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
-
-    // create grab
-    KeyGrab *grab = g_new(KeyGrab, 1);
-    grab->keysym = keysym;
-    grab->modifiers = modifiers;
-
     // add the grab
+    BackendKeyboardEvent *grab = g_new(BackendKeyboardEvent, 1);
+    *grab = event;
     keyboard->key_grabs = g_list_append(keyboard->key_grabs, grab);
 }
 
 // ungrab input of a specific key
-void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, guint keysym, GdkModifierType modifiers)
+void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event)
 {
-    // sanitize modifiers
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &modifiers);
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
-
     // remove the first instance of the grab
     for (GList *link = keyboard->key_grabs; link; link = link->next)
     {
-        KeyGrab *grab = link->data;
+        BackendKeyboardEvent *grab = link->data;
 
         // check if grab matches
-        if (!((grab->keysym == keysym) &&
-              (grab->modifiers == modifiers)))
+        if (!((grab->keycode == event.keycode) &&
+              (grab->state.modifiers == event.state.modifiers) &&
+              (grab->state.group == event.state.group)))
             continue;
 
         // remove the grab
@@ -135,9 +117,15 @@ void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, guint k
     }
 }
 
-GdkModifierType backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard)
+BackendKeyboardState backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard)
 {
-    return gdk_keymap_get_modifier_state(keyboard->keymap);
+    // get state
+    BackendKeyboardState state;
+    state.modifiers = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(gdk_display_get_default())) & 0xFF;
+    state.group = 0; // todo, maybe contained in the gdk return bits 13 and 14?
+
+    // return
+    return state;
 }
 
 static void listener_register(BackendLegacyKeyboard *keyboard)
@@ -181,15 +169,12 @@ static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboa
 {
     BackendLegacyKeyboard *keyboard = keyboard_ptr;
 
-    // sanitize modifiers
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &atspi_event->modifiers);
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &atspi_event->modifiers);
-
-    // create event
-    KeyboardEvent event;
-    event.keysym = atspi_event->id;
+    // get event
+    BackendKeyboardEvent event;
+    event.keycode = atspi_event->hw_code;
     event.pressed = (atspi_event->type == ATSPI_KEY_PRESSED_EVENT);
-    event.modifiers = atspi_event->modifiers;
+    event.state.modifiers = atspi_event->modifiers & 0xFF;
+    event.state.group = 0; // todo, maybe contained in the gdk return bits 13 and 14?
 
     // free the atspi event
     g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
@@ -204,11 +189,12 @@ static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboa
     // check for a key grab
     for (GList *link = keyboard->key_grabs; link; link = link->next)
     {
-        KeyboardEvent *grab = link->data;
+        BackendKeyboardEvent *grab = link->data;
 
-        // check if grab matches
-        if ((grab->keysym == event.keysym) &&
-            (grab->modifiers == event.modifiers))
+        // check if a grab matches
+        if ((grab->keycode == event.keycode) &&
+            (grab->state.modifiers == event.state.modifiers) &&
+            (grab->state.group == event.state.group))
             return KEYBOARD_EVENT_CONSUME;
     }
 

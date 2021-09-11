@@ -36,8 +36,8 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
     if (key_string)
     {
         // parse string
-        config->key = gdk_keyval_from_name(key_string);
-        if (config->key == GDK_KEY_VoidSymbol)
+        config->keysym = gdk_keyval_from_name(key_string);
+        if (config->keysym == GDK_KEY_VoidSymbol)
         {
             g_warning("config: background: key: Unknown '%s'", key_string);
             config_valid = FALSE;
@@ -47,7 +47,7 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
     else
     {
         // default
-        config->key = GDK_KEY_g;
+        config->keysym = GDK_KEY_g;
     }
 
     // get modifiers
@@ -66,12 +66,10 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
                 config->modifiers |= GDK_SHIFT_MASK;
             else if (g_ascii_strcasecmp(modifier_string, "control") == 0)
                 config->modifiers |= GDK_CONTROL_MASK;
+            else if (g_ascii_strcasecmp(modifier_string, "alt") == 0)
+                config->modifiers |= GDK_MOD1_MASK;
             else if (g_ascii_strcasecmp(modifier_string, "super") == 0)
                 config->modifiers |= GDK_SUPER_MASK;
-            else if (g_ascii_strcasecmp(modifier_string, "hyper") == 0)
-                config->modifiers |= GDK_HYPER_MASK;
-            else if (g_ascii_strcasecmp(modifier_string, "alt") == 0)
-                config->modifiers |= GDK_META_MASK;
             else
             {
                 g_warning("config: background: modifiers: Unknown modifier '%s'", modifier_string);
@@ -94,10 +92,14 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
     }
 
     // use upper case key if shift is set
-    if (config->modifiers & GDK_SHIFT_MASK)
-        config->key = gdk_keyval_to_upper(config->key);
-    else
-        config->key = gdk_keyval_to_lower(config->key);
+    // if (config->modifiers & GDK_SHIFT_MASK)
+    // {
+    //     config->keysym = gdk_keyval_to_upper(config->keysym);
+    // }
+    // else
+    // {
+    //     config->keysym = gdk_keyval_to_lower(config->keysym);
+    // }
 
     // return
     if (!config_valid)

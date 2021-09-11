@@ -27,7 +27,7 @@
 
 // typedef struct KeyGrab
 // {
-//     KeyboardEvent event;
+//     BackendKeyboardEvent event;
 //     int keycode;
 // } KeyGrab;
 
@@ -111,18 +111,18 @@ void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard)
 }
 
 // grab input of a specific key
-void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
+void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
 }
 
 // ungrab input of a specific key
-void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
+void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
 }
 
-GdkModifierType backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
+BackendKeyboardState backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
 {
-    // get the current modifier state
+    // get the current state
     Window root, child;
     double root_x, root_y, win_x, win_y;
     XIButtonState buttons;
@@ -131,10 +131,13 @@ GdkModifierType backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
     XIQueryPointer(keyboard->display, keyboard->pointer_id, keyboard->root_window,
                    &root, &child, &root_x, &root_y, &win_x, &win_y, &buttons, &mods, &group);
 
-    // add the virtual modifiers
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &mods.effective);
+    // parse the current state
+    BackendKeyboardState state;
+    state.modifiers = mods.effective & 0xFF;
+    state.group = group.effective & 0xFF;
 
-    return mods.effective;
+    // return
+    return state;
 }
 
 // static void set_grabs(BackendX11Keyboard *keyboard)
@@ -183,24 +186,11 @@ static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr)
         return;
 
     // get event data
-    KeyboardEvent event;
-
-    // get keysym
-    XKeyEvent x11_key_event;
-    x11_key_event.display = xinput_event->display;
-    x11_key_event.keycode = xinput_event->detail;
-    x11_key_event.state = xinput_event->mods.effective;
-    KeySym keysym;
-    XLookupString(&x11_key_event, NULL, 0, &keysym, NULL);
-    // todo: try to use gdk
-    event.keysym = keysym;
-
-    // get type
+    BackendKeyboardEvent event;
+    event.keycode = xinput_event->detail;
     event.pressed = (xinput_event->evtype == XI_KeyPress);
-
-    // get modifiers
-    event.modifiers = xinput_event->mods.effective;
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &event.modifiers);
+    event.state.modifiers = xinput_event->mods.effective;
+    event.state.group = xinput_event->group.effective;
 
     // callback the event
     keyboard->callback(event, keyboard->data);
@@ -210,11 +200,11 @@ static void callback_focus(gpointer keyboard_ptr)
 {
     BackendX11Keyboard *keyboard = keyboard_ptr;
 
-    // add new focus window
+    // get new focused window
     keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
 
     // set the grabs
-    set_grabs(keyboard);
+    // set_grabs(keyboard);
 }
 
 #endif /* USE_X11 */

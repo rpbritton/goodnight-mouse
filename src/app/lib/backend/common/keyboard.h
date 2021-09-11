@@ -21,17 +21,23 @@
 #define C34EFBD7_588C_4399_8DEF_C92876EB3C3D
 
 #include <glib.h>
-#include <gdk/gdk.h>
+
+// state of the keyboard modifiers and group
+typedef struct BackendKeyboardState
+{
+    guchar modifiers;
+    guchar group;
+} BackendKeyboardState;
 
 // event representing a key action
-typedef struct KeyboardEvent
+typedef struct BackendKeyboardEvent
 {
-    guint keysym;
+    guint keycode;
     gboolean pressed;
-    GdkModifierType modifiers;
-} KeyboardEvent;
+    BackendKeyboardState state;
+} BackendKeyboardEvent;
 
 // callback used for keyboard events
-typedef void (*BackendKeyboardCallback)(KeyboardEvent event, gpointer data);
+typedef void (*BackendKeyboardCallback)(BackendKeyboardEvent event, gpointer data);
 
 #endif /* C34EFBD7_588C_4399_8DEF_C92876EB3C3D */

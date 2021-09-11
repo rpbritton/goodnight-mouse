@@ -33,8 +33,6 @@ typedef struct BackendLegacyKeyboard
     BackendKeyboardCallback callback;
     gpointer data;
 
-    GdkKeymap *keymap;
-
     gboolean registered;
     AtspiDeviceListener *listener;
 
@@ -46,8 +44,8 @@ BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, Backe
 void backend_legacy_keyboard_destroy(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_grab(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard);
-void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, guint keysym, GdkModifierType modifiers);
-void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, guint keysym, GdkModifierType modifiers);
-GdkModifierType backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard);
+void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event);
+void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event);
+BackendKeyboardState backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard);
 
 #endif /* F57F1019_9CFE_4F5D_A723_17B8C671BC05 */

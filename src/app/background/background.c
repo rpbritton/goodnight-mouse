@@ -38,7 +38,7 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground,
     background->focus = focus;
 
     // add trigger event
-    background->trigger_keysym = config->key;
+    background->trigger_keysym = config->keysym;
     background->trigger_modifiers = config->modifiers;
 
     return background;

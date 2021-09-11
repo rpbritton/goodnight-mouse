@@ -24,6 +24,14 @@
 
 #include "../backend/backend.h"
 
+// event for when a key is pressed or released
+typedef struct KeyboardEvent
+{
+    guint keysym;
+    gboolean pressed;
+    GdkModifierType modifiers;
+} KeyboardEvent;
+
 // callback type used to notify on subscribed keyboard event
 typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 
@@ -31,6 +39,9 @@ typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 typedef struct Keyboard
 {
     BackendKeyboard *backend;
+
+    GdkKeymap *keymap;
+    guchar valid_modifiers;
 
     GList *subscribers;
 } Keyboard;

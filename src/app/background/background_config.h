@@ -20,12 +20,12 @@
 #ifndef EBBD1A8E_931A_4028_8044_D10EFEDD3A27
 #define EBBD1A8E_931A_4028_8044_D10EFEDD3A27
 
-#include <glib.h>
+#include <gdk/gdk.h>
 
 // background configuration
 typedef struct BackgroundConfig
 {
-    guint key;
+    guint keysym;
     GdkModifierType modifiers;
 } BackgroundConfig;
 
