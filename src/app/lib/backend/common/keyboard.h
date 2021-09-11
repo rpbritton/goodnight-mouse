@@ -21,28 +21,17 @@
 #define C34EFBD7_588C_4399_8DEF_C92876EB3C3D
 
 #include <glib.h>
-
-// type of key event
-typedef enum KeyboardEventType
-{
-    KEYBOARD_EVENT_PRESSED = (1 << 0),
-    KEYBOARD_EVENT_RELEASED = (1 << 1),
-} KeyboardEventType;
-
-// type for representing modifiers
-typedef guchar Modifiers;
+#include <gdk/gdk.h>
 
 // event representing a key action
 typedef struct KeyboardEvent
 {
     guint keysym;
-    KeyboardEventType type;
-    Modifiers modifiers;
+    gboolean pressed;
+    GdkModifierType modifiers;
 } KeyboardEvent;
 
 // callback used for keyboard events
 typedef void (*BackendKeyboardCallback)(KeyboardEvent event, gpointer data);
-
-void backend_keyboard_sanitize_event(KeyboardEvent *event);
 
 #endif /* C34EFBD7_588C_4399_8DEF_C92876EB3C3D */

@@ -39,7 +39,8 @@ typedef struct Background
     Keyboard *keyboard;
     Focus *focus;
 
-    KeyboardEvent trigger_event;
+    guint trigger_keysym;
+    GdkModifierType trigger_modifiers;
 } Background;
 
 Background *background_new(BackgroundConfig *config, Foreground *foreground,

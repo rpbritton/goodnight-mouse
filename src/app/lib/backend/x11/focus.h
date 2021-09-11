@@ -47,6 +47,8 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendFocusCallback
 void backend_x11_focus_destroy(BackendX11Focus *focus);
 AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus);
 
+Window backend_x11_focus_get_x11_window(BackendX11Focus *focus);
+
 #endif /* USE_X11 */
 
 #endif /* A2EF5F11_2529_4652_BC50_4EEE3926B412 */

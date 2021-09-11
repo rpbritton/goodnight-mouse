@@ -26,7 +26,6 @@
 #define WINDOW_PROPERTY_ACTIVE_WINDOW "_NET_ACTIVE_WINDOW"
 #define WINDOW_PROPERTY_WINDOW_PID "_NET_WM_PID"
 
-static Window get_active_window(BackendX11Focus *focus);
 static guint get_window_pid(BackendX11Focus *focus, Window window);
 static void callback_property_notify(XEvent *event, gpointer focus_ptr);
 static void callback_backend_legacy(gpointer focus_ptr);
@@ -74,7 +73,7 @@ void backend_x11_focus_destroy(BackendX11Focus *focus)
 AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus)
 {
     // get active window
-    Window active_window = get_active_window(focus);
+    Window active_window = backend_x11_focus_get_x11_window(focus);
     if (active_window == None)
         return NULL;
 
@@ -143,7 +142,7 @@ AtspiAccessible *backend_x11_focus_get_window(BackendX11Focus *focus)
 }
 
 // get the focused x11 window using the window property
-static Window get_active_window(BackendX11Focus *focus)
+Window backend_x11_focus_get_x11_window(BackendX11Focus *focus)
 {
     // get property
     unsigned char *data = get_window_property(focus->display, focus->root_window,

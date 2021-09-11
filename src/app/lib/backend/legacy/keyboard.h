@@ -21,7 +21,6 @@
 #define F57F1019_9CFE_4F5D_A723_17B8C671BC05
 
 #include <atspi/atspi.h>
-#include <gdk/gdk.h>
 
 #include "legacy.h"
 #include "../common/keyboard.h"
@@ -47,8 +46,8 @@ BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, Backe
 void backend_legacy_keyboard_destroy(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_grab(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard);
-void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, KeyboardEvent event);
-void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, KeyboardEvent event);
-Modifiers backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard);
+void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, guint keysym, GdkModifierType modifiers);
+void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, guint keysym, GdkModifierType modifiers);
+GdkModifierType backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard);
 
 #endif /* F57F1019_9CFE_4F5D_A723_17B8C671BC05 */

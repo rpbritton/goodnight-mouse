@@ -19,6 +19,8 @@
 
 #include "foreground.h"
 
+#define SHIFT_MASK (GDK_SHIFT_MASK | GDK_LOCK_MASK)
+
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
@@ -49,9 +51,6 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
     foreground->mouse = mouse;
     foreground->focus = focus;
 
-    // set shift mods
-    foreground->shift_mods = keyboard_map_modifiers(foreground->keyboard, GDK_SHIFT_MASK | GDK_LOCK_MASK);
-
     return foreground;
 }
 
@@ -80,7 +79,7 @@ void foreground_run(Foreground *foreground)
         return;
 
     // init shift state
-    foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & foreground->shift_mods);
+    foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & SHIFT_MASK);
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
@@ -191,21 +190,20 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
 
     // modifiers are not set in the modifier key event, so get fresh set
     guint current_mods = keyboard_get_modifiers(foreground->keyboard);
-    g_message("event mods: %d, current mods: %d", event.modifiers, current_mods);
 
     // check if shift state changed
-    if (!!(current_mods & foreground->shift_mods) != foreground->shifted)
+    if (!!(current_mods & SHIFT_MASK) != foreground->shifted)
     {
         foreground->shifted = !foreground->shifted;
         overlay_shifted(foreground->overlay, foreground->shifted);
     }
 
     // don't use key if modifiers other than the shift mods are held
-    if (current_mods & ~foreground->shift_mods)
+    if (current_mods & ~SHIFT_MASK)
         return;
 
     // only check presses
-    if (event.type != KEYBOARD_EVENT_PRESSED)
+    if (!event.pressed)
         return;
 
     // process key type

@@ -32,8 +32,6 @@ typedef struct Keyboard
 {
     BackendKeyboard *backend;
 
-    GdkKeymap *keymap;
-
     GList *subscribers;
 } Keyboard;
 
@@ -41,9 +39,8 @@ Keyboard *keyboard_new(Backend *backend);
 void keyboard_destroy(Keyboard *keyboard);
 void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
-void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
-void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data);
-Modifiers keyboard_get_modifiers(Keyboard *keyboard);
-Modifiers keyboard_map_modifiers(Keyboard *keyboard, GdkModifierType mods);
+void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data);
+void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data);
+GdkModifierType keyboard_get_modifiers(Keyboard *keyboard);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */

@@ -38,9 +38,8 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground,
     background->focus = focus;
 
     // add trigger event
-    background->trigger_event.keysym = config->key;
-    background->trigger_event.type = KEYBOARD_EVENT_PRESSED | KEYBOARD_EVENT_RELEASED;
-    background->trigger_event.modifiers = keyboard_map_modifiers(background->keyboard, config->modifiers);
+    background->trigger_keysym = config->key;
+    background->trigger_modifiers = config->modifiers;
 
     return background;
 }
@@ -62,7 +61,8 @@ void background_run(Background *background)
         return;
 
     // subscribe to listeners
-    keyboard_subscribe_key(background->keyboard, background->trigger_event,
+    keyboard_subscribe_key(background->keyboard,
+                           background->trigger_keysym, background->trigger_modifiers,
                            callback_keyboard, background);
     focus_subscribe(background->focus, callback_focus, background);
 
@@ -72,7 +72,8 @@ void background_run(Background *background)
     g_debug("background: Stopping loop");
 
     // unsubscribe from listeners
-    keyboard_unsubscribe_key(background->keyboard, background->trigger_event,
+    keyboard_unsubscribe_key(background->keyboard,
+                             background->trigger_keysym, background->trigger_modifiers,
                              callback_keyboard, background);
     focus_unsubscribe(background->focus, callback_focus, background);
 }
@@ -99,7 +100,7 @@ void background_quit(Background *background)
 static void callback_keyboard(KeyboardEvent event, gpointer background_ptr)
 {
     // only check press events
-    if (event.type != KEYBOARD_EVENT_PRESSED)
+    if (!event.pressed)
         return;
 
     g_debug("background: Input hotkey triggered");

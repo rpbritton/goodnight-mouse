@@ -24,8 +24,9 @@ typedef struct Subscriber
 {
     KeyboardCallback callback;
     gpointer data;
-    gboolean all_events;
-    KeyboardEvent event;
+    gboolean all_keys;
+    guint keysym;
+    GdkModifierType modifiers;
 } Subscriber;
 
 // callback to handle an atspi keyboard event
@@ -38,9 +39,6 @@ Keyboard *keyboard_new(Backend *backend)
 
     // init subscribers
     keyboard->subscribers = NULL;
-
-    // get keymap
-    keyboard->keymap = gdk_keymap_get_for_display(gdk_display_get_default());
 
     // add backend
     keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
@@ -68,7 +66,7 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->callback = callback;
     subscriber->data = data;
-    subscriber->all_events = TRUE;
+    subscriber->all_keys = TRUE;
 
     // add subscriber
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
@@ -88,7 +86,7 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
         // check if subscriber matches
         if (!((subscriber->callback == callback) &&
               (subscriber->data == data) &&
-              (subscriber->all_events == TRUE)))
+              (subscriber->all_keys == TRUE)))
             continue;
 
         // remove subscriber
@@ -103,24 +101,25 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
 }
 
 // subscribe a callback to a particular keyboard event
-void keyboard_subscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
+void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data)
 {
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->callback = callback;
     subscriber->data = data;
-    subscriber->all_events = FALSE;
-    subscriber->event = event;
+    subscriber->all_keys = FALSE;
+    subscriber->keysym = keysym;
+    subscriber->modifiers = modifiers;
 
     // add subscriber
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the key
-    backend_keyboard_grab_key(keyboard->backend, event);
+    backend_keyboard_grab_key(keyboard->backend, keysym, modifiers);
 }
 
 // removes a key subscription
-void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardCallback callback, gpointer data)
+void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data)
 {
     // remove the first matching subscriber
     for (GList *link = keyboard->subscribers; link; link = link->next)
@@ -130,10 +129,9 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardC
         // check if subscriber matches
         if (!((subscriber->callback == callback) &&
               (subscriber->data == data) &&
-              (subscriber->all_events == FALSE) &&
-              (subscriber->event.keysym == event.keysym) &&
-              (subscriber->event.type == event.type) &&
-              (subscriber->event.modifiers == event.modifiers)))
+              (subscriber->all_keys == FALSE) &&
+              (subscriber->keysym == keysym) &&
+              (subscriber->modifiers == modifiers)))
             continue;
 
         // remove subscriber
@@ -141,7 +139,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, KeyboardEvent event, KeyboardC
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
 
         // ungrab the key
-        backend_keyboard_ungrab_key(keyboard->backend, event);
+        backend_keyboard_ungrab_key(keyboard->backend, keysym, modifiers);
 
         return;
     }
@@ -158,10 +156,9 @@ static void callback_keyboard(KeyboardEvent event, gpointer keyboard_ptr)
         Subscriber *subscriber = link->data;
 
         // check if event matches against subscription
-        if (!((subscriber->all_events) ||
-              ((subscriber->event.keysym == event.keysym) &&
-               (subscriber->event.type & event.type) &&
-               (subscriber->event.modifiers == event.modifiers))))
+        if (!((subscriber->all_keys) ||
+              ((subscriber->keysym == event.keysym) &&
+               (subscriber->modifiers == event.modifiers))))
             continue;
 
         // notify subscriber
@@ -170,14 +167,7 @@ static void callback_keyboard(KeyboardEvent event, gpointer keyboard_ptr)
 }
 
 // get the current modifiers
-Modifiers keyboard_get_modifiers(Keyboard *keyboard)
+GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
 {
     return backend_keyboard_get_modifiers(keyboard->backend);
-}
-
-// map virtual gdk modifiers into 8-bits
-Modifiers keyboard_map_modifiers(Keyboard *keyboard, GdkModifierType mods)
-{
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &mods);
-    return mods & 0xFF;
 }

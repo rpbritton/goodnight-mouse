@@ -25,7 +25,15 @@
 
 #include "utils.h"
 
+// typedef struct KeyGrab
+// {
+//     KeyboardEvent event;
+//     int keycode;
+// } KeyGrab;
+
+// static void set_grab(BackendX11Keyboard *keyboard);
 static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr);
+static void callback_focus(gpointer keyboard_ptr);
 
 // create a new keyboard listener
 BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboardCallback callback, gpointer data)
@@ -50,6 +58,14 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     // add xinput
     keyboard->xinput = backend_x11_xinput_new(backend, callback_xinput, keyboard);
 
+    // initialize grabs
+    keyboard->grabs = 0;
+    keyboard->key_grabs = NULL;
+
+    // add focus listener
+    keyboard->focus = backend_x11_focus_new(keyboard->backend, callback_focus, keyboard);
+    keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
+
     return keyboard;
 }
 
@@ -59,6 +75,12 @@ void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
     // destroy xinput
     backend_x11_xinput_destroy(keyboard->xinput);
 
+    // free grabs
+    g_list_free_full(keyboard->key_grabs, g_free);
+
+    // destroy the focus listener
+    backend_x11_focus_destroy(keyboard->focus);
+
     // free
     g_free(keyboard);
 }
@@ -66,26 +88,41 @@ void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
 // grab all keyboard input
 void backend_x11_keyboard_grab(BackendX11Keyboard *keyboard)
 {
+    // // add a grab
+    // keyboard->grabs++;
+
+    // // add grab
+    // set_grab(keyboard);
 }
 
 // ungrab all keyboard input
 void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard)
 {
+    // // check if the grab exists
+    // if (keyboard->grabs == 0)
+    //     return;
+
+    // // remove a grab
+    // keyboard->grabs--;
+
+    // // remove the grab if none exist now
+    // if (keyboard->grabs == 0)
+    //     XIUngrabDevice(keyboard->display, keyboard->keyboard_id, CurrentTime);
 }
 
 // grab input of a specific key
-void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, KeyboardEvent event)
+void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
 {
 }
 
 // ungrab input of a specific key
-void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, KeyboardEvent event)
+void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
 {
 }
 
-Modifiers backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
+GdkModifierType backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
 {
-    // get modifier state
+    // get the current modifier state
     Window root, child;
     double root_x, root_y, win_x, win_y;
     XIButtonState buttons;
@@ -94,8 +131,47 @@ Modifiers backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
     XIQueryPointer(keyboard->display, keyboard->pointer_id, keyboard->root_window,
                    &root, &child, &root_x, &root_y, &win_x, &win_y, &buttons, &mods, &group);
 
+    // add the virtual modifiers
+    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &mods.effective);
+
     return mods.effective;
 }
+
+// static void set_grabs(BackendX11Keyboard *keyboard)
+// {
+//     XIEventMask event_mask = {
+//         .deviceid = XIAllDevices,
+//         .mask_len = 0,
+//         .mask = NULL,
+//     };
+
+//     // check if any grabs exist
+//     //if (keyboard->grabs > 0)
+//     if (FALSE)
+//     {
+//         XIGrabDevice(keyboard->display, keyboard->keyboard_id, keyboard->grab_window,
+//                      CurrentTime,   // grabbing now
+//                      None,          // use default cursor <-- todo verify
+//                      GrabModeAsync, // todo
+//                      GrabModeAsync, // todo
+//                      False,         // todo
+//                      &event_mask);  // todo
+//     }
+
+//     // set any key grabs
+//     for (GList *link = keyboard->key_grabs; link; link = link->next)
+//     {
+//         KeyGrab *grab = link->data;
+//         XIGrabKeycode(keyboard->display, keyboard->keyboard_id, grab->keycode,
+//                       keyboard->grab_window,
+//                       GrabModeAsync, // todo
+//                       GrabModeAsync, // todo
+//                       False,         // todo
+//                       &event_mask,   // todo
+//                       grab->event.modifiers,
+//                       NULL); // todo
+//     }
+// }
 
 static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr)
 {
@@ -116,16 +192,29 @@ static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr)
     x11_key_event.state = xinput_event->mods.effective;
     KeySym keysym;
     XLookupString(&x11_key_event, NULL, 0, &keysym, NULL);
+    // todo: try to use gdk
     event.keysym = keysym;
 
     // get type
-    event.type = (xinput_event->evtype == XI_KeyPress) ? KEYBOARD_EVENT_PRESSED : KEYBOARD_EVENT_RELEASED;
+    event.pressed = (xinput_event->evtype == XI_KeyPress);
 
     // get modifiers
     event.modifiers = xinput_event->mods.effective;
+    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &event.modifiers);
 
     // callback the event
     keyboard->callback(event, keyboard->data);
+}
+
+static void callback_focus(gpointer keyboard_ptr)
+{
+    BackendX11Keyboard *keyboard = keyboard_ptr;
+
+    // add new focus window
+    keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
+
+    // set the grabs
+    set_grabs(keyboard);
 }
 
 #endif /* USE_X11 */
