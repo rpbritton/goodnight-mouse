@@ -31,6 +31,7 @@ Background *background_new(BackgroundConfig *config, Foreground *foreground,
 
     // create main loop
     background->loop = g_main_loop_new(NULL, FALSE);
+    background->is_running = FALSE;
 
     // add members
     background->foreground = foreground;
@@ -59,6 +60,7 @@ void background_run(Background *background)
     // do nothing if running
     if (background_is_running(background))
         return;
+    background->is_running = TRUE;
 
     // subscribe to listeners
     keyboard_subscribe_key(background->keyboard,
@@ -76,12 +78,15 @@ void background_run(Background *background)
                              background->trigger_keysym, background->trigger_modifiers,
                              callback_keyboard, background);
     focus_unsubscribe(background->focus, callback_focus, background);
+
+    // unset running
+    background->is_running = FALSE;
 }
 
 // returns whether the background is running
 gboolean background_is_running(Background *background)
 {
-    return g_main_loop_is_running(background->loop);
+    return background->is_running;
 }
 
 // quits the background if running

@@ -34,6 +34,7 @@
 typedef struct Background
 {
     GMainLoop *loop;
+    gboolean is_running;
 
     Foreground *foreground;
     Keyboard *keyboard;

@@ -39,6 +39,7 @@
 typedef struct Foreground
 {
     GMainLoop *loop;
+    gboolean is_running;
 
     GHashTable *accessible_to_tag;
 

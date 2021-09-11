@@ -36,6 +36,7 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
 
     // create main loop
     foreground->loop = g_main_loop_new(NULL, FALSE);
+    foreground->is_running = FALSE;
 
     // create tag management
     foreground->accessible_to_tag = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
@@ -77,6 +78,7 @@ void foreground_run(Foreground *foreground)
 {
     if (foreground_is_running(foreground))
         return;
+    foreground->is_running = TRUE;
 
     // init shift state
     foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & SHIFT_MASK);
@@ -127,12 +129,15 @@ void foreground_run(Foreground *foreground)
     registry_unwatch(foreground->registry);
     overlay_hide(foreground->overlay);
     g_object_unref(window);
+
+    // set not running
+    foreground->is_running = FALSE;
 }
 
 // returns whether the given foreground is running
 gboolean foreground_is_running(Foreground *foreground)
 {
-    return g_main_loop_is_running(foreground->loop);
+    return foreground->is_running;
 }
 
 // quits a given foreground if running
