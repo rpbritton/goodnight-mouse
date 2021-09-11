@@ -31,9 +31,19 @@ static gboolean registry_refresh_loop(gpointer registry_ptr);
 
 static gboolean registry_check_children(Registry *registry, ControlType control_type);
 static GList *registry_get_children(Registry *registry, AtspiAccessible *accessible);
+static GList *registry_get_children_fallback(Registry *registry, AtspiAccessible *accessible);
 
 static void registry_remove_missing_accessibles(Registry *registry, GHashTable *accessibles_to_keep);
 static void registry_add_accessibles(Registry *registry, GArray *accessibles_to_add);
+
+static const AtspiStateType INTERACTIVE_STATES[] = {
+    ATSPI_STATE_SHOWING,
+    ATSPI_STATE_VISIBLE,
+    ATSPI_STATE_ENABLED,
+    ATSPI_STATE_SENSITIVE,
+};
+
+#define NUM_INTERACTIVE_STATES (sizeof(INTERACTIVE_STATES) / sizeof(INTERACTIVE_STATES[0]))
 
 Registry *registry_new()
 {
@@ -44,10 +54,8 @@ Registry *registry_new()
 
     // create match rule
     AtspiStateSet *interactive_states = atspi_state_set_new(NULL);
-    atspi_state_set_add(interactive_states, ATSPI_STATE_SHOWING);
-    atspi_state_set_add(interactive_states, ATSPI_STATE_VISIBLE);
-    atspi_state_set_add(interactive_states, ATSPI_STATE_ENABLED);
-    atspi_state_set_add(interactive_states, ATSPI_STATE_SENSITIVE);
+    for (gint index = 0; index < NUM_INTERACTIVE_STATES; index++)
+        atspi_state_set_add(interactive_states, INTERACTIVE_STATES[index]);
     registry->match_interactive = atspi_match_rule_new(interactive_states, ATSPI_Collection_MATCH_ALL,
                                                        NULL, ATSPI_Collection_MATCH_NONE,
                                                        NULL, ATSPI_Collection_MATCH_NONE,
@@ -205,10 +213,7 @@ static GList *registry_get_children(Registry *registry, AtspiAccessible *accessi
     // get collection
     AtspiCollection *collection = atspi_accessible_get_collection_iface(accessible);
     if (!collection)
-    {
-        g_warning("registry: Collection is NULL");
-        return children;
-    }
+        return registry_get_children_fallback(registry, accessible);
 
     // get interactive children
     GArray *array = atspi_collection_get_matches(collection,
@@ -227,6 +232,38 @@ static GList *registry_get_children(Registry *registry, AtspiAccessible *accessi
     g_object_unref(collection);
 
     // return
+    return children;
+}
+
+static GList *registry_get_children_fallback(Registry *registry, AtspiAccessible *accessible)
+{
+    GList *children = NULL;
+
+    // check all the children manually
+    for (gint index = 0; index < atspi_accessible_get_child_count(accessible, NULL); index++)
+    {
+        AtspiAccessible *child = atspi_accessible_get_child_at_index(accessible, index, NULL);
+        if (!child)
+            continue;
+
+        // check if is interactive
+        AtspiStateSet *state_set = atspi_accessible_get_state_set(child);
+        gboolean is_interactive = TRUE;
+        for (gint index = 0; index < NUM_INTERACTIVE_STATES; index++)
+            is_interactive &= atspi_state_set_contains(state_set, INTERACTIVE_STATES[index]);
+        g_object_unref(state_set);
+
+        // don't add child if not interactive
+        if (!is_interactive)
+        {
+            g_object_unref(child);
+            continue;
+        }
+
+        // add the child
+        children = g_list_append(children, child);
+    }
+
     return children;
 }
 
