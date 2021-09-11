@@ -253,15 +253,11 @@ static GList *registry_get_children_fallback(Registry *registry, AtspiAccessible
             is_interactive &= atspi_state_set_contains(state_set, INTERACTIVE_STATES[index]);
         g_object_unref(state_set);
 
-        // don't add child if not interactive
-        if (!is_interactive)
-        {
+        // add the child if it is interactive
+        if (is_interactive)
+            children = g_list_append(children, child);
+        else
             g_object_unref(child);
-            continue;
-        }
-
-        // add the child
-        children = g_list_append(children, child);
     }
 
     return children;

@@ -149,6 +149,7 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
                 continue;
 
             // add the grab
+            g_debug("keyboard: Grabbing key: keycode: %d, modifiers: 0x%X", keys[index].keycode, modifiers);
             BackendKeyboardEvent *grab = g_new(BackendKeyboardEvent, 1);
             grab->keycode = keys[index].keycode;
             grab->state.modifiers = modifiers;
@@ -162,7 +163,7 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
 
     // ensure grabs were found
     if (!subscriber->grabs)
-        g_warning("keyboard: Subscription has no keys: keysym: %d, modifiers: %d", keysym, modifiers);
+        g_warning("keyboard: No valid keys to grab: keysym: %d, modifiers: 0x%X", keysym, modifiers);
 
     // add subscriber
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);

@@ -91,16 +91,6 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
         config->modifiers = GDK_SUPER_MASK;
     }
 
-    // use upper case key if shift is set
-    // if (config->modifiers & GDK_SHIFT_MASK)
-    // {
-    //     config->keysym = gdk_keyval_to_upper(config->keysym);
-    // }
-    // else
-    // {
-    //     config->keysym = gdk_keyval_to_lower(config->keysym);
-    // }
-
     // return
     if (!config_valid)
     {

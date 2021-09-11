@@ -223,7 +223,7 @@ static void set_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *gra
 
     // check if successful
     if (status == AlreadyGrabbed)
-        g_debug("x11-keyboard: Failed to grab key, keycode: %d, modifiers: %d", grab->keycode, modifier_input.modifiers);
+        g_debug("x11-keyboard: Failed to grab key: keycode: %d, modifiers: 0x%X", grab->keycode, modifier_input.modifiers);
 }
 
 static void unset_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *grab)
@@ -263,7 +263,8 @@ static void callback_focus(gpointer keyboard_ptr)
 {
     BackendX11Keyboard *keyboard = keyboard_ptr;
 
-    // get new focused window
+    // set the new active window to grab
+    // this prevents the window from losing focus on key grabs
     keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
 
     // set the global grab to the new window
