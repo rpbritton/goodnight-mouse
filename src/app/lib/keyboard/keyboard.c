@@ -115,7 +115,6 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
     // sanitize modifiers
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
     modifiers = modifiers & 0xFF & keyboard->valid_modifiers;
-    g_message("grabbing keysym: %d, modifiers: %d", keysym, modifiers);
 
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);

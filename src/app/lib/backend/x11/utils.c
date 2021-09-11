@@ -69,8 +69,6 @@ int get_device_id(Display *display, int device_type)
     device_id = -1;
     for (int index = 0; index < num_devices; index++)
     {
-        g_message("checking device %s", device_info[index].name);
-
         if (device_info[index].use != device_type)
             continue;
 
