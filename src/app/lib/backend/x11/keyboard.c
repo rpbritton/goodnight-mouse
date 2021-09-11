@@ -173,9 +173,16 @@ BackendKeyboardState backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyb
 
 static void set_grab(BackendX11Keyboard *keyboard)
 {
+    g_debug("x11-keyboard: Attempting global keyboard grab");
+
+    // grab the device
     XIEventMask event_mask = {.deviceid = keyboard->keyboard_id, .mask_len = 0, .mask = NULL};
-    XIGrabDevice(keyboard->display, keyboard->keyboard_id, keyboard->grab_window, CurrentTime,
-                 None, XIGrabModeAsync, XIGrabModeAsync, FALSE, &event_mask);
+    gint status = XIGrabDevice(keyboard->display, keyboard->keyboard_id, keyboard->grab_window, CurrentTime,
+                               None, XIGrabModeAsync, XIGrabModeAsync, FALSE, &event_mask);
+
+    // check if successful
+    if (status == AlreadyGrabbed)
+        g_debug("x11-keyboard: Failed global keyboard grab");
 }
 
 static void unset_grab(BackendX11Keyboard *keyboard)
@@ -211,8 +218,12 @@ static void set_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *gra
     XIGrabModifiers modifier_input;
     // todo, this doesn't take group into the account
     modifier_input.modifiers = grab->state.modifiers;
-    XIGrabKeycode(keyboard->display, keyboard->keyboard_id, grab->keycode, keyboard->grab_window,
-                  XIGrabModeAsync, XIGrabModeAsync, FALSE, &event_mask, 1, &modifier_input);
+    int status = XIGrabKeycode(keyboard->display, keyboard->keyboard_id, grab->keycode, keyboard->grab_window,
+                               XIGrabModeAsync, XIGrabModeAsync, FALSE, &event_mask, 1, &modifier_input);
+
+    // check if successful
+    if (status == AlreadyGrabbed)
+        g_debug("x11-keyboard: Failed to grab key, keycode: %d, modifiers: %d", grab->keycode, modifier_input.modifiers);
 }
 
 static void unset_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *grab)
