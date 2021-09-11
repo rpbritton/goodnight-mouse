@@ -36,6 +36,7 @@ typedef struct Tag
     gboolean shifted;
 
     GtkLayout *parent;
+    gint window_x, window_y;
 
     GtkWidget *wrapper;
     GtkWidget *label;
@@ -50,9 +51,8 @@ void tag_unset_accessible(Tag *tag);
 
 void tag_shifted(Tag *tag, gboolean shifted);
 
-void tag_show(Tag *tag, GtkLayout *parent);
+void tag_show(Tag *tag, GtkLayout *parent, gint window_x, gint window_y);
 void tag_hide(Tag *tag);
-void tag_reposition(Tag *tag);
 
 void tag_set_code(Tag *tag, GArray *code);
 GArray *tag_get_code(Tag *tag);

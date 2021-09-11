@@ -19,6 +19,7 @@
 
 #include "tag.h"
 
+static void tag_reposition(Tag *tag);
 static void tag_generate_label(Tag *tag);
 static void tag_destroy_label(Tag *tag);
 static void tag_show_label(Tag *tag);
@@ -36,7 +37,10 @@ Tag *tag_new(TagConfig *config)
 
     tag->shifted = FALSE;
 
+    // set parent window
     tag->parent = NULL;
+    tag->window_x = 0;
+    tag->window_y = 0;
 
     // create the label
     tag->label = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -48,6 +52,7 @@ Tag *tag_new(TagConfig *config)
     tag->wrapper = g_object_ref(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
     gtk_style_context_add_class(gtk_widget_get_style_context(tag->wrapper), TAG_CONTAINER_CSS_CLASS);
     gtk_box_pack_start(GTK_BOX(tag->wrapper), tag->label, TRUE, TRUE, 0);
+    gtk_widget_set_no_show_all(tag->wrapper, TRUE);
 
     // init the gtk labels
     tag->characters = NULL;
@@ -127,24 +132,34 @@ void tag_shifted(Tag *tag, gboolean shifted)
 }
 
 // add and show a tag in a gtk layout
-void tag_show(Tag *tag, GtkLayout *parent)
+void tag_show(Tag *tag, GtkLayout *parent, gint window_x, gint window_y)
 {
     // return if invalid parent
-    if (!parent || tag->parent == parent)
+    if (!parent)
         return;
 
-    // hide if already showing
-    tag_hide(tag);
+    // add new parent
+    if (parent != tag->parent)
+    {
+        // hide if already showing
+        tag_hide(tag);
 
-    // add the new parent
-    tag->parent = g_object_ref(parent);
+        // add the new parent
+        tag->parent = g_object_ref(parent);
+
+        // generate the label
+        tag_generate_label(tag);
+
+        // show the wrapper
+        gtk_widget_show(tag->wrapper);
+    }
+
+    // set window coordinates
+    tag->window_x = window_x;
+    tag->window_y = window_y;
+
+    // reposition the tag
     tag_reposition(tag);
-
-    // generate the label
-    tag_generate_label(tag);
-
-    // show the wrapper
-    gtk_widget_show(tag->wrapper);
 }
 
 // removes a tag from its parent
@@ -171,10 +186,14 @@ void tag_reposition(Tag *tag)
 
     // get accessible position
     AtspiComponent *component = atspi_accessible_get_component_iface(tag->accessible);
-    AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_WINDOW, NULL);
+    AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
+
+    // offset with window coordinates
+    rect->x -= tag->window_x;
+    rect->y -= tag->window_y;
 
     // put/move location in parent if coordinates are valid
-    if (rect->x != -1 && rect->y != -1)
+    if (rect->x >= 0 && rect->y >= 0)
     {
         if (gtk_widget_get_parent(tag->wrapper) == GTK_WIDGET(tag->parent))
             gtk_layout_move(tag->parent, tag->wrapper, rect->x, rect->y);
@@ -183,7 +202,7 @@ void tag_reposition(Tag *tag)
     }
 
     // set wrapper to cover accessible
-    if (rect->width != -1 && rect->height != -1)
+    if (rect->width > 0 && rect->height > 0)
         gtk_widget_set_size_request(tag->wrapper, rect->width, rect->height);
 
     // free

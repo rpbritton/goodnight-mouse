@@ -32,7 +32,12 @@ Overlay *overlay_new(OverlayConfig *config)
 {
     Overlay *overlay = g_new(Overlay, 1);
 
+    // set window
     overlay->window = NULL;
+    overlay->window_x = 0;
+    overlay->window_y = 0;
+
+    // set tags
     overlay->tags = g_hash_table_new(NULL, NULL);
     overlay->shifted = FALSE;
 
@@ -87,18 +92,13 @@ void overlay_show(Overlay *overlay, AtspiAccessible *window)
     // set the new window
     overlay->window = g_object_ref(window);
 
-    // show all tags
-    GHashTableIter iter;
-    gpointer tag_ptr, null_ptr;
-    g_hash_table_iter_init(&iter, overlay->tags);
-    while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
-        tag_show(tag_ptr, GTK_LAYOUT(overlay->container));
+    // refresh the overlay
+    overlay_refresh(overlay);
 
     // start the refresh loop
-    overlay_refresh_loop(overlay);
-
-    // show the window
-    gtk_widget_show_all(overlay->overlay);
+    overlay->refresh_source_id = g_timeout_add(OVERLAY_REFRESH_INTERVAL,
+                                               overlay_refresh_loop,
+                                               overlay);
 }
 
 // hides the overlay and unsets the followed window
@@ -139,7 +139,7 @@ void overlay_add(Overlay *overlay, Tag *tag)
 
     // show tag if overlay is shown
     if (overlay->window)
-        tag_show(tag, GTK_LAYOUT(overlay->container));
+        tag_show(tag, GTK_LAYOUT(overlay->container), overlay->window_x, overlay->window_y);
 }
 
 // removes the tag from the overlay
@@ -195,23 +195,33 @@ static void overlay_refresh(Overlay *overlay)
     // reposition the overlay
     overlay_reposition(overlay);
 
-    // reposition the tags
+    // reshow the tags the tags
     GHashTableIter iter;
     gpointer tag_ptr, null_ptr;
     g_hash_table_iter_init(&iter, overlay->tags);
     while (g_hash_table_iter_next(&iter, &tag_ptr, &null_ptr))
-        tag_reposition(tag_ptr);
+        tag_show(tag_ptr, GTK_LAYOUT(overlay->container), overlay->window_x, overlay->window_y);
+
+    // show the window
+    gtk_widget_show_all(overlay->overlay);
 }
 
 // repositions the overlay over the followed window
 static void overlay_reposition(Overlay *overlay)
 {
+    // get window dimensions
     AtspiComponent *component = atspi_accessible_get_component_iface(overlay->window);
     AtspiRect *rect = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
 
+    // save coordinates
+    overlay->window_x = rect->x;
+    overlay->window_y = rect->y;
+
+    // move the window
     gtk_window_move(GTK_WINDOW(overlay->overlay), rect->x, rect->y);
     gtk_window_resize(GTK_WINDOW(overlay->overlay), rect->width, rect->height);
 
+    // free
     g_object_unref(component);
     g_free(rect);
 }

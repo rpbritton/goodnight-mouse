@@ -34,6 +34,9 @@
 typedef struct Overlay
 {
     AtspiAccessible *window;
+    gint window_x;
+    gint window_y;
+
     GHashTable *tags;
     gboolean shifted;
 
