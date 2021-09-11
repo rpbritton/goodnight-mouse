@@ -66,10 +66,12 @@ BackgroundConfig *background_new_config(GKeyFile *key_file)
                 config->modifiers |= GDK_SHIFT_MASK;
             else if (g_ascii_strcasecmp(modifier_string, "control") == 0)
                 config->modifiers |= GDK_CONTROL_MASK;
-            else if (g_ascii_strcasecmp(modifier_string, "alt") == 0)
-                config->modifiers |= GDK_MOD1_MASK;
             else if (g_ascii_strcasecmp(modifier_string, "super") == 0)
                 config->modifiers |= GDK_SUPER_MASK;
+            else if (g_ascii_strcasecmp(modifier_string, "hyper") == 0)
+                config->modifiers |= GDK_HYPER_MASK;
+            else if (g_ascii_strcasecmp(modifier_string, "alt") == 0)
+                config->modifiers |= GDK_META_MASK;
             else
             {
                 g_warning("config: background: modifiers: Unknown modifier '%s'", modifier_string);
