@@ -60,7 +60,6 @@ void background_run(Background *background)
     // do nothing if running
     if (background_is_running(background))
         return;
-    background->is_running = TRUE;
 
     // subscribe to listeners
     keyboard_subscribe_key(background->keyboard,
@@ -70,7 +69,9 @@ void background_run(Background *background)
 
     // run loop
     g_debug("background: Starting loop");
+    background->is_running = TRUE;
     g_main_loop_run(background->loop);
+    background->is_running = FALSE;
     g_debug("background: Stopping loop");
 
     // unsubscribe from listeners
@@ -78,9 +79,6 @@ void background_run(Background *background)
                              background->trigger_keysym, background->trigger_modifiers,
                              callback_keyboard, background);
     focus_unsubscribe(background->focus, callback_focus, background);
-
-    // unset running
-    background->is_running = FALSE;
 }
 
 // returns whether the background is running

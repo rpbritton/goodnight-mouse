@@ -78,7 +78,6 @@ void foreground_run(Foreground *foreground)
 {
     if (foreground_is_running(foreground))
         return;
-    foreground->is_running = TRUE;
 
     // init shift state
     foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & SHIFT_MASK);
@@ -109,7 +108,9 @@ void foreground_run(Foreground *foreground)
 
     // run loop
     g_debug("foreground: Starting loop");
+    foreground->is_running = TRUE;
     g_main_loop_run(foreground->loop);
+    foreground->is_running = FALSE;
     g_debug("foreground: Stopping loop");
 
     // unsubscribe from listeners
@@ -129,9 +130,6 @@ void foreground_run(Foreground *foreground)
     registry_unwatch(foreground->registry);
     overlay_hide(foreground->overlay);
     g_object_unref(window);
-
-    // set not running
-    foreground->is_running = FALSE;
 }
 
 // returns whether the given foreground is running
