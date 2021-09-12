@@ -22,6 +22,7 @@
 #include "keyboard.h"
 
 #include <X11/Xutil.h>
+#include <X11/XKBlib.h>
 
 #include "utils.h"
 
@@ -151,21 +152,16 @@ void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboa
     }
 }
 
-BackendKeyboardState backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard)
+BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard)
 {
-    // get the current state
-    Window root, child;
-    double root_x, root_y, win_x, win_y;
-    XIButtonState buttons;
-    XIModifierState mods;
-    XIGroupState group;
-    XIQueryPointer(keyboard->display, keyboard->pointer_id, keyboard->root_window,
-                   &root, &child, &root_x, &root_y, &win_x, &win_y, &buttons, &mods, &group);
+    // get state
+    XkbStateRec xkb_state;
+    XkbGetState(keyboard->display, XkbUseCoreKbd, &xkb_state);
 
-    // parse the current state
+    // parse state
     BackendKeyboardState state;
-    state.modifiers = mods.effective & 0xFF;
-    state.group = group.effective & 0xFF;
+    state.modifiers = xkb_state.mods & 0xFF;
+    state.group = xkb_state.group & 0xFF;
 
     // return
     return state;
