@@ -50,7 +50,7 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendFocusCallback
     focus->legacy = backend_legacy_focus_new(backend_x11_get_legacy(focus->backend), callback_backend_legacy, focus);
 
     // subscribe to x11 focus events
-    backend_x11_subscribe(focus->backend, PropertyNotify, callback_property_notify, focus);
+    backend_x11_subscribe(focus->backend, BACKEND_X11_EVENT_TYPE_X11, PropertyNotify, callback_property_notify, focus);
 
     // return
     return focus;
@@ -60,7 +60,7 @@ BackendX11Focus *backend_x11_focus_new(BackendX11 *backend, BackendFocusCallback
 void backend_x11_focus_destroy(BackendX11Focus *focus)
 {
     // unsubscribe to x11 focus events
-    backend_x11_unsubscribe(focus->backend, PropertyNotify, callback_property_notify, focus);
+    backend_x11_unsubscribe(focus->backend, BACKEND_X11_EVENT_TYPE_X11, PropertyNotify, callback_property_notify, focus);
 
     // free legacy backend
     backend_legacy_focus_destroy(focus->legacy);

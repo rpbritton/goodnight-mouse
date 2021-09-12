@@ -25,7 +25,6 @@
 #include <xdo.h>
 
 #include "x11.h"
-#include "xinput.h"
 #include "../common/keyboard.h"
 #include "focus.h"
 

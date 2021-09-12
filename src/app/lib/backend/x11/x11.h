@@ -29,11 +29,20 @@
 
 typedef void (*BackendX11Callback)(XEvent *event, gpointer data);
 
+typedef enum BackendX11Extension
+{
+    BACKEND_X11_EVENT_TYPE_X11,
+    BACKEND_X11_EVENT_TYPE_XINPUT,
+    BACKEND_X11_EVENT_TYPE_XKB,
+} BackendX11Extension;
+
 typedef struct BackendX11
 {
     Display *display;
     GSource *source;
-    int xi_opcode; // todo: probably not here but in keyboard, or make a helper class <--
+
+    int xinput_opcode;
+    int xkb_opcode;
 
     BackendLegacy *legacy;
 
@@ -43,8 +52,8 @@ typedef struct BackendX11
 BackendX11 *backend_x11_new();
 void backend_x11_destroy(BackendX11 *backend);
 
-void backend_x11_subscribe(BackendX11 *backend, int event_type, BackendX11Callback callback, gpointer data);
-void backend_x11_unsubscribe(BackendX11 *backend, int event_type, BackendX11Callback callback, gpointer data);
+void backend_x11_subscribe(BackendX11 *backend, BackendX11Extension extension, int type, BackendX11Callback callback, gpointer data);
+void backend_x11_unsubscribe(BackendX11 *backend, BackendX11Extension extension, int type, BackendX11Callback callback, gpointer data);
 Display *backend_x11_get_display(BackendX11 *backend);
 BackendLegacy *backend_x11_get_legacy(BackendX11 *backend);
 

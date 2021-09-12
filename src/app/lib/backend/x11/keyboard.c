@@ -34,7 +34,7 @@ static void reset_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *g
 static void set_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *grab);
 static void unset_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *grab);
 
-static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr);
+static void callback_xinput(XEvent *x11_event, gpointer keyboard_ptr);
 static void callback_focus(gpointer keyboard_ptr);
 
 // create a new keyboard listener
@@ -57,6 +57,10 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     keyboard->display = backend_x11_get_display(keyboard->backend);
     keyboard->root_window = XDefaultRootWindow(keyboard->display);
 
+    // subscribe to xinput
+    backend_x11_subscribe(keyboard->backend, BACKEND_X11_EVENT_TYPE_XINPUT, XI_KeyPress, callback_xinput, keyboard);
+    backend_x11_subscribe(keyboard->backend, BACKEND_X11_EVENT_TYPE_XINPUT, XI_KeyRelease, callback_xinput, keyboard);
+
     // get primary keyboard id
     keyboard->keyboard_id = get_device_id(keyboard->display, XIMasterKeyboard);
 
@@ -73,8 +77,9 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
 // destroy the keyboard listener
 void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
 {
-    // destroy xinput
-    backend_x11_xinput_destroy(keyboard->xinput);
+    // unsubscribe from xinput
+    backend_x11_unsubscribe(keyboard->backend, BACKEND_X11_EVENT_TYPE_XINPUT, XI_KeyPress, callback_xinput, keyboard);
+    backend_x11_unsubscribe(keyboard->backend, BACKEND_X11_EVENT_TYPE_XINPUT, XI_KeyRelease, callback_xinput, keyboard);
 
     // free grabs
     g_list_free_full(keyboard->key_grabs, g_free);
@@ -253,25 +258,23 @@ static void unset_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *g
                     1, &modifier_input);
 }
 
-static void callback_xinput(XIDeviceEvent *xinput_event, gpointer keyboard_ptr)
+static void callback_xinput(XEvent *x11_event, gpointer keyboard_ptr)
 {
     BackendX11Keyboard *keyboard = keyboard_ptr;
 
-    // only check root window events
-    if (xinput_event->event != keyboard->root_window)
-        return;
+    // get device event
+    XIDeviceEvent *device_event = x11_event->xcookie.data;
 
-    // ensure this is a keyboard event
-    if (xinput_event->evtype != XI_KeyPress &&
-        xinput_event->evtype != XI_KeyRelease)
+    // only check root window events
+    if (device_event->event != keyboard->root_window)
         return;
 
     // get event data
     BackendKeyboardEvent event;
-    event.keycode = xinput_event->detail;
-    event.pressed = (xinput_event->evtype == XI_KeyPress);
-    event.state.modifiers = xinput_event->mods.effective;
-    event.state.group = xinput_event->group.effective;
+    event.keycode = device_event->detail;
+    event.pressed = (device_event->evtype == XI_KeyPress);
+    event.state.modifiers = device_event->mods.effective;
+    event.state.group = device_event->group.effective;
 
     // callback the event
     keyboard->callback(event, keyboard->data);
