@@ -22,6 +22,8 @@
 
 #if USE_X11
 
+#include <xdo.h>
+
 #include "x11.h"
 #include "xinput.h"
 #include "../common/keyboard.h"
@@ -35,16 +37,15 @@ typedef struct BackendX11Keyboard
     BackendKeyboardCallback callback;
     gpointer data;
 
+    gint grabs;
+    GList *key_grabs;
+
     Display *display;
     Window root_window;
 
     int keyboard_id;
-    int pointer_id;
 
-    BackendX11XInput *xinput;
-
-    gint grabs;
-    GList *key_grabs;
+    xdo_t *xdo;
 
     BackendX11Focus *focus;
     Window grab_window;

@@ -22,7 +22,7 @@
 #include "keyboard.h"
 
 #include <X11/Xutil.h>
-#include <X11/extensions/XTest.h>
+#include <X11/extensions/XInput2.h>
 #include <X11/XKBlib.h>
 
 #include "utils.h"
@@ -49,20 +49,19 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     keyboard->callback = callback;
     keyboard->data = data;
 
+    // initialize grabs
+    keyboard->grabs = 0;
+    keyboard->key_grabs = NULL;
+
     // add x connection
     keyboard->display = backend_x11_get_display(keyboard->backend);
     keyboard->root_window = XDefaultRootWindow(keyboard->display);
 
-    // get device ids
+    // get primary keyboard id
     keyboard->keyboard_id = get_device_id(keyboard->display, XIMasterKeyboard);
-    keyboard->pointer_id = get_device_id(keyboard->display, XIMasterPointer);
 
-    // add xinput
-    keyboard->xinput = backend_x11_xinput_new(backend, callback_xinput, keyboard);
-
-    // initialize grabs
-    keyboard->grabs = 0;
-    keyboard->key_grabs = NULL;
+    // create xdo
+    keyboard->xdo = xdo_new_with_opened_display(keyboard->display, NULL, FALSE);
 
     // add focus listener
     keyboard->focus = backend_x11_focus_new(keyboard->backend, callback_focus, keyboard);
@@ -80,7 +79,10 @@ void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
     // free grabs
     g_list_free_full(keyboard->key_grabs, g_free);
 
-    // destroy the focus listener
+    // free xdo
+    xdo_free(keyboard->xdo);
+
+    // free focus listener
     backend_x11_focus_destroy(keyboard->focus);
 
     // free
@@ -174,17 +176,17 @@ void backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboar
 
 void backend_X11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
-    // save initial state
-    BackendKeyboardState state = backend_x11_keyboard_get_state(keyboard);
+    // // save initial state
+    // BackendKeyboardState state = backend_x11_keyboard_get_state(keyboard);
 
-    // set the new state
-    backend_x11_keyboard_set_state(keyboard, event.state);
+    // // set the new state
+    // backend_x11_keyboard_set_state(keyboard, event.state);
 
-    // send the key event
-    XTestFakeKeyEvent(keyboard->display, event.keycode, event.pressed, CurrentTime);
-    XSync(keyboard->display, FALSE);
+    // // send the key event
+    // XTestFakeKeyEvent(keyboard->display, event.keycode, event.pressed, CurrentTime);
+    // XSync(keyboard->display, FALSE);
 
-    // reset to original state
+    // // reset to original state
 }
 
 static void set_grab(BackendX11Keyboard *keyboard)
