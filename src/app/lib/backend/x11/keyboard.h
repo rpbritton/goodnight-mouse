@@ -22,8 +22,6 @@
 
 #if USE_X11
 
-#include <xdo.h>
-
 #include "x11.h"
 #include "../common/keyboard.h"
 #include "focus.h"
@@ -44,8 +42,6 @@ typedef struct BackendX11Keyboard
 
     int keyboard_id;
 
-    xdo_t *xdo;
-
     BackendX11Focus *focus;
     Window grab_window;
 } BackendX11Keyboard;
@@ -57,8 +53,8 @@ void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard);
-void backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state);
-void backend_X11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
+BackendKeyboardState backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state);
+BackendKeyboardState backend_x11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 
 #endif /* USE_X11 */
 

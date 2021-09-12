@@ -24,9 +24,8 @@
 #include "identify.h"
 
 static gboolean execute_action(Executor *executor, AtspiAccessible *accessible, guint index);
-static gboolean execute_modifiers(Executor *executor, guint modifiers, gboolean lock);
-static gboolean execute_key(Executor *executor, guint key);
-static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button);
+static gboolean execute_key(Executor *executor, guint key, GdkModifierType modifiers);
+static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button, GdkModifierType modifiers);
 static gboolean execute_focus(Executor *executor, AtspiAccessible *accessible);
 static gboolean execute_press(Executor *executor, AtspiAccessible *accessible);
 
@@ -74,7 +73,7 @@ void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shift
         if (!shifted)
             execute_press(executor, accessible);
         else
-            execute_mouse(executor, accessible, 2);
+            execute_mouse(executor, accessible, 2, 0);
 
         break;
 
@@ -85,19 +84,13 @@ void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shift
         }
         else
         {
-            // todo: doesn't do exactly what I want since shift is active
-
             // attempt using ctrl + return key
-            if (execute_modifiers(executor, GDK_CONTROL_MASK, TRUE) &&
-                execute_focus(executor, accessible) &&
-                execute_key(executor, GDK_KEY_Return) &&
-                execute_modifiers(executor, GDK_CONTROL_MASK, FALSE))
+            if (execute_focus(executor, accessible) &&
+                execute_key(executor, GDK_KEY_Return, GDK_CONTROL_MASK))
                 break;
 
             // attempt using ctrl + mouse click
-            if (execute_modifiers(executor, GDK_CONTROL_MASK, TRUE) &&
-                execute_mouse(executor, accessible, 1) &&
-                execute_modifiers(executor, GDK_CONTROL_MASK, FALSE))
+            if (execute_mouse(executor, accessible, 1, GDK_CONTROL_MASK))
                 break;
         }
         break;
@@ -146,31 +139,19 @@ static gboolean execute_action(Executor *executor, AtspiAccessible *accessible, 
     return TRUE;
 }
 
-// lock or unlock a mask of modifiers
-static gboolean execute_modifiers(Executor *executor, guint modifiers, gboolean lock)
-{
-    if (lock)
-        g_debug("executor: Locking modifiers '%d'", modifiers);
-    else
-        g_debug("executor: Unlocking modifiers '%d'", modifiers);
-
-    // attempt modifier set
-    // return keyboard_set_modifiers(executor->keyboard, modifiers, lock);
-    return FALSE;
-}
-
 // presses and releases the given key
-static gboolean execute_key(Executor *executor, guint key)
+static gboolean execute_key(Executor *executor, guint key, GdkModifierType modifiers)
 {
     g_debug("executor: Pressing key '%d'", key);
 
     // attempt key press
-    // return keyboard_press_key(executor->keyboard, key);
-    return FALSE;
+    keyboard_press_key(executor->keyboard, key, modifiers);
+    // todo: add return
+    return TRUE;
 }
 
 // executes a mouse click of the button into the center of the given accessible
-static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button)
+static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, guint button, GdkModifierType modifiers)
 {
     g_debug("executor: Clicking mouse '%d'", button);
 
@@ -186,6 +167,8 @@ static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, g
 
     // // attempt mouse press
     // return mouse_press(executor->mouse, x, y, button);
+
+    //keyboard_reset_modifiers
     return FALSE;
 }
 
@@ -232,11 +215,11 @@ static gboolean execute_press(Executor *executor, AtspiAccessible *accessible)
 
     // attempt press using return key
     if (execute_focus(executor, accessible) &&
-        execute_key(executor, GDK_KEY_Return))
+        execute_key(executor, GDK_KEY_Return, 0))
         return TRUE;
 
     // attempt press using mouse click
-    if (execute_mouse(executor, accessible, 1))
+    if (execute_mouse(executor, accessible, 1, 0))
         return TRUE;
 
     return FALSE;

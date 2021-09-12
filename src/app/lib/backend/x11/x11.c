@@ -199,8 +199,6 @@ static void proccess_extension_event(BackendX11 *backend, XEvent *event)
     else
         return;
 
-    g_message("processing event");
-
     // get event data
     XGetEventData(backend->display, &event->xcookie);
 

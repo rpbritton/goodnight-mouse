@@ -24,6 +24,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 #include <X11/XKBlib.h>
+#include <X11/extensions/XTest.h>
 
 #include "utils.h"
 
@@ -64,9 +65,6 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     // get primary keyboard id
     keyboard->keyboard_id = get_device_id(keyboard->display, XIMasterKeyboard);
 
-    // create xdo
-    keyboard->xdo = xdo_new_with_opened_display(keyboard->display, NULL, FALSE);
-
     // add focus listener
     keyboard->focus = backend_x11_focus_new(keyboard->backend, callback_focus, keyboard);
     keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
@@ -83,9 +81,6 @@ void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
 
     // free grabs
     g_list_free_full(keyboard->key_grabs, g_free);
-
-    // free xdo
-    xdo_free(keyboard->xdo);
 
     // free focus listener
     backend_x11_focus_destroy(keyboard->focus);
@@ -175,23 +170,68 @@ BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard
     return state;
 }
 
-void backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
+BackendKeyboardState backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
 {
+    // get initial state
+    XkbStateRec xkb_state;
+    XkbGetState(keyboard->display, XkbUseCoreKbd, &xkb_state);
+
+    // parse initial state
+    BackendKeyboardState initial_state;
+    initial_state.modifiers = xkb_state.locked_mods & 0xFF;
+    initial_state.group = xkb_state.locked_group & 0xFF;
+
+    // set the modifiers
+    XkbLockModifiers(keyboard->display, XkbUseCoreKbd, initial_state.modifiers & ~state.modifiers, FALSE);
+    XkbLockModifiers(keyboard->display, XkbUseCoreKbd, state.modifiers, TRUE);
+
+    // set the group
+    XkbLockGroup(keyboard->display, XkbUseCoreKbd, state.group);
+
+    // return
+    return initial_state;
+
+    // todo, needed?
+    //XSync(keyboard->display, FALSE);
+
+    // // get keycodes to set modifiers
+    // XModifierKeymap *modifiers = XGetModifierMapping(keyboard->display);
+
+    // // check all the modifiers
+    // for (gint mod_index = 0; mod_index <= 8; mod_index++)
+    // {
+    //     // get modifier action
+    //     gboolean set_mod = (state.modifiers & (1 << mod_index)) && !(current_state.modifiers & (1 << mod_index));
+    //     if (!set_mod && !(current_state.modifiers & (1 << mod_index)))
+    //         continue;
+
+    //     // send all keycodes for the modifier
+    //     for (gint keycode_index = 0; keycode_index < modifiers->max_keypermod; keycode_index++)
+    //     {
+    //         guint keycode = modifiers->modifiermap[mod_index * modifiers->max_keypermod + keycode_index];
+    //         if (keycode)
+    //         {
+    //             XTestFakeKeyEvent(keyboard->display, keycode, set_mod, CurrentTime);
+    //             XSync(keyboard->display, False);
+    //         }
+    //     }
+    // }
+
+    // // free
+    // XFreeModifiermap(modifiers);
 }
 
-void backend_X11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
+BackendKeyboardState backend_x11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
-    // // save initial state
-    // BackendKeyboardState state = backend_x11_keyboard_get_state(keyboard);
+    // set the state
+    BackendKeyboardState initial_state = backend_x11_keyboard_set_state(keyboard, event.state);
 
-    // // set the new state
-    // backend_x11_keyboard_set_state(keyboard, event.state);
+    // send the key event
+    XTestFakeKeyEvent(keyboard->display, event.keycode, event.pressed, CurrentTime);
+    XSync(keyboard->display, FALSE);
 
-    // // send the key event
-    // XTestFakeKeyEvent(keyboard->display, event.keycode, event.pressed, CurrentTime);
-    // XSync(keyboard->display, FALSE);
-
-    // // reset to original state
+    // return
+    return initial_state;
 }
 
 static void set_grab(BackendX11Keyboard *keyboard)

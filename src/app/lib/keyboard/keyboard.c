@@ -48,6 +48,7 @@ Keyboard *keyboard_new(Backend *backend)
     GdkModifierType virtual_valid_modifiers = VALID_MODIFIERS;
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &virtual_valid_modifiers);
     keyboard->valid_modifiers = virtual_valid_modifiers & 0xFF;
+    keyboard->modifiers_set = FALSE;
 
     // add backend
     keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
@@ -263,10 +264,94 @@ GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
     return modifiers;
 }
 
-void keyboard_set_modifiers(BackendX11Keyboard *keyboard, GdkModifierType modifiers)
+void keyboard_set_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
 {
+    // sanitize modifiers
+    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
+    modifiers &= 0xFF;
+
+    // get the state
+    BackendKeyboardState state = backend_keyboard_get_state(keyboard->backend);
+    state.modifiers = modifiers;
+
+    // set the state
+    BackendKeyboardState reset_state = backend_keyboard_set_state(keyboard->backend, state);
+    if (!keyboard->modifiers_set)
+    {
+        keyboard->modifiers_set = TRUE;
+        keyboard->reset_state = reset_state;
+    }
 }
 
-void keyboard_set_key(BackendX11Keyboard *keyboard, KeyboardEvent event)
+void keyboard_reset_modifiers(Keyboard *keyboard)
 {
+    // don't reset if not set
+    if (!keyboard->modifiers_set)
+        return;
+
+    // set state
+    backend_keyboard_set_state(keyboard->backend, keyboard->reset_state);
+    keyboard->modifiers_set = FALSE;
+}
+
+void keyboard_press_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
+{
+    // sanitize modifiers
+    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
+    modifiers &= 0xFF;
+
+    // get valid a backend key event to generate the keysym
+    BackendKeyboardEvent event;
+    event.keycode = 0;
+    GdkKeymapKey *keys;
+    gint n_keys;
+    gdk_keymap_get_entries_for_keyval(keyboard->keymap, keysym, &keys, &n_keys);
+    for (gint index = 0; index < n_keys; index++)
+    {
+        for (guchar modifiers = 0; modifiers < 0xFF; modifiers++)
+        {
+            // get keysym and consumed modifiers from state
+            guint generated_keysym;
+            GdkModifierType consumed_modifiers;
+            gdk_keymap_translate_keyboard_state(keyboard->keymap, keys[index].keycode,
+                                                modifiers, keys[index].group,
+                                                &generated_keysym, NULL, NULL, &consumed_modifiers);
+
+            // ensure keysym is the same
+            if (generated_keysym != keysym)
+                continue;
+
+            // ensure modifiers match
+            if (modifiers != (modifiers & ~consumed_modifiers & keyboard->valid_modifiers))
+                continue;
+
+            // use this combination
+            event.keycode = keys[index].keycode;
+            event.state.modifiers = modifiers;
+            event.state.group = keys[index].group;
+            break;
+        }
+        if (event.keycode)
+            break;
+    }
+    if (keys)
+        g_free(keys);
+
+    // ensure keycode was found
+    if (!event.keycode)
+    {
+        g_warning("keyboard: Failed to generate keysym (%d), no keycodes found", keysym);
+        return;
+    }
+
+    // send a key press
+    event.pressed = TRUE;
+    BackendKeyboardState initial_state = backend_keyboard_set_key(keyboard->backend, event);
+
+    // send key release
+    event.pressed = FALSE;
+    backend_keyboard_set_key(keyboard->backend, event);
+
+    // reset the state
+    backend_keyboard_set_state(keyboard->backend, initial_state);
 }
