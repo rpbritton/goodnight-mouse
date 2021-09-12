@@ -117,7 +117,7 @@ void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, Backend
     }
 }
 
-BackendKeyboardState backend_legacy_keyboard_get_modifiers(BackendLegacyKeyboard *keyboard)
+BackendKeyboardState backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard)
 {
     // get state
     BackendKeyboardState state;

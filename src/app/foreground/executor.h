@@ -22,8 +22,8 @@
 
 #include <atspi/atspi.h>
 
-#include "../lib/mouse/emulation.h"
-#include "../lib/keyboard/emulation.h"
+#include "../lib/mouse/mouse.h"
+#include "../lib/keyboard/keyboard.h"
 
 typedef struct Executor
 {

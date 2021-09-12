@@ -56,7 +56,9 @@ void backend_x11_keyboard_grab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
-BackendKeyboardState backend_x11_keyboard_get_modifiers(BackendX11Keyboard *keyboard);
+BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard);
+void backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state);
+void backend_X11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 
 #endif /* USE_X11 */
 

@@ -19,39 +19,39 @@
 
 #include "emulation.h"
 
-gboolean keyboard_set_modifiers(Keyboard *keyboard, guint modifiers, gboolean lock)
-{
-    // unregister keyboard
-    //gboolean registered = keyboard_is_registered(keyboard);
-    //if (registered)
-    //    keyboard_deregister(keyboard);
+// gboolean keyboard_set_modifiers(Keyboard *keyboard, guint modifiers, gboolean lock)
+// {
+//     // unregister keyboard
+//     //gboolean registered = keyboard_is_registered(keyboard);
+//     //if (registered)
+//     //    keyboard_deregister(keyboard);
 
-    // set modifiers
-    AtspiKeySynthType synth_type = lock ? ATSPI_KEY_LOCKMODIFIERS : ATSPI_KEY_UNLOCKMODIFIERS;
-    gboolean success = atspi_generate_keyboard_event(modifiers, NULL, synth_type, NULL);
+//     // set modifiers
+//     AtspiKeySynthType synth_type = lock ? ATSPI_KEY_LOCKMODIFIERS : ATSPI_KEY_UNLOCKMODIFIERS;
+//     gboolean success = atspi_generate_keyboard_event(modifiers, NULL, synth_type, NULL);
 
-    // reregister keyboard
-    //if (registered)
-    //    keyboard_register(keyboard);
+//     // reregister keyboard
+//     //if (registered)
+//     //    keyboard_register(keyboard);
 
-    // return success
-    return success;
-}
+//     // return success
+//     return success;
+// }
 
-gboolean keyboard_press_key(Keyboard *keyboard, guint key)
-{
-    // unregister keyboard
-    //gboolean registered = keyboard_is_registered(keyboard);
-    //if (registered)
-    //    keyboard_deregister(keyboard);
+// gboolean keyboard_press_key(Keyboard *keyboard, guint key)
+// {
+//     // unregister keyboard
+//     //gboolean registered = keyboard_is_registered(keyboard);
+//     //if (registered)
+//     //    keyboard_deregister(keyboard);
 
-    // press key
-    gboolean success = atspi_generate_keyboard_event(key, NULL, ATSPI_KEY_SYM, NULL);
+//     // press key
+//     gboolean success = atspi_generate_keyboard_event(key, NULL, ATSPI_KEY_SYM, NULL);
 
-    // reregister keyboard
-    //if (registered)
-    //    keyboard_register(keyboard);
+//     // reregister keyboard
+//     //if (registered)
+//     //    keyboard_register(keyboard);
 
-    // return success
-    return success;
-}
+//     // return success
+//     return success;
+// }

@@ -253,7 +253,7 @@ static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keybo
 GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
 {
     // get the current modifiers
-    BackendKeyboardState state = backend_keyboard_get_modifiers(keyboard->backend);
+    BackendKeyboardState state = backend_keyboard_get_state(keyboard->backend);
 
     // sanitize the modifiers
     GdkModifierType modifiers = state.modifiers;
@@ -261,4 +261,12 @@ GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
 
     // return
     return modifiers;
+}
+
+void keyboard_set_modifiers(BackendX11Keyboard *keyboard, GdkModifierType modifiers)
+{
+}
+
+void keyboard_set_key(BackendX11Keyboard *keyboard, KeyboardEvent event)
+{
 }

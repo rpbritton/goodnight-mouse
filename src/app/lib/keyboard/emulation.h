@@ -22,7 +22,7 @@
 
 #include "keyboard.h"
 
-gboolean keyboard_set_modifiers(Keyboard *keyboard, guint modifiers, gboolean lock);
-gboolean keyboard_press_key(Keyboard *keyboard, guint key);
+//gboolean keyboard_set_modifiers(Keyboard *keyboard, guint modifiers, gboolean lock);
+//gboolean keyboard_press_key(Keyboard *keyboard, guint key);
 
 #endif /* E7A7B34D_5F98_4087_B797_6D0FA73394FC */

@@ -38,7 +38,9 @@
 #define backend_keyboard_ungrab backend_x11_keyboard_ungrab
 #define backend_keyboard_grab_key backend_x11_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_x11_keyboard_ungrab_key
-#define backend_keyboard_get_modifiers backend_x11_keyboard_get_modifiers
+#define backend_keyboard_get_state backend_x11_keyboard_get_state
+#define backend_keyboard_set_state backend_x11_keyboard_set_state
+#define backend_keyboard_set_key backend_x11_keyboard_set_key
 
 #else
 
@@ -58,7 +60,9 @@
 #define backend_keyboard_ungrab backend_legacy_keyboard_ungrab
 #define backend_keyboard_grab_key backend_legacy_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_legacy_keyboard_ungrab_key
-#define backend_keyboard_get_modifiers backend_legacy_keyboard_get_modifiers
+#define backend_keyboard_get_state backend_legacy_keyboard_get_state
+#define backend_keyboard_set_state backend_legacy_keyboard_set_state
+#define backend_keyboard_set_key backend_legacy_keyboard_set_key
 
 #endif
 

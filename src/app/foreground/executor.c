@@ -155,7 +155,8 @@ static gboolean execute_modifiers(Executor *executor, guint modifiers, gboolean 
         g_debug("executor: Unlocking modifiers '%d'", modifiers);
 
     // attempt modifier set
-    return keyboard_set_modifiers(executor->keyboard, modifiers, lock);
+    // return keyboard_set_modifiers(executor->keyboard, modifiers, lock);
+    return FALSE;
 }
 
 // presses and releases the given key
@@ -164,7 +165,8 @@ static gboolean execute_key(Executor *executor, guint key)
     g_debug("executor: Pressing key '%d'", key);
 
     // attempt key press
-    return keyboard_press_key(executor->keyboard, key);
+    // return keyboard_press_key(executor->keyboard, key);
+    return FALSE;
 }
 
 // executes a mouse click of the button into the center of the given accessible
@@ -172,18 +174,19 @@ static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, g
 {
     g_debug("executor: Clicking mouse '%d'", button);
 
-    // get position of the center of the accessible
-    AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
-    if (!component)
-        return FALSE;
-    AtspiRect *bounds = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
-    gint x = bounds->x + bounds->width / 2;
-    gint y = bounds->y + bounds->height / 2;
-    g_object_unref(component);
-    g_free(bounds);
+    // // get position of the center of the accessible
+    // AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
+    // if (!component)
+    //     return FALSE;
+    // AtspiRect *bounds = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
+    // gint x = bounds->x + bounds->width / 2;
+    // gint y = bounds->y + bounds->height / 2;
+    // g_object_unref(component);
+    // g_free(bounds);
 
-    // attempt mouse press
-    return mouse_press(executor->mouse, x, y, button);
+    // // attempt mouse press
+    // return mouse_press(executor->mouse, x, y, button);
+    return FALSE;
 }
 
 // grabs the input focus onto the given accessible

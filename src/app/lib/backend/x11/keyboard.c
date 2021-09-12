@@ -22,6 +22,7 @@
 #include "keyboard.h"
 
 #include <X11/Xutil.h>
+#include <X11/extensions/XTest.h>
 #include <X11/XKBlib.h>
 
 #include "utils.h"
@@ -165,6 +166,25 @@ BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard
 
     // return
     return state;
+}
+
+void backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
+{
+}
+
+void backend_X11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
+{
+    // save initial state
+    BackendKeyboardState state = backend_x11_keyboard_get_state(keyboard);
+
+    // set the new state
+    backend_x11_keyboard_set_state(keyboard, event.state);
+
+    // send the key event
+    XTestFakeKeyEvent(keyboard->display, event.keycode, event.pressed, CurrentTime);
+    XSync(keyboard->display, FALSE);
+
+    // reset to original state
 }
 
 static void set_grab(BackendX11Keyboard *keyboard)
