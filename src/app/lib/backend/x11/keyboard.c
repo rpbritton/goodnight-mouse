@@ -187,7 +187,9 @@ void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard)
     if (!keyboard->is_emulating)
         return;
 
-    g_message("resetting keys");
+    // set the initial state
+    backend_x11_keyboard_emulate_state(keyboard, keyboard->initial_state);
+
     // get lists of keys to send
     GList *keys_to_press = NULL;
     GList *keys_to_release = NULL;
@@ -208,10 +210,6 @@ void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard)
         emulate_key(keyboard, GPOINTER_TO_UINT(link->data), FALSE);
     g_list_free(keys_to_release);
 
-    // set the initial state
-    g_message("resetting state");
-    backend_x11_keyboard_emulate_state(keyboard, keyboard->initial_state);
-
     // set not emulating
     keyboard->is_emulating = FALSE;
 }
@@ -230,10 +228,12 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
     // check all the modifiers
     for (gint mod_index = 0; mod_index <= 8; mod_index++)
     {
+        // do nothing if already correct
+        if ((state.modifiers & (1 << mod_index)) == (current_state.modifiers & (1 << mod_index)))
+            continue;
+
         // get modifier action
         gboolean press = (state.modifiers & (1 << mod_index)) && !(current_state.modifiers & (1 << mod_index));
-        if (!press && !(current_state.modifiers & (1 << mod_index)))
-            continue;
 
         // try sending keycodes to set the modifier
         for (gint keycode_index = 0; keycode_index < modifiers->max_keypermod; keycode_index++)
@@ -250,13 +250,11 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
             current_state = backend_x11_keyboard_get_state(keyboard);
             if (((state.modifiers & (1 << mod_index))) != (current_state.modifiers & (1 << mod_index)))
             {
-                g_message("mod %d did not get set by keycode %d after trying %d", mod_index, keycode, press);
                 emulate_key(keyboard, keycode, !press);
                 current_state = backend_x11_keyboard_get_state(keyboard);
             }
             else
             {
-                g_message("mod %d did get set by keycode %d after trying %d", mod_index, keycode, press);
                 break;
             }
         }
@@ -267,9 +265,6 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
 
     // set the group
     XkbLockGroup(keyboard->display, XkbUseCoreKbd, state.group);
-
-    // todo, needed?
-    //XSync(keyboard->display, FALSE);
 }
 
 void backend_x11_keyboard_emulate_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
@@ -295,7 +290,6 @@ static void emulate_start(BackendX11Keyboard *keyboard)
 
 static void emulate_key(BackendX11Keyboard *keyboard, guint keycode, gboolean pressed)
 {
-    g_message("sending key %d %d", keycode, pressed);
     // send key
     XTestFakeKeyEvent(keyboard->display, keycode, pressed, CurrentTime);
 
