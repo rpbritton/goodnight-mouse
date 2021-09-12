@@ -28,6 +28,9 @@
 
 #include "utils.h"
 
+static void emulate_start(BackendX11Keyboard *keyboard);
+static void emulate_key(BackendX11Keyboard *keyboard, guint keycode, gboolean pressed);
+
 static void set_grab(BackendX11Keyboard *keyboard);
 static void unset_grab(BackendX11Keyboard *keyboard);
 
@@ -69,12 +72,20 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     keyboard->focus = backend_x11_focus_new(keyboard->backend, callback_focus, keyboard);
     keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
 
+    // add emulation tracker
+    keyboard->is_emulating = FALSE;
+    keyboard->emulated_keys = g_hash_table_new(NULL, NULL);
+
     return keyboard;
 }
 
 // destroy the keyboard listener
 void backend_x11_keyboard_destroy(BackendX11Keyboard *keyboard)
 {
+    // free emulation tracker
+    backend_x11_keyboard_emulate_reset(keyboard);
+    g_hash_table_unref(keyboard->emulated_keys);
+
     // unsubscribe from xinput
     backend_x11_unsubscribe(keyboard->backend, BACKEND_X11_EVENT_TYPE_XINPUT, XI_KeyPress, callback_xinput, keyboard);
     backend_x11_unsubscribe(keyboard->backend, BACKEND_X11_EVENT_TYPE_XINPUT, XI_KeyRelease, callback_xinput, keyboard);
@@ -170,26 +181,53 @@ BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard
     return state;
 }
 
-BackendKeyboardState backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
+void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard)
 {
-    // get initial state
-    XkbStateRec xkb_state;
-    XkbGetState(keyboard->display, XkbUseCoreKbd, &xkb_state);
+    // only reset if emulating
+    if (keyboard->is_emulating)
+        return;
 
-    // parse initial state
-    BackendKeyboardState initial_state;
-    initial_state.modifiers = xkb_state.locked_mods & 0xFF;
-    initial_state.group = xkb_state.locked_group & 0xFF;
+    // set the initial state
+    backend_x11_keyboard_emulate_state(keyboard, keyboard->initial_state);
+
+    // get lists of keys to send
+    GList *keys_to_press = NULL;
+    GList *keys_to_release = NULL;
+    GHashTableIter iter;
+    gpointer keycode, pressed;
+    g_hash_table_iter_init(&iter, keyboard->emulated_keys);
+    while (g_hash_table_iter_next(&iter, &keycode, &pressed))
+        if (GPOINTER_TO_UINT(pressed))
+            keys_to_release = g_list_prepend(keys_to_release, keycode);
+        else
+            keys_to_press = g_list_prepend(keys_to_press, keycode);
+
+    // send keys
+    for (GList *link = keys_to_press; link; link = link->next)
+        emulate_key(keyboard, GPOINTER_TO_UINT(link->data), TRUE);
+    g_list_free(keys_to_press);
+    for (GList *link = keys_to_release; link; link = link->next)
+        emulate_key(keyboard, GPOINTER_TO_UINT(link->data), FALSE);
+    g_list_free(keys_to_release);
+
+    // set not emulating
+    keyboard->is_emulating = FALSE;
+}
+
+void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
+{
+    // start emulating
+    emulate_start(keyboard);
+
+    // get current state
+    BackendKeyboardState current_state = backend_x11_keyboard_get_state(keyboard);
 
     // set the modifiers
-    XkbLockModifiers(keyboard->display, XkbUseCoreKbd, initial_state.modifiers & ~state.modifiers, FALSE);
+    XkbLockModifiers(keyboard->display, XkbUseCoreKbd, current_state.modifiers & ~state.modifiers, FALSE);
     XkbLockModifiers(keyboard->display, XkbUseCoreKbd, state.modifiers, TRUE);
 
     // set the group
     XkbLockGroup(keyboard->display, XkbUseCoreKbd, state.group);
-
-    // return
-    return initial_state;
 
     // todo, needed?
     //XSync(keyboard->display, FALSE);
@@ -221,17 +259,45 @@ BackendKeyboardState backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard
     // XFreeModifiermap(modifiers);
 }
 
-BackendKeyboardState backend_x11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
+void backend_x11_keyboard_emulate_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
+    // start emulating
+    emulate_start(keyboard);
+
     // set the state
-    BackendKeyboardState initial_state = backend_x11_keyboard_set_state(keyboard, event.state);
+    backend_x11_keyboard_emulate_state(keyboard, event.state);
 
     // send the key event
-    XTestFakeKeyEvent(keyboard->display, event.keycode, event.pressed, CurrentTime);
+    emulate_key(keyboard, event.keycode, event.pressed);
+}
+
+static void emulate_start(BackendX11Keyboard *keyboard)
+{
+    if (keyboard->is_emulating)
+        return;
+
+    keyboard->is_emulating = TRUE;
+    keyboard->initial_state = backend_x11_keyboard_get_state(keyboard);
+}
+
+static void emulate_key(BackendX11Keyboard *keyboard, guint keycode, gboolean pressed)
+{
+    // send key
+    XTestFakeKeyEvent(keyboard->display, keycode, pressed, CurrentTime);
+
+    // sync the display
     XSync(keyboard->display, FALSE);
 
-    // return
-    return initial_state;
+    // record in emulation table
+    if (g_hash_table_contains(keyboard->emulated_keys, GUINT_TO_POINTER(keycode)))
+    {
+        if (GPOINTER_TO_UINT(g_hash_table_lookup(keyboard->emulated_keys, GUINT_TO_POINTER(keycode))) != pressed)
+            g_hash_table_remove(keyboard->emulated_keys, GUINT_TO_POINTER(keycode));
+    }
+    else
+    {
+        g_hash_table_insert(keyboard->emulated_keys, GUINT_TO_POINTER(keycode), GUINT_TO_POINTER(pressed));
+    }
 }
 
 static void set_grab(BackendX11Keyboard *keyboard)

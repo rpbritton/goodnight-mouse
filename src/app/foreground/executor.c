@@ -145,7 +145,7 @@ static gboolean execute_key(Executor *executor, guint key, GdkModifierType modif
     g_debug("executor: Pressing key '%d'", key);
 
     // attempt key press
-    keyboard_press_key(executor->keyboard, key, modifiers);
+    keyboard_emulate_key(executor->keyboard, key, modifiers);
     // todo: add return
     return TRUE;
 }

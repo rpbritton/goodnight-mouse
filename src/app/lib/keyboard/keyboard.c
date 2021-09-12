@@ -48,7 +48,6 @@ Keyboard *keyboard_new(Backend *backend)
     GdkModifierType virtual_valid_modifiers = VALID_MODIFIERS;
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &virtual_valid_modifiers);
     keyboard->valid_modifiers = virtual_valid_modifiers & 0xFF;
-    keyboard->modifiers_set = FALSE;
 
     // add backend
     keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
@@ -192,7 +191,12 @@ GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
     return modifiers;
 }
 
-void keyboard_set_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
+void keyboard_emulate_reset(Keyboard *keyboard)
+{
+    backend_keyboard_emulate_reset(keyboard->backend);
+}
+
+void keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
 {
     // sanitize modifiers
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
@@ -203,26 +207,10 @@ void keyboard_set_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
     state.modifiers = modifiers;
 
     // set the state
-    BackendKeyboardState reset_state = backend_keyboard_set_state(keyboard->backend, state);
-    if (!keyboard->modifiers_set)
-    {
-        keyboard->modifiers_set = TRUE;
-        keyboard->reset_state = reset_state;
-    }
+    backend_keyboard_emulate_state(keyboard->backend, state);
 }
 
-void keyboard_reset_modifiers(Keyboard *keyboard)
-{
-    // don't reset if not set
-    if (!keyboard->modifiers_set)
-        return;
-
-    // set state
-    backend_keyboard_set_state(keyboard->backend, keyboard->reset_state);
-    keyboard->modifiers_set = FALSE;
-}
-
-void keyboard_press_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
+void keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
 {
     // sanitize modifiers
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
@@ -244,14 +232,14 @@ void keyboard_press_key(Keyboard *keyboard, guint keysym, GdkModifierType modifi
 
     // send a key press
     event.pressed = TRUE;
-    BackendKeyboardState initial_state = backend_keyboard_set_key(keyboard->backend, event);
+    backend_keyboard_emulate_key(keyboard->backend, event);
 
     // send key release
     event.pressed = FALSE;
-    backend_keyboard_set_key(keyboard->backend, event);
+    backend_keyboard_emulate_key(keyboard->backend, event);
 
     // reset the state
-    backend_keyboard_set_state(keyboard->backend, initial_state);
+    keyboard_emulate_reset(keyboard);
 }
 
 static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guchar additional_modifiers)

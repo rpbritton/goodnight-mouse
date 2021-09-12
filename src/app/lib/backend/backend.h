@@ -39,8 +39,9 @@
 #define backend_keyboard_grab_key backend_x11_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_x11_keyboard_ungrab_key
 #define backend_keyboard_get_state backend_x11_keyboard_get_state
-#define backend_keyboard_set_state backend_x11_keyboard_set_state
-#define backend_keyboard_set_key backend_x11_keyboard_set_key
+#define backend_keyboard_emulate_reset backend_x11_keyboard_emulate_reset
+#define backend_keyboard_emulate_state backend_x11_keyboard_emulate_state
+#define backend_keyboard_emulate_key backend_x11_keyboard_emulate_key
 
 #else
 

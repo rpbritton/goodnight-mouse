@@ -44,6 +44,10 @@ typedef struct BackendX11Keyboard
 
     BackendX11Focus *focus;
     Window grab_window;
+
+    gboolean is_emulating;
+    GHashTable *emulated_keys;
+    BackendKeyboardState initial_state;
 } BackendX11Keyboard;
 
 BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboardCallback callback, gpointer data);
@@ -53,8 +57,9 @@ void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard);
-BackendKeyboardState backend_x11_keyboard_set_state(BackendX11Keyboard *keyboard, BackendKeyboardState state);
-BackendKeyboardState backend_x11_keyboard_set_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
+void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard);
+void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKeyboardState state);
+void backend_x11_keyboard_emulate_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 
 #endif /* USE_X11 */
 

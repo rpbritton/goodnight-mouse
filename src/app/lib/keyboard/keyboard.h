@@ -42,8 +42,6 @@ typedef struct Keyboard
 
     GdkKeymap *keymap;
     guchar valid_modifiers;
-    gboolean modifiers_set;
-    BackendKeyboardState reset_state;
 
     GList *subscribers;
 } Keyboard;
@@ -55,8 +53,8 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
 void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data);
 GdkModifierType keyboard_get_modifiers(Keyboard *keyboard);
-void keyboard_set_modifiers(Keyboard *keyboard, GdkModifierType modifiers);
-void keyboard_reset_modifiers(Keyboard *keyboard);
-void keyboard_press_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers);
+void keyboard_emulate_reset(Keyboard *keyboard);
+void keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers);
+void keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */
