@@ -45,9 +45,12 @@ typedef struct BackendX11Keyboard
     BackendX11Focus *focus;
     Window grab_window;
 
+    BackendKeyboardEvent last_event;
+
     gboolean is_emulating;
     GHashTable *emulated_keys;
     BackendKeyboardState initial_state;
+    GList *emulation_queue;
 } BackendX11Keyboard;
 
 BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboardCallback callback, gpointer data);

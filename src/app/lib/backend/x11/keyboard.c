@@ -72,6 +72,9 @@ BackendX11Keyboard *backend_x11_keyboard_new(BackendX11 *backend, BackendKeyboar
     keyboard->focus = backend_x11_focus_new(keyboard->backend, callback_focus, keyboard);
     keyboard->grab_window = backend_x11_focus_get_x11_window(keyboard->focus);
 
+    // init last event
+    keyboard->last_event.keycode = 0;
+
     // add emulation tracker
     keyboard->is_emulating = FALSE;
     keyboard->emulated_keys = g_hash_table_new(NULL, NULL);
@@ -216,6 +219,7 @@ void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard)
 
 void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
 {
+    g_message("emulating state");
     // start emulating
     emulate_start(keyboard);
 
@@ -234,6 +238,7 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
 
         // get modifier action
         gboolean press = (state.modifiers & (1 << mod_index)) && !(current_state.modifiers & (1 << mod_index));
+        g_message("press: %d, mod: %d", press, mod_index);
 
         // try sending keycodes to set the modifier
         for (gint keycode_index = 0; keycode_index < modifiers->max_keypermod; keycode_index++)
@@ -269,21 +274,25 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
 
 void backend_x11_keyboard_emulate_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
+    g_message("emulating key");
     // start emulating
     emulate_start(keyboard);
 
     // set the state
     backend_x11_keyboard_emulate_state(keyboard, event.state);
 
+    g_message("sending key");
     // send the key event
     emulate_key(keyboard, event.keycode, event.pressed);
 }
 
 static void emulate_start(BackendX11Keyboard *keyboard)
 {
+    // don't start if already started
     if (keyboard->is_emulating)
         return;
 
+    // set emulating
     keyboard->is_emulating = TRUE;
     keyboard->initial_state = backend_x11_keyboard_get_state(keyboard);
 }
@@ -315,15 +324,16 @@ static void set_grab(BackendX11Keyboard *keyboard)
     // grab the device
     XIEventMask event_mask = {.deviceid = keyboard->keyboard_id, .mask_len = 0, .mask = NULL};
     gint status = XIGrabDevice(keyboard->display, keyboard->keyboard_id, keyboard->grab_window, CurrentTime,
-                               None, XIGrabModeAsync, XIGrabModeAsync, FALSE, &event_mask);
+                               None, XIGrabModeSync, XIGrabModeSync, FALSE, &event_mask);
 
     // check if successful
     if (status == AlreadyGrabbed)
-        g_debug("x11-keyboard: Failed global keyboard grab");
+        g_warning("x11-keyboard: Failed global keyboard grab");
 }
 
 static void unset_grab(BackendX11Keyboard *keyboard)
 {
+    g_debug("x11-keyboard: Ungrabbing keyboard");
     XIUngrabDevice(keyboard->display, keyboard->keyboard_id, CurrentTime);
 }
 
@@ -356,7 +366,7 @@ static void set_key_grab(BackendX11Keyboard *keyboard, BackendKeyboardEvent *gra
     // todo, this doesn't take group into the account
     modifier_input.modifiers = grab->state.modifiers;
     int status = XIGrabKeycode(keyboard->display, keyboard->keyboard_id, grab->keycode, keyboard->grab_window,
-                               XIGrabModeAsync, XIGrabModeAsync, FALSE, &event_mask, 1, &modifier_input);
+                               XIGrabModeSync, XIGrabModeSync, FALSE, &event_mask, 1, &modifier_input);
 
     // check if successful
     if (status == AlreadyGrabbed)
@@ -379,10 +389,6 @@ static void callback_xinput(XEvent *x11_event, gpointer keyboard_ptr)
     // get device event
     XIDeviceEvent *device_event = x11_event->xcookie.data;
 
-    // only check root window events
-    if (device_event->event != keyboard->root_window)
-        return;
-
     // get event data
     BackendKeyboardEvent event;
     event.keycode = device_event->detail;
@@ -390,8 +396,40 @@ static void callback_xinput(XEvent *x11_event, gpointer keyboard_ptr)
     event.state.modifiers = device_event->mods.effective;
     event.state.group = device_event->group.effective;
 
+    g_message("this event is grab: %d", device_event->event != keyboard->root_window);
+
+    // check for duplicate event
+    if (event.keycode == keyboard->last_event.keycode &&
+        event.pressed == keyboard->last_event.pressed &&
+        event.state.modifiers == keyboard->last_event.state.modifiers &&
+        event.state.group == keyboard->last_event.state.group)
+        return;
+    keyboard->last_event = event;
+
     // callback the event
-    keyboard->callback(event, keyboard->data);
+    BackendKeyboardEventResponse response = keyboard->callback(event, keyboard->data);
+
+    // consume or relay the event
+    if (response == BACKEND_KEYBOARD_EVENT_CONSUME)
+    {
+        g_message("consuming");
+        XIAllowEvents(keyboard->display, keyboard->keyboard_id,
+                      XISyncDevice, device_event->time);
+    }
+    else
+    {
+        g_message("replaying");
+        XIAllowEvents(keyboard->display, keyboard->keyboard_id,
+                      XIReplayDevice, device_event->time);
+        XFlush(keyboard->display);
+
+        // unthaw the keyboard
+        if (keyboard->grabs > 0)
+        {
+            unset_grab(keyboard);
+            set_grab(keyboard);
+        }
+    }
 }
 
 static void callback_focus(gpointer keyboard_ptr)

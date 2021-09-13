@@ -22,6 +22,12 @@
 
 #include <glib.h>
 
+typedef enum BackendKeyboardEventResponse
+{
+    BACKEND_KEYBOARD_EVENT_RELAY,
+    BACKEND_KEYBOARD_EVENT_CONSUME,
+} BackendKeyboardEventResponse;
+
 // state of the keyboard modifiers and group
 typedef struct BackendKeyboardState
 {
@@ -38,6 +44,6 @@ typedef struct BackendKeyboardEvent
 } BackendKeyboardEvent;
 
 // callback used for keyboard events
-typedef void (*BackendKeyboardCallback)(BackendKeyboardEvent event, gpointer data);
+typedef BackendKeyboardEventResponse (*BackendKeyboardCallback)(BackendKeyboardEvent event, gpointer data);
 
 #endif /* C34EFBD7_588C_4399_8DEF_C92876EB3C3D */

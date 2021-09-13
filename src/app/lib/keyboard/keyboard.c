@@ -33,7 +33,7 @@ typedef struct Subscriber
 } Subscriber;
 
 static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guchar additional_modifiers);
-static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
+static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
 
 // creates a new keyboard event keyboard and starts listening
 Keyboard *keyboard_new(Backend *backend)
@@ -284,7 +284,7 @@ static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guchar additi
 }
 
 // callback to handle an atspi keyboard event
-static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr)
+static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr)
 {
     Keyboard *keyboard = keyboard_ptr;
 
@@ -312,6 +312,7 @@ static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keybo
                               keyboard->valid_modifiers;
 
     // notify subscribers
+    KeyboardEventResponse response = BACKEND_KEYBOARD_EVENT_RELAY;
     for (GList *link = keyboard->subscribers; link; link = link->next)
     {
         Subscriber *subscriber = link->data;
@@ -323,6 +324,11 @@ static void callback_keyboard(BackendKeyboardEvent backend_event, gpointer keybo
             continue;
 
         // notify subscriber
-        subscriber->callback(event, subscriber->data);
+        KeyboardEventResponse subscriber_response = subscriber->callback(event, subscriber->data);
+        response = (subscriber_response == KEYBOARD_EVENT_CONSUME) ? BACKEND_KEYBOARD_EVENT_CONSUME
+                                                                   : BACKEND_KEYBOARD_EVENT_RELAY;
     }
+
+    // return response
+    return response;
 }

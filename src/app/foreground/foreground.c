@@ -24,7 +24,7 @@
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
-static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
+static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
 static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
@@ -187,7 +187,7 @@ static void callback_accessible_remove(AtspiAccessible *accessible, gpointer for
 }
 
 // event callback for all keyboard events
-static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
+static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
 {
     Foreground *foreground = foreground_ptr;
 
@@ -203,11 +203,11 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
 
     // don't use key if modifiers other than the shift mods are held
     if (current_mods & ~SHIFT_MASK)
-        return;
+        return KEYBOARD_EVENT_CONSUME;
 
     // only check presses
     if (!event.pressed)
-        return;
+        return KEYBOARD_EVENT_CONSUME;
 
     // process key type
     g_debug("foreground: Checking key press event for '%s'", gdk_keyval_name(event.keysym));
@@ -226,7 +226,9 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
     case GDK_KEY_Home:
     case GDK_KEY_End:
         // pass these keys through to the window below
-        return; // todo: send emulation
+        g_debug("foreground: Passing keysym (%d) to application", event.keysym);
+        //keyboard_emulate_key(foreground->keyboard, event.keysym, 0);
+        return KEYBOARD_EVENT_RELAY; // todo: send emulation
     case GDK_KEY_BackSpace:
         // remove the last key
         codes_pop_key(foreground->codes);
@@ -240,7 +242,7 @@ static void callback_keyboard(KeyboardEvent event, gpointer foreground_ptr)
         break;
     }
 
-    return;
+    return KEYBOARD_EVENT_CONSUME;
 }
 
 // event callback for all mouse events

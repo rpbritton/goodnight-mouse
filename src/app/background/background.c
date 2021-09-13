@@ -19,7 +19,7 @@
 
 #include "background.h"
 
-static void callback_keyboard(KeyboardEvent event, gpointer background_ptr);
+static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr);
 static gboolean start_foreground(gpointer background_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
@@ -100,14 +100,16 @@ void background_quit(Background *background)
 
 // callback to handle the hotkey input event by scheduling the foreground
 // to start
-static void callback_keyboard(KeyboardEvent event, gpointer background_ptr)
+static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr)
 {
     // only check press events
-    if (!event.pressed)
-        return;
+    if (event.pressed)
+    {
+        g_debug("background: Input hotkey triggered");
+        g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
+    }
 
-    g_debug("background: Input hotkey triggered");
-    g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
+    return KEYBOARD_EVENT_CONSUME;
 }
 
 // starts the foreground from inside a source, which will be removed on foreground

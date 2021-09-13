@@ -24,6 +24,13 @@
 
 #include "../backend/backend.h"
 
+// how to respond to a key event
+typedef enum KeyboardEventResponse
+{
+    KEYBOARD_EVENT_RELAY,
+    KEYBOARD_EVENT_CONSUME,
+} KeyboardEventResponse;
+
 // event for when a key is pressed or released
 typedef struct KeyboardEvent
 {
@@ -33,7 +40,7 @@ typedef struct KeyboardEvent
 } KeyboardEvent;
 
 // callback type used to notify on subscribed keyboard event
-typedef void (*KeyboardCallback)(KeyboardEvent event, gpointer data);
+typedef KeyboardEventResponse (*KeyboardCallback)(KeyboardEvent event, gpointer data);
 
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
