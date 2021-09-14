@@ -29,6 +29,7 @@
 static xcb_atom_t get_atom(BackendXCBFocus *focus, const char *name);
 static guint32 get_window_pid(BackendXCBFocus *focus, xcb_window_t window);
 static void callback_property_notify(xcb_generic_event_t *generic_event, gpointer focus_ptr);
+static void callback_backend_legacy(gpointer focus_ptr);
 
 // create a new xcb based focus event backend
 BackendXCBFocus *backend_xcb_focus_new(BackendXCB *backend, BackendFocusCallback callback, gpointer data)
@@ -50,6 +51,9 @@ BackendXCBFocus *backend_xcb_focus_new(BackendXCB *backend, BackendFocusCallback
     focus->atom_active_window = get_atom(focus, WINDOW_PROPERTY_ACTIVE_WINDOW);
     focus->atom_window_pid = get_atom(focus, WINDOW_PROPERTY_WINDOW_PID);
 
+    // add legacy backend in case x11 events are faster than atspi
+    focus->legacy = backend_legacy_focus_new(backend_xcb_get_legacy(focus->backend), callback_backend_legacy, focus);
+
     // subscribe to property change events
     backend_xcb_subscribe(focus->backend, XCB_PROPERTY_NOTIFY, callback_property_notify, focus);
 
@@ -62,6 +66,9 @@ void backend_xcb_focus_destroy(BackendXCBFocus *focus)
 {
     // unsubscribe from property change events
     backend_xcb_unsubscribe(focus->backend, XCB_PROPERTY_NOTIFY, callback_property_notify, focus);
+
+    // free legacy backend
+    backend_legacy_focus_destroy(focus->legacy);
 
     // free
     g_free(focus);
@@ -226,6 +233,15 @@ static void callback_property_notify(xcb_generic_event_t *generic_event, gpointe
         return;
 
     // notify callback
+    focus->callback(focus->data);
+}
+
+// callback for legacy backend events
+static void callback_backend_legacy(gpointer focus_ptr)
+{
+    BackendXCBFocus *focus = focus_ptr;
+
+    // send a notification
     focus->callback(focus->data);
 }
 

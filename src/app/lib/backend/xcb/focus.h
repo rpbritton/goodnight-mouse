@@ -26,6 +26,7 @@
 
 #include "xcb.h"
 #include "../common/focus.h"
+#include "../legacy/focus.h"
 
 // backend for focus that uses xcb
 typedef struct BackendXCBFocus
@@ -40,6 +41,8 @@ typedef struct BackendXCBFocus
 
     xcb_atom_t atom_active_window;
     xcb_atom_t atom_window_pid;
+
+    BackendLegacyFocus *legacy;
 } BackendXCBFocus;
 
 BackendXCBFocus *backend_xcb_focus_new(BackendXCB *backend, BackendFocusCallback callback, gpointer data);
