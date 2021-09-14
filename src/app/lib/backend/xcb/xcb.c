@@ -57,17 +57,17 @@ BackendXCB *backend_xcb_new()
     // todo: need you free xinput_reply?
 
     // select xinput events
-    struct
-    {
-        xcb_input_event_mask_t head;
-        xcb_input_xi_event_mask_t mask;
-    } xinput_mask;
-    xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL;
-    // xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL_MASTER;
-    xinput_mask.head.mask_len = sizeof(xinput_mask.mask) / sizeof(uint32_t);
-    xinput_mask.mask = XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE;
-    //                   XCB_INPUT_XI_EVENT_MASK_RAW_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_RAW_KEY_RELEASE;
-    xcb_input_xi_select_events(backend->connection, backend->root, 1, &xinput_mask.head);
+    // struct
+    // {
+    //     xcb_input_event_mask_t head;
+    //     xcb_input_xi_event_mask_t mask;
+    // } xinput_mask;
+    // xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL;
+    // // xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL_MASTER;
+    // xinput_mask.head.mask_len = sizeof(xinput_mask.mask) / sizeof(uint32_t);
+    // xinput_mask.mask = XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE;
+    // //                   XCB_INPUT_XI_EVENT_MASK_RAW_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_RAW_KEY_RELEASE;
+    // xcb_input_xi_select_events(backend->connection, backend->root, 1, &xinput_mask.head);
 
     // add the event source
     backend->source = xcb_source_new(backend->connection);

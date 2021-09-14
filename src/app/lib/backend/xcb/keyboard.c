@@ -21,6 +21,12 @@
 
 #include "keyboard.h"
 
+static void set_grab(BackendXCBKeyboard *keyboard);
+static void unset_grab(BackendXCBKeyboard *keyboard);
+
+static void set_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *grab);
+static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *grab);
+
 static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyboard_ptr);
 
 // create a new keyboard listener
@@ -67,9 +73,8 @@ void backend_xcb_keyboard_grab(BackendXCBKeyboard *keyboard)
     // add a grab
     keyboard->grabs++;
 
-    // add grab if not set
-    if (keyboard->grabs == 1)
-        g_message("todo: set_grab");
+    // ensure grab is applied
+    set_grab(keyboard);
 }
 
 // ungrab all keyboard input
@@ -82,9 +87,9 @@ void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard)
     // remove a grab
     keyboard->grabs--;
 
-    // remove the grab if none exist now
+    // remove the grab if none exist
     if (keyboard->grabs == 0)
-        g_message("todo: unset_grab");
+        unset_grab(keyboard);
 }
 
 // grab input of a specific key
@@ -97,8 +102,8 @@ void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, BackendKeyboard
     // add grab
     keyboard->key_grabs = g_list_append(keyboard->key_grabs, grab);
 
-    // reset grab
-    g_message("todo: reset_key_grab");
+    // ensure the grab is set
+    set_key_grab(keyboard, grab);
 }
 
 // ungrab input of a specific key
@@ -118,8 +123,26 @@ void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboa
         // remove grab
         keyboard->key_grabs = g_list_delete_link(keyboard->key_grabs, link);
 
-        // reset grab
-        g_message("todo: reset_key_grab");
+        // check if grab is duplicated
+        gboolean unique_grab = FALSE;
+        for (GList *link = keyboard->key_grabs; link; link = link->next)
+        {
+            BackendKeyboardEvent *found_grab = link->data;
+
+            // check if grab matches
+            if (!((grab->keycode == found_grab->keycode) &&
+                  (grab->state.modifiers == found_grab->state.modifiers) &&
+                  (grab->state.group == found_grab->state.group)))
+                continue;
+
+            // set unique
+            unique_grab = FALSE;
+            break;
+        }
+
+        // unset grab if it is unique
+        if (unique_grab)
+            unset_key_grab(keyboard, grab);
 
         // free grab
         g_free(grab);
@@ -157,6 +180,114 @@ void backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeybo
     g_message("todo: backend_xcb_keyboard_emulate_key");
 }
 
+// apply the full device grab
+static void set_grab(BackendXCBKeyboard *keyboard)
+{
+    // // create request
+    // const uint32_t mask[] = {XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE};
+    // xcb_input_xi_grab_device_cookie_t cookie = xcb_input_xi_grab_device(keyboard->connection,
+    //                                                                     keyboard->root,
+    //                                                                     XCB_CURRENT_TIME,
+    //                                                                     XCB_NONE,
+    //                                                                     XCB_INPUT_DEVICE_ALL_MASTER,
+    //                                                                     XCB_INPUT_GRAB_MODE_22_ASYNC,
+    //                                                                     XCB_INPUT_GRAB_MODE_22_ASYNC,
+    //                                                                     FALSE,
+    //                                                                     1,
+    //                                                                     &mask);
+
+    // // send request
+    // xcb_generic_error_t *error = NULL;
+    // xcb_input_xi_grab_device_reply_t *reply = xcb_input_xi_grab_device_reply(keyboard->connection,
+    //                                                                          cookie,
+    //                                                                          &error);
+    // if (error != NULL)
+    // {
+    //     g_warning("backend-xcb: Failed to get key grab: keycode %d, modifiers: %d, error: %d",
+    //               grab->keycode, grab->modifiers, error->error_code);
+    //     free(error);
+    //     return;
+    // }
+
+    // free(reply);
+}
+
+// remove the full device grab
+static void unset_grab(BackendXCBKeyboard *keyboard)
+{
+}
+
+// apply a passive key grab
+static void set_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *grab)
+{
+    // create request
+    // todo: add group
+    const uint32_t modifiers[] = {grab->state.modifiers};
+    const uint32_t mask[] = {XCB_INPUT_XI_EVENT_MASK_KEY_PRESS |
+                             XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE};
+    xcb_input_xi_passive_grab_device_cookie_t cookie;
+    cookie = xcb_input_xi_passive_grab_device(keyboard->connection,
+                                              XCB_CURRENT_TIME,
+                                              keyboard->root,
+                                              XCB_NONE,
+                                              grab->keycode,
+                                              XCB_INPUT_DEVICE_ALL_MASTER,
+                                              1,
+                                              1,
+                                              XCB_INPUT_GRAB_TYPE_KEYCODE,
+                                              XCB_INPUT_GRAB_MODE_22_ASYNC,
+                                              XCB_INPUT_GRAB_MODE_22_ASYNC,
+                                              FALSE,
+                                              mask,
+                                              modifiers);
+
+    // send request
+    xcb_generic_error_t *error = NULL;
+    xcb_input_xi_passive_grab_device_reply_t *reply = NULL;
+    reply = xcb_input_xi_passive_grab_device_reply(keyboard->connection,
+                                                   cookie,
+                                                   &error);
+
+    // handle response
+    if (error)
+    {
+        g_warning("backend-xcb: Failed to grab key: keycode %d, modifiers: %d, error: %d",
+                  grab->keycode, grab->state.modifiers, error->error_code);
+        free(error);
+    }
+    if (reply)
+        free(reply);
+}
+
+// remove a passive key grab
+static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *grab)
+{
+    // send the request
+    // todo: add group
+    const uint32_t modifiers[] = {grab->state.modifiers};
+    xcb_void_cookie_t cookie;
+    cookie = xcb_input_xi_passive_ungrab_device_checked(keyboard->connection,
+                                                        keyboard->root,
+                                                        grab->keycode,
+                                                        XCB_INPUT_DEVICE_ALL_MASTER,
+                                                        1,
+                                                        XCB_INPUT_GRAB_TYPE_KEYCODE,
+                                                        modifiers);
+
+    // get the response
+    xcb_generic_error_t *error = NULL;
+    error = xcb_request_check(keyboard->connection, cookie);
+
+    // handle response
+    if (error)
+    {
+        g_warning("backend-xcb: Failed to ungrab key: keycode %d, modifiers: %d, error: %d",
+                  grab->keycode, grab->state.modifiers, error->error_code);
+        free(error);
+    }
+}
+
+// callback for handling key events
 static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyboard_ptr)
 {
     // get key event
