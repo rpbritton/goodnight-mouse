@@ -43,6 +43,29 @@
 #define backend_keyboard_emulate_state backend_x11_keyboard_emulate_state
 #define backend_keyboard_emulate_key backend_x11_keyboard_emulate_key
 
+#elif USE_XCB
+
+#include "xcb/xcb.h"
+#define backend_new backend_xcb_new
+#define backend_destroy backend_xcb_destroy
+
+#include "xcb/focus.h"
+#define backend_focus_new backend_xcb_focus_new
+#define backend_focus_destroy backend_xcb_focus_destroy
+#define backend_focus_get_window backend_xcb_focus_get_window
+
+#include "xcb/keyboard.h"
+#define backend_keyboard_new backend_xcb_keyboard_new
+#define backend_keyboard_destroy backend_xcb_keyboard_destroy
+#define backend_keyboard_grab backend_xcb_keyboard_grab
+#define backend_keyboard_ungrab backend_xcb_keyboard_ungrab
+#define backend_keyboard_grab_key backend_xcb_keyboard_grab_key
+#define backend_keyboard_ungrab_key backend_xcb_keyboard_ungrab_key
+#define backend_keyboard_get_state backend_xcb_keyboard_get_state
+#define backend_keyboard_emulate_reset backend_xcb_keyboard_emulate_reset
+#define backend_keyboard_emulate_state backend_xcb_keyboard_emulate_state
+#define backend_keyboard_emulate_key backend_xcb_keyboard_emulate_key
+
 #else
 
 #include "legacy/legacy.h"

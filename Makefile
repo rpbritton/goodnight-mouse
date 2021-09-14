@@ -28,8 +28,11 @@ CFLAGS := -Wall
 LDFLAGS :=
 LIBS := glib-2.0 atspi-2 gobject-2.0 gtk+-3.0 gsl
 
-LIBS += x11 xi xkbcommon xtst
-CFLAGS += -DUSE_X11=1
+#LIBS += x11 xi xkbcommon xtst
+#CFLAGS += -DUSE_X11=1
+
+LIBS += xcb
+CFLAGS += -DUSE_XCB=1
 
 CFLAGS += -DG_LOG_DOMAIN=\"GoodnightMouse\"
 
