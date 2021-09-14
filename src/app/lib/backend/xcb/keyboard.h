@@ -29,6 +29,15 @@
 typedef struct BackendXCBKeyboard
 {
     BackendXCB *backend;
+
+    BackendKeyboardCallback callback;
+    gpointer data;
+
+    xcb_connection_t *connection;
+    xcb_window_t root;
+
+    gint grabs;
+    GList *key_grabs;
 } BackendXCBKeyboard;
 
 BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data);

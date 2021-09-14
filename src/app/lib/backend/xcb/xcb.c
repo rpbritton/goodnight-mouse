@@ -26,6 +26,7 @@
 // subscriber to xcb events
 typedef struct Subscriber
 {
+    BackendXCBExtension extension;
     guint8 type;
     BackendXCBCallback callback;
     gpointer data;
@@ -44,13 +45,29 @@ BackendXCB *backend_xcb_new()
     xcb_screen_t *screen = xcb_setup_roots_iterator(setup).data;
     backend->root = screen->root;
 
-    // set root window events
+    // set xcb events
     uint32_t values[] = {XCB_EVENT_MASK_PROPERTY_CHANGE};
-    xcb_change_window_attributes(backend->connection, backend->root,
-                                 XCB_CW_EVENT_MASK, values);
+    xcb_change_window_attributes(backend->connection, backend->root, XCB_CW_EVENT_MASK, values);
 
-    // select xcb events
-    // todo: xcb_input_xi_select_events
+    // get xinput op code
+    const xcb_query_extension_reply_t *xinput_reply = xcb_get_extension_data(backend->connection, &xcb_input_id);
+    if (!xinput_reply || !xinput_reply->present)
+        g_error("backend-xcb: XInputExtension not found");
+    backend->extension_xinput = xinput_reply->major_opcode;
+    // todo: need you free xinput_reply?
+
+    // select xinput events
+    struct
+    {
+        xcb_input_event_mask_t head;
+        xcb_input_xi_event_mask_t mask;
+    } xinput_mask;
+    xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL;
+    // xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL_MASTER;
+    xinput_mask.head.mask_len = sizeof(xinput_mask.mask) / sizeof(uint32_t);
+    xinput_mask.mask = XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE;
+    //                   XCB_INPUT_XI_EVENT_MASK_RAW_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_RAW_KEY_RELEASE;
+    xcb_input_xi_select_events(backend->connection, backend->root, 1, &xinput_mask.head);
 
     // add the event source
     backend->source = xcb_source_new(backend->connection);
@@ -88,10 +105,11 @@ void backend_xcb_destroy(BackendXCB *backend)
 }
 
 // subscribe to xcb events
-void backend_xcb_subscribe(BackendXCB *backend, guint8 type, BackendXCBCallback callback, gpointer data)
+void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data)
 {
     // create new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
+    subscriber->extension = extension;
     subscriber->type = type;
     subscriber->callback = callback;
     subscriber->data = data;
@@ -101,7 +119,7 @@ void backend_xcb_subscribe(BackendXCB *backend, guint8 type, BackendXCBCallback 
 }
 
 // unsubscribe from xcb events
-void backend_xcb_unsubscribe(BackendXCB *backend, guint8 type, BackendXCBCallback callback, gpointer data)
+void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data)
 {
     // remove the first matching subscriber
     for (GList *link = backend->subscribers; link; link = link->next)
@@ -109,7 +127,8 @@ void backend_xcb_unsubscribe(BackendXCB *backend, guint8 type, BackendXCBCallbac
         Subscriber *subscriber = link->data;
 
         // check if subscriber matches
-        if (!(subscriber->type == type &&
+        if (!(subscriber->extension == extension &&
+              subscriber->type == type &&
               subscriber->callback == callback &&
               subscriber->data == data))
             continue;
@@ -144,7 +163,19 @@ static gboolean process_event(xcb_generic_event_t *event, gpointer backend_ptr)
 {
     BackendXCB *backend = backend_ptr;
 
-    g_message("got event of type %d", event->response_type);
+    // get event extension and type
+    BackendXCBExtension extension = BACKEND_XCB_EXTENSION_NONE;
+    guint8 type = event->response_type;
+    if (type == XCB_GE_GENERIC)
+    {
+        xcb_ge_generic_event_t *ge_event = (xcb_ge_generic_event_t *)event;
+        if (ge_event->extension == backend->extension_xinput)
+        {
+            extension = BACKEND_XCB_EXTENSION_XINPUT;
+            type = ge_event->event_type;
+        }
+    }
+    g_message("got event: extension: %d, type: %d", extension, type);
 
     // notify subscribers
     for (GList *link = backend->subscribers; link; link = link->next)
@@ -152,7 +183,9 @@ static gboolean process_event(xcb_generic_event_t *event, gpointer backend_ptr)
         Subscriber *subscriber = link->data;
 
         // check if subscriber matches
-        if (!(subscriber->type == event->response_type))
+        // todo: do you need to do (event->response_type & ~0x80)?
+        if (!(subscriber->extension == extension &&
+              subscriber->type == type))
             continue;
 
         // notify subscriber

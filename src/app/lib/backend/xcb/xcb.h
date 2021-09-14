@@ -24,8 +24,16 @@
 
 #include <glib.h>
 #include <xcb/xcb.h>
+#include <xcb/xinput.h>
 
 #include "../legacy/legacy.h"
+
+// xcb event extensions
+typedef enum BackendXCBExtension
+{
+    BACKEND_XCB_EXTENSION_NONE,
+    BACKEND_XCB_EXTENSION_XINPUT,
+} BackendXCBExtension;
 
 // subscriber callback to xcb events
 typedef void (*BackendXCBCallback)(xcb_generic_event_t *event, gpointer data);
@@ -37,6 +45,8 @@ typedef struct BackendXCB
     xcb_window_t root;
     GSource *source;
 
+    uint8_t extension_xinput;
+
     BackendLegacy *legacy;
 
     GList *subscribers;
@@ -45,8 +55,8 @@ typedef struct BackendXCB
 BackendXCB *backend_xcb_new();
 void backend_xcb_destroy(BackendXCB *backend);
 
-void backend_xcb_subscribe(BackendXCB *backend, guint8 type, BackendXCBCallback callback, gpointer data);
-void backend_xcb_unsubscribe(BackendXCB *backend, guint8 type, BackendXCBCallback callback, gpointer data);
+void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data);
+void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data);
 xcb_connection_t *backend_xcb_get_connection(BackendXCB *backend);
 xcb_window_t backend_xcb_get_root(BackendXCB *backend);
 BackendLegacy *backend_xcb_get_legacy(BackendXCB *backend);
