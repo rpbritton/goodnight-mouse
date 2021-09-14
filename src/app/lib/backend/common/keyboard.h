@@ -31,8 +31,8 @@ typedef enum BackendKeyboardEventResponse
 // state of the keyboard modifiers and group
 typedef struct BackendKeyboardState
 {
-    guchar modifiers;
-    guchar group;
+    guint8 modifiers;
+    guint8 group;
 } BackendKeyboardState;
 
 // event representing a key action

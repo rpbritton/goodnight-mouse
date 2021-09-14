@@ -48,7 +48,7 @@ typedef struct Keyboard
     BackendKeyboard *backend;
 
     GdkKeymap *keymap;
-    guchar valid_modifiers;
+    guint8 valid_modifiers;
 
     GList *subscribers;
 } Keyboard;

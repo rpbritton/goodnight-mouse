@@ -32,7 +32,7 @@ typedef struct Subscriber
     GList *grabs;
 } Subscriber;
 
-static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guchar additional_modifiers);
+static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guint8 additional_modifiers);
 static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
 
 // creates a new keyboard event keyboard and starts listening
@@ -242,7 +242,7 @@ void keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modi
     keyboard_emulate_reset(keyboard);
 }
 
-static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guchar additional_modifiers)
+static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guint8 additional_modifiers)
 {
     GList *recipes = NULL;
 
@@ -252,7 +252,7 @@ static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guchar additi
     gdk_keymap_get_entries_for_keyval(keyboard->keymap, keysym, &keys, &n_keys);
     for (gint index = 0; index < n_keys; index++)
     {
-        for (guchar modifiers = 0; modifiers < 0xFF; modifiers++)
+        for (guint8 modifiers = 0; modifiers < 0xFF; modifiers++)
         {
             // get keysym and consumed modifiers from state
             guint generated_keysym;
@@ -307,7 +307,7 @@ static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backe
     gdk_keymap_add_virtual_modifiers(keyboard->keymap, &event.modifiers);
 
     // get active modifiers that were not consumed to create the keyval
-    guchar active_modifiers = backend_event.state.modifiers &
+    guint8 active_modifiers = backend_event.state.modifiers &
                               ~consumed_modifiers &
                               keyboard->valid_modifiers;
 
