@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 ryan
+ * Copyright (C) 2021 Ryan Britton
  *
  * This file is part of Goodnight Mouse.
  *
