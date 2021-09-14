@@ -231,11 +231,13 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
         return KEYBOARD_EVENT_RELAY; // todo: send emulation
     case GDK_KEY_BackSpace:
         // remove the last key
-        codes_pop_key(foreground->codes);
+        if (event.pressed)
+            codes_pop_key(foreground->codes);
         break;
     default:
         // add this pressed key
-        codes_add_key(foreground->codes, event.keysym);
+        if (event.pressed)
+            codes_add_key(foreground->codes, event.keysym);
         // quit if matched
         if (codes_matched_tag(foreground->codes))
             foreground_quit(foreground);

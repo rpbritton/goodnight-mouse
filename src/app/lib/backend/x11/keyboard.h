@@ -45,6 +45,7 @@ typedef struct BackendX11Keyboard
     BackendX11Focus *focus;
     Window grab_window;
 
+    Time last_event_time;
     BackendKeyboardEvent last_event;
 
     gboolean is_emulating;

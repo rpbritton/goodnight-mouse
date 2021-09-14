@@ -219,7 +219,6 @@ void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard)
 
 void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
 {
-    g_message("emulating state");
     // start emulating
     emulate_start(keyboard);
 
@@ -238,7 +237,6 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
 
         // get modifier action
         gboolean press = (state.modifiers & (1 << mod_index)) && !(current_state.modifiers & (1 << mod_index));
-        g_message("press: %d, mod: %d", press, mod_index);
 
         // try sending keycodes to set the modifier
         for (gint keycode_index = 0; keycode_index < modifiers->max_keypermod; keycode_index++)
@@ -274,14 +272,12 @@ void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKey
 
 void backend_x11_keyboard_emulate_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event)
 {
-    g_message("emulating key");
     // start emulating
     emulate_start(keyboard);
 
     // set the state
     backend_x11_keyboard_emulate_state(keyboard, event.state);
 
-    g_message("sending key");
     // send the key event
     emulate_key(keyboard, event.keycode, event.pressed);
 }
@@ -396,14 +392,14 @@ static void callback_xinput(XEvent *x11_event, gpointer keyboard_ptr)
     event.state.modifiers = device_event->mods.effective;
     event.state.group = device_event->group.effective;
 
-    g_message("this event is grab: %d", device_event->event != keyboard->root_window);
-
     // check for duplicate event
-    if (event.keycode == keyboard->last_event.keycode &&
+    if (device_event->time == keyboard->last_event_time &&
+        event.keycode == keyboard->last_event.keycode &&
         event.pressed == keyboard->last_event.pressed &&
         event.state.modifiers == keyboard->last_event.state.modifiers &&
         event.state.group == keyboard->last_event.state.group)
         return;
+    keyboard->last_event_time = device_event->time;
     keyboard->last_event = event;
 
     // callback the event
