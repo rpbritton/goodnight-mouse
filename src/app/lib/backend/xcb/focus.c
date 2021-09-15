@@ -165,9 +165,9 @@ xcb_window_t backend_xcb_focus_get_xcb_window(BackendXCBFocus *focus)
         return XCB_NONE;
 
     // parse the property
-    gpointer value = xcb_get_property_value(reply);
+    xcb_window_t window = *(xcb_window_t *)xcb_get_property_value(reply);
     free(reply);
-    return *(xcb_window_t *)value;
+    return window;
 }
 
 // get an atom from string
@@ -213,9 +213,9 @@ static guint32 get_window_pid(BackendXCBFocus *focus, xcb_window_t window)
         return XCB_NONE;
 
     // parse the property
-    gpointer value = xcb_get_property_value(reply);
+    guint32 pid = *(guint32 *)xcb_get_property_value(reply);
     free(reply);
-    return *(guint32 *)value;
+    return pid;
 }
 
 // callback to handle focus change by checking the active window property

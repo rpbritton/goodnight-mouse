@@ -35,6 +35,7 @@ typedef struct BackendXCBKeyboard
 
     xcb_connection_t *connection;
     xcb_window_t root;
+    xcb_input_device_id_t keyboard_id;
 
     gint grabs;
     GList *key_grabs;

@@ -205,10 +205,6 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
     if (current_mods & ~SHIFT_MASK)
         return KEYBOARD_EVENT_CONSUME;
 
-    // only check presses
-    if (!event.pressed)
-        return KEYBOARD_EVENT_CONSUME;
-
     // process key type
     g_debug("foreground: Checking key press event for '%s'", gdk_keyval_name(event.keysym));
     switch (event.keysym)
@@ -226,18 +222,22 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
     case GDK_KEY_Home:
     case GDK_KEY_End:
         // pass these keys through to the window below
-        g_debug("foreground: Passing keysym (%d) to application", event.keysym);
+        //g_debug("foreground: Passing keysym (%d) to application", event.keysym);
         //keyboard_emulate_key(foreground->keyboard, event.keysym, 0);
         return KEYBOARD_EVENT_RELAY; // todo: send emulation
     case GDK_KEY_BackSpace:
+        // only check pressed
+        if (!event.pressed)
+            break;
         // remove the last key
-        if (event.pressed)
-            codes_pop_key(foreground->codes);
+        codes_pop_key(foreground->codes);
         break;
     default:
-        // add this pressed key
-        if (event.pressed)
-            codes_add_key(foreground->codes, event.keysym);
+        // only check pressed
+        if (!event.pressed)
+            break;
+        // add this key
+        codes_add_key(foreground->codes, event.keysym);
         // quit if matched
         if (codes_matched_tag(foreground->codes))
             foreground_quit(foreground);

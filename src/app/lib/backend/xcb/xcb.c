@@ -175,7 +175,7 @@ static gboolean process_event(xcb_generic_event_t *event, gpointer backend_ptr)
             type = ge_event->event_type;
         }
     }
-    g_message("got event: extension: %d, type: %d", extension, type);
+    //g_message("got event: extension: %d, type: %d", extension, type);
 
     // notify subscribers
     for (GList *link = backend->subscribers; link; link = link->next)
