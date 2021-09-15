@@ -30,6 +30,7 @@ static void set_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *gra
 static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *grab);
 
 static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyboard_ptr);
+static void callback_focus(gpointer keyboard_ptr);
 
 // create a new keyboard listener
 BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data)
@@ -51,6 +52,10 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
     // initialize grabs
     keyboard->grabs = 0;
     keyboard->key_grabs = NULL;
+
+    // add focus listener
+    keyboard->focus = backend_xcb_focus_new(keyboard->backend, callback_focus, keyboard);
+    keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
 
     // subscribe to key events
     backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
@@ -263,7 +268,7 @@ static void set_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *gra
     xcb_input_xi_passive_grab_device_cookie_t cookie;
     cookie = xcb_input_xi_passive_grab_device(keyboard->connection,
                                               XCB_CURRENT_TIME,
-                                              keyboard->root_window,
+                                              keyboard->grab_window,
                                               XCB_NONE,
                                               grab->keycode,
                                               keyboard->keyboard_id,
@@ -302,7 +307,7 @@ static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *g
     const uint32_t modifiers[] = {grab->state.modifiers};
     xcb_void_cookie_t cookie;
     cookie = xcb_input_xi_passive_ungrab_device_checked(keyboard->connection,
-                                                        keyboard->root_window,
+                                                        keyboard->grab_window,
                                                         grab->keycode,
                                                         keyboard->keyboard_id,
                                                         1,
@@ -408,6 +413,23 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
         g_warning("backend-xcb: Allow events failed: response: %d, error %d", error->response_type, error->error_code);
         free(error);
     }
+}
+
+static void callback_focus(gpointer keyboard_ptr)
+{
+    BackendXCBKeyboard *keyboard = keyboard_ptr;
+
+    // set the new active window to grab
+    // this prevents the window from losing focus during key grabbing
+    keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
+
+    // set the global grab to the new window
+    if (keyboard->grabs > 0)
+        set_grab(keyboard);
+
+    // set the key grabs to the new window
+    for (GList *link = keyboard->key_grabs; link; link = link->next)
+        set_key_grab(keyboard, link->data);
 }
 
 #endif /* USE_XCB */

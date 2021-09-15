@@ -24,6 +24,7 @@
 
 #include "xcb.h"
 #include "../common/keyboard.h"
+#include "focus.h"
 
 // backend for keyboard events that uses pure atspi
 typedef struct BackendXCBKeyboard
@@ -39,6 +40,9 @@ typedef struct BackendXCBKeyboard
 
     gint grabs;
     GList *key_grabs;
+
+    BackendXCBFocus *focus;
+    xcb_window_t grab_window;
 } BackendXCBKeyboard;
 
 BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data);
