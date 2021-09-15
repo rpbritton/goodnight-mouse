@@ -37,7 +37,7 @@ typedef struct BackendXCBFocus
     gpointer data;
 
     xcb_connection_t *connection;
-    xcb_window_t root;
+    xcb_window_t root_window;
 
     xcb_atom_t atom_active_window;
     xcb_atom_t atom_window_pid;

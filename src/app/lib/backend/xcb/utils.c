@@ -22,7 +22,7 @@
 #include "utils.h"
 
 // get the first device id that matches the device type
-xcb_input_device_id_t device_id_from_device_type(xcb_connection_t *connection, xcb_input_device_type_t device_type)
+xcb_input_device_id_t backend_xcb_device_id_from_device_type(xcb_connection_t *connection, xcb_input_device_type_t device_type)
 {
     // get input device
     xcb_input_device_t device = XCB_INPUT_DEVICE_ALL;

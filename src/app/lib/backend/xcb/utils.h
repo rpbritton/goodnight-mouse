@@ -26,7 +26,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xinput.h>
 
-xcb_input_device_id_t device_id_from_device_type(xcb_connection_t *connection, xcb_input_device_type_t device_type);
+xcb_input_device_id_t backend_xcb_device_id_from_device_type(xcb_connection_t *connection, xcb_input_device_type_t device_type);
 
 #endif /* USE_XCB */
 

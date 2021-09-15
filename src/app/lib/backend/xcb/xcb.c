@@ -43,18 +43,17 @@ BackendXCB *backend_xcb_new()
     backend->connection = xcb_connect(NULL, NULL);
     const xcb_setup_t *setup = xcb_get_setup(backend->connection);
     xcb_screen_t *screen = xcb_setup_roots_iterator(setup).data;
-    backend->root = screen->root;
+    backend->root_window = screen->root;
 
     // set xcb events
     uint32_t values[] = {XCB_EVENT_MASK_PROPERTY_CHANGE};
-    xcb_change_window_attributes(backend->connection, backend->root, XCB_CW_EVENT_MASK, values);
+    xcb_change_window_attributes(backend->connection, backend->root_window, XCB_CW_EVENT_MASK, values);
 
     // get xinput op code
     const xcb_query_extension_reply_t *xinput_reply = xcb_get_extension_data(backend->connection, &xcb_input_id);
     if (!xinput_reply || !xinput_reply->present)
         g_error("backend-xcb: XInputExtension not found");
     backend->extension_xinput = xinput_reply->major_opcode;
-    // todo: need you free xinput_reply?
 
     // select xinput events
     // struct
@@ -67,7 +66,7 @@ BackendXCB *backend_xcb_new()
     // xinput_mask.head.mask_len = sizeof(xinput_mask.mask) / sizeof(uint32_t);
     // xinput_mask.mask = XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE;
     // //                   XCB_INPUT_XI_EVENT_MASK_RAW_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_RAW_KEY_RELEASE;
-    // xcb_input_xi_select_events(backend->connection, backend->root, 1, &xinput_mask.head);
+    // xcb_input_xi_select_events(backend->connection, backend->root_window, 1, &xinput_mask.head);
 
     // add the event source
     backend->source = xcb_source_new(backend->connection);
@@ -146,10 +145,10 @@ xcb_connection_t *backend_xcb_get_connection(BackendXCB *backend)
     return backend->connection;
 }
 
-// get the xcb root window
-xcb_window_t backend_xcb_get_root(BackendXCB *backend)
+// get the xcb root_window window
+xcb_window_t backend_xcb_get_root_window(BackendXCB *backend)
 {
-    return backend->root;
+    return backend->root_window;
 }
 
 // get the legacy fallback backend

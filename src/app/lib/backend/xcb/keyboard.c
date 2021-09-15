@@ -45,9 +45,8 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
 
     // add x connection
     keyboard->connection = backend_xcb_get_connection(keyboard->backend);
-    keyboard->root = backend_xcb_get_root(keyboard->backend);
-    keyboard->keyboard_id = device_id_from_device_type(keyboard->connection, XCB_INPUT_DEVICE_TYPE_MASTER_KEYBOARD);
-    g_message("keyboard_id %d", keyboard->keyboard_id);
+    keyboard->root_window = backend_xcb_get_root_window(keyboard->backend);
+    keyboard->keyboard_id = backend_xcb_device_id_from_device_type(keyboard->connection, XCB_INPUT_DEVICE_TYPE_MASTER_KEYBOARD);
 
     // initialize grabs
     keyboard->grabs = 0;
@@ -250,10 +249,10 @@ static void set_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *gra
     xcb_input_xi_passive_grab_device_cookie_t cookie;
     cookie = xcb_input_xi_passive_grab_device(keyboard->connection,
                                               XCB_CURRENT_TIME,
-                                              keyboard->root,
+                                              keyboard->root_window,
                                               XCB_NONE,
                                               grab->keycode,
-                                              XCB_INPUT_DEVICE_ALL_MASTER,
+                                              keyboard->keyboard_id,
                                               1,
                                               1,
                                               XCB_INPUT_GRAB_TYPE_KEYCODE,
@@ -289,9 +288,9 @@ static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *g
     const uint32_t modifiers[] = {grab->state.modifiers};
     xcb_void_cookie_t cookie;
     cookie = xcb_input_xi_passive_ungrab_device_checked(keyboard->connection,
-                                                        keyboard->root,
+                                                        keyboard->root_window,
                                                         grab->keycode,
-                                                        XCB_INPUT_DEVICE_ALL_MASTER,
+                                                        keyboard->keyboard_id,
                                                         1,
                                                         XCB_INPUT_GRAB_TYPE_KEYCODE,
                                                         modifiers);
@@ -343,7 +342,7 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
     //                                                              event->deviceid,
     //                                                              event_mode,
     //                                                              0,
-    //                                                              keyboard->root);
+    //                                                              keyboard->root_window);
     // xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
     // if (error)
     // {
@@ -388,7 +387,7 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
                                                                  key_event->deviceid,
                                                                  event_mode,
                                                                  0,
-                                                                 keyboard->root);
+                                                                 keyboard->root_window);
     xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
     if (error)
     {

@@ -42,7 +42,7 @@ typedef void (*BackendXCBCallback)(xcb_generic_event_t *event, gpointer data);
 typedef struct BackendXCB
 {
     xcb_connection_t *connection;
-    xcb_window_t root;
+    xcb_window_t root_window;
     GSource *source;
 
     uint8_t extension_xinput;
@@ -58,7 +58,7 @@ void backend_xcb_destroy(BackendXCB *backend);
 void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data);
 void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data);
 xcb_connection_t *backend_xcb_get_connection(BackendXCB *backend);
-xcb_window_t backend_xcb_get_root(BackendXCB *backend);
+xcb_window_t backend_xcb_get_root_window(BackendXCB *backend);
 BackendLegacy *backend_xcb_get_legacy(BackendXCB *backend);
 
 #endif /* USE_XCB */

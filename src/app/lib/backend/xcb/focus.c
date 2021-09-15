@@ -45,7 +45,7 @@ BackendXCBFocus *backend_xcb_focus_new(BackendXCB *backend, BackendFocusCallback
 
     // add connection
     focus->connection = backend_xcb_get_connection(focus->backend);
-    focus->root = backend_xcb_get_root(focus->backend);
+    focus->root_window = backend_xcb_get_root_window(focus->backend);
 
     // get the atoms
     focus->atom_active_window = get_atom(focus, WINDOW_PROPERTY_ACTIVE_WINDOW);
@@ -150,7 +150,7 @@ AtspiAccessible *backend_xcb_focus_get_window(BackendXCBFocus *focus)
 xcb_window_t backend_xcb_focus_get_xcb_window(BackendXCBFocus *focus)
 {
     // get the property
-    xcb_get_property_cookie_t cookie = xcb_get_property(focus->connection, 0, focus->root, focus->atom_active_window, XCB_ATOM_WINDOW, 0, 1);
+    xcb_get_property_cookie_t cookie = xcb_get_property(focus->connection, 0, focus->root_window, focus->atom_active_window, XCB_ATOM_WINDOW, 0, 1);
     xcb_generic_error_t *error;
     xcb_get_property_reply_t *reply = xcb_get_property_reply(focus->connection, cookie, &error);
 
