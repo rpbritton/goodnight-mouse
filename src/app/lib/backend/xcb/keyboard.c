@@ -399,6 +399,10 @@ static void callback_focus(gpointer keyboard_ptr)
     // this prevents the window from losing focus during key grabbing
     keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
 
+    // ensure grab window exists
+    if (keyboard->grab_window == XCB_NONE)
+        keyboard->grab_window = keyboard->root_window;
+
     // set the global grab to the new window
     if (keyboard->grabs > 0)
         set_grab(keyboard);
