@@ -37,7 +37,7 @@ typedef struct LastEvent
     BackendKeyboardEventResponse response;
 } LastEvent;
 
-static void emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean pressed);
+static gboolean emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean pressed);
 
 static void set_grab(BackendXCBKeyboard *keyboard);
 static void unset_grab(BackendXCBKeyboard *keyboard);
@@ -234,7 +234,7 @@ BackendKeyboardState backend_xcb_keyboard_get_state(BackendXCBKeyboard *keyboard
 }
 
 // reset any emulated keys or state
-void backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard)
+gboolean backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard)
 {
     // get lists of keys to send
     GList *keys_to_press = NULL;
@@ -249,16 +249,20 @@ void backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard)
             keys_to_press = g_list_prepend(keys_to_press, keycode);
 
     // send keys
+    gboolean is_success = TRUE;
     for (GList *link = keys_to_press; link; link = link->next)
-        emulate_key(keyboard, GPOINTER_TO_UINT(link->data), TRUE);
+        is_success &= emulate_key(keyboard, GPOINTER_TO_UINT(link->data), TRUE);
     g_list_free(keys_to_press);
     for (GList *link = keys_to_release; link; link = link->next)
-        emulate_key(keyboard, GPOINTER_TO_UINT(link->data), FALSE);
+        is_success &= emulate_key(keyboard, GPOINTER_TO_UINT(link->data), FALSE);
     g_list_free(keys_to_release);
+
+    // return
+    return is_success;
 }
 
 // set an emulated state
-void backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKeyboardState state)
+gboolean backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKeyboardState state)
 {
     // todo: group
 
@@ -277,14 +281,16 @@ void backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKey
     {
         g_warning("backend-xcb: Failed to get modifier mapping: error: %d", error->error_code);
         free(error);
+        return FALSE;
     }
     if (!reply)
-        return;
+        return FALSE;
 
     // get the maps
     guint8 *modifiers = xcb_input_get_device_modifier_mapping_keymaps(reply);
 
     // check all the modifiers
+    gboolean is_success = TRUE;
     for (gint mod_index = 0; mod_index <= 8; mod_index++)
     {
         // do nothing if already matches
@@ -313,24 +319,32 @@ void backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKey
                 emulate_key(keyboard, keycode, !press);
         }
 
-        // todo: fail if could not set modifier
+        // check if modifier was set
+        if ((state.modifiers & (1 << mod_index)) != (current_state.modifiers & (1 << mod_index)))
+            is_success = FALSE;
     }
 
-    // free
+    // return
     free(reply);
+    return is_success;
 }
 
 // set an emulated key
-void backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event)
+gboolean backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event)
 {
     // set the state
-    backend_xcb_keyboard_emulate_state(keyboard, event.state);
+    if (!backend_xcb_keyboard_emulate_state(keyboard, event.state))
+        return FALSE;
 
     // send the key event
-    emulate_key(keyboard, event.keycode, event.pressed);
+    if (!emulate_key(keyboard, event.keycode, event.pressed))
+        return FALSE;
+
+    // return success
+    return TRUE;
 }
 
-static void emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean press)
+static gboolean emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean press)
 {
     g_debug("backend-xcb: Emulating key: keycode: %d, press: %d", keycode, press);
 
@@ -352,7 +366,7 @@ static void emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean pr
         g_warning("backend-xcb: Key emulation failed: keycode: %d, press: %d, error %d",
                   keycode, press, error->error_code);
         free(error);
-        // todo: return boolean that it failed
+        return FALSE;
     }
 
     // record in emulation table
@@ -365,6 +379,9 @@ static void emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean pr
     {
         g_hash_table_insert(keyboard->emulated_keys, GUINT_TO_POINTER(keycode), GUINT_TO_POINTER(press));
     }
+
+    // return success
+    return TRUE;
 }
 
 // apply the full device grab

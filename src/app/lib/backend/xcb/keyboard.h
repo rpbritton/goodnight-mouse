@@ -57,9 +57,9 @@ void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard);
 void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
 void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
 BackendKeyboardState backend_xcb_keyboard_get_state(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKeyboardState state);
-void backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
+gboolean backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard);
+gboolean backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKeyboardState state);
+gboolean backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
 
 #endif /* USE_XCB */
 

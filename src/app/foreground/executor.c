@@ -145,9 +145,7 @@ static gboolean execute_key(Executor *executor, guint key, GdkModifierType modif
     g_debug("executor: Pressing key '%d'", key);
 
     // attempt key press
-    keyboard_emulate_key(executor->keyboard, key, modifiers);
-    // todo: add return
-    return TRUE;
+    return keyboard_emulate_key(executor->keyboard, key, modifiers);
 }
 
 // executes a mouse click of the button into the center of the given accessible

@@ -191,12 +191,12 @@ GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
     return modifiers;
 }
 
-void keyboard_emulate_reset(Keyboard *keyboard)
+gboolean keyboard_emulate_reset(Keyboard *keyboard)
 {
-    backend_keyboard_emulate_reset(keyboard->backend);
+    return backend_keyboard_emulate_reset(keyboard->backend);
 }
 
-void keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
+gboolean keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
 {
     // sanitize modifiers
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
@@ -207,10 +207,10 @@ void keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
     state.modifiers = modifiers;
 
     // set the state
-    backend_keyboard_emulate_state(keyboard->backend, state);
+    return backend_keyboard_emulate_state(keyboard->backend, state);
 }
 
-void keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
+gboolean keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
 {
     // sanitize modifiers
     gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
@@ -223,7 +223,7 @@ void keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modi
     if (!recipes)
     {
         g_warning("keyboard: Failed to generate keysym (%d), no keycodes found", keysym);
-        return;
+        return FALSE;
     }
 
     // use the first recipe
@@ -232,14 +232,22 @@ void keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modi
 
     // send a key press
     event.pressed = TRUE;
-    backend_keyboard_emulate_key(keyboard->backend, event);
+    if (!backend_keyboard_emulate_key(keyboard->backend, event))
+    {
+        keyboard_emulate_reset(keyboard);
+        return FALSE;
+    }
 
     // send key release
     event.pressed = FALSE;
-    backend_keyboard_emulate_key(keyboard->backend, event);
+    if (!backend_keyboard_emulate_key(keyboard->backend, event))
+    {
+        keyboard_emulate_reset(keyboard);
+        return FALSE;
+    }
 
     // reset the state
-    keyboard_emulate_reset(keyboard);
+    return keyboard_emulate_reset(keyboard);
 }
 
 static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guint8 additional_modifiers)
