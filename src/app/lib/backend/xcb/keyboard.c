@@ -21,6 +21,8 @@
 
 #include "keyboard.h"
 
+#include <xcb/xtest.h>
+
 #include "utils.h"
 
 // the global passive grab lets us replay keyboard events
@@ -34,6 +36,8 @@ typedef struct LastEvent
     BackendKeyboardEvent event;
     BackendKeyboardEventResponse response;
 } LastEvent;
+
+static void emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean pressed);
 
 static void set_grab(BackendXCBKeyboard *keyboard);
 static void unset_grab(BackendXCBKeyboard *keyboard);
@@ -80,8 +84,11 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
     keyboard->focus = backend_xcb_focus_new(keyboard->backend, callback_focus, keyboard);
     keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
 
-    // initialize last events
-    keyboard->last_events = g_hash_table_new_full(NULL, NULL, NULL, g_free);
+    // init last events
+    keyboard->last_keys = g_hash_table_new_full(NULL, NULL, NULL, g_free);
+
+    // init emulated events
+    keyboard->emulated_keys = g_hash_table_new(NULL, NULL);
 
     // subscribe to key events
     backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
@@ -98,7 +105,11 @@ void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard)
     backend_xcb_unsubscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_RELEASE, callback_key_event, keyboard);
 
     // free last events
-    g_hash_table_unref(keyboard->last_events);
+    g_hash_table_unref(keyboard->last_keys);
+
+    // free any emulation
+    backend_xcb_keyboard_emulate_reset(keyboard);
+    g_hash_table_unref(keyboard->emulated_keys);
 
     // free
     g_free(keyboard);
@@ -198,8 +209,6 @@ BackendKeyboardState backend_xcb_keyboard_get_state(BackendXCBKeyboard *keyboard
     xcb_generic_error_t *error = NULL;
     xcb_input_xi_query_pointer_reply_t *reply;
     reply = xcb_input_xi_query_pointer_reply(keyboard->connection, cookie, &error);
-
-    // handle response
     if (error != NULL)
     {
         g_warning("backend-xcb: Failed to query pointer: error: %d", error->error_code);
@@ -227,19 +236,135 @@ BackendKeyboardState backend_xcb_keyboard_get_state(BackendXCBKeyboard *keyboard
 // reset any emulated keys or state
 void backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard)
 {
-    g_message("todo: backend_xcb_keyboard_emulate_reset");
+    // get lists of keys to send
+    GList *keys_to_press = NULL;
+    GList *keys_to_release = NULL;
+    GHashTableIter iter;
+    gpointer keycode, pressed;
+    g_hash_table_iter_init(&iter, keyboard->emulated_keys);
+    while (g_hash_table_iter_next(&iter, &keycode, &pressed))
+        if (GPOINTER_TO_UINT(pressed))
+            keys_to_release = g_list_prepend(keys_to_release, keycode);
+        else
+            keys_to_press = g_list_prepend(keys_to_press, keycode);
+
+    // send keys
+    for (GList *link = keys_to_press; link; link = link->next)
+        emulate_key(keyboard, GPOINTER_TO_UINT(link->data), TRUE);
+    g_list_free(keys_to_press);
+    for (GList *link = keys_to_release; link; link = link->next)
+        emulate_key(keyboard, GPOINTER_TO_UINT(link->data), FALSE);
+    g_list_free(keys_to_release);
 }
 
 // set an emulated state
 void backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKeyboardState state)
 {
-    g_message("todo: backend_xcb_keyboard_emulate_state");
+    // todo: group
+
+    // get current state
+    BackendKeyboardState current_state = backend_xcb_keyboard_get_state(keyboard);
+
+    // send get modifiers mapping request
+    xcb_input_get_device_modifier_mapping_cookie_t cookie;
+    cookie = xcb_input_get_device_modifier_mapping(keyboard->connection, keyboard->keyboard_id);
+
+    // get the reply
+    xcb_generic_error_t *error = NULL;
+    xcb_input_get_device_modifier_mapping_reply_t *reply;
+    reply = xcb_input_get_device_modifier_mapping_reply(keyboard->connection, cookie, &error);
+    if (error)
+    {
+        g_warning("backend-xcb: Failed to get modifier mapping: error: %d", error->error_code);
+        free(error);
+    }
+    if (!reply)
+        return;
+
+    // get the maps
+    guint8 *modifiers = xcb_input_get_device_modifier_mapping_keymaps(reply);
+
+    // check all the modifiers
+    for (gint mod_index = 0; mod_index <= 8; mod_index++)
+    {
+        // do nothing if already matches
+        if ((state.modifiers & (1 << mod_index)) == (current_state.modifiers & (1 << mod_index)))
+            continue;
+
+        // get modifier action
+        gboolean press = (state.modifiers & (1 << mod_index)) && !(current_state.modifiers & (1 << mod_index));
+
+        // try sending keycodes to set the modifier
+        for (gint keycode_index = 0; keycode_index < reply->keycodes_per_modifier; keycode_index++)
+        {
+            // get the keycode
+            guint keycode = modifiers[mod_index * reply->keycodes_per_modifier + keycode_index];
+            if (!keycode)
+                continue;
+
+            // send key
+            emulate_key(keyboard, keycode, press);
+
+            // check if was set
+            current_state = backend_xcb_keyboard_get_state(keyboard);
+            if ((state.modifiers & (1 << mod_index)) == (current_state.modifiers & (1 << mod_index)))
+                break;
+            else
+                emulate_key(keyboard, keycode, !press);
+        }
+
+        // todo: fail if could not set modifier
+    }
+
+    // free
+    free(reply);
 }
 
 // set an emulated key
 void backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event)
 {
-    g_message("todo: backend_xcb_keyboard_emulate_key");
+    // set the state
+    backend_xcb_keyboard_emulate_state(keyboard, event.state);
+
+    // send the key event
+    emulate_key(keyboard, event.keycode, event.pressed);
+}
+
+static void emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean press)
+{
+    g_debug("backend-xcb: Emulating key: keycode: %d, press: %d", keycode, press);
+
+    // send key
+    xcb_void_cookie_t cookie;
+    // todo: deviceid can apparently be 0, will that still get picked up by grabs?
+    cookie = xcb_test_fake_input_checked(keyboard->connection,
+                                         (press) ? XCB_KEY_PRESS : XCB_KEY_RELEASE,
+                                         keycode,
+                                         XCB_CURRENT_TIME,
+                                         keyboard->root_window,
+                                         0, 0,
+                                         keyboard->keyboard_id);
+
+    // check response
+    xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
+    if (error)
+    {
+        g_warning("backend-xcb: Key emulation failed: keycode: %d, press: %d, error %d",
+                  keycode, press, error->error_code);
+        free(error);
+        // todo: return boolean that it failed
+    }
+
+    // record in emulation table
+    if (g_hash_table_contains(keyboard->emulated_keys, GUINT_TO_POINTER(keycode)))
+    {
+        if (GPOINTER_TO_UINT(g_hash_table_lookup(keyboard->emulated_keys, GUINT_TO_POINTER(keycode))) != press)
+            g_hash_table_remove(keyboard->emulated_keys, GUINT_TO_POINTER(keycode));
+    }
+    else
+    {
+        g_hash_table_insert(keyboard->emulated_keys, GUINT_TO_POINTER(keycode), GUINT_TO_POINTER(press));
+    }
 }
 
 // apply the full device grab
@@ -335,8 +460,6 @@ static void set_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *gra
     reply = xcb_input_xi_passive_grab_device_reply(keyboard->connection,
                                                    cookie,
                                                    &error);
-
-    // handle response
     if (error)
     {
         g_warning("backend-xcb: Failed to grab key: keycode %d, modifiers: %d, error: %d",
@@ -364,8 +487,6 @@ static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *g
 
     // get response
     xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
-
-    // handle response
     if (error)
     {
         g_warning("backend-xcb: Failed to ungrab key: keycode %d, modifiers: %d, error: %d",
@@ -390,11 +511,11 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
     event.state.group = key_event->group.effective;
 
     // get last event of this key type
-    LastEvent *last_event = g_hash_table_lookup(keyboard->last_events, GUINT_TO_POINTER(event.keycode));
+    LastEvent *last_event = g_hash_table_lookup(keyboard->last_keys, GUINT_TO_POINTER(event.keycode));
     if (last_event == NULL)
     {
         last_event = g_new0(LastEvent, 1);
-        g_hash_table_insert(keyboard->last_events, GUINT_TO_POINTER(event.keycode), last_event);
+        g_hash_table_insert(keyboard->last_keys, GUINT_TO_POINTER(event.keycode), last_event);
     }
 
     // check if the event is a duplicate
@@ -432,7 +553,7 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
     xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
     if (error)
     {
-        g_warning("backend-xcb: Allow events failed: response: %d, error %d", error->response_type, error->error_code);
+        g_warning("backend-xcb: Allow events failed: error %d", error->error_code);
         free(error);
     }
     xcb_flush(keyboard->connection);
