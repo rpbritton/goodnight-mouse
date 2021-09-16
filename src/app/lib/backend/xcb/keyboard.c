@@ -67,7 +67,10 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
     // add x connection
     keyboard->connection = backend_xcb_get_connection(keyboard->backend);
     keyboard->root_window = backend_xcb_get_root_window(keyboard->backend);
+
+    // get device ids
     keyboard->keyboard_id = backend_xcb_device_id_from_device_type(keyboard->connection, XCB_INPUT_DEVICE_TYPE_MASTER_KEYBOARD);
+    keyboard->pointer_id = backend_xcb_device_id_from_device_type(keyboard->connection, XCB_INPUT_DEVICE_TYPE_MASTER_POINTER);
 
     // initialize grabs
     keyboard->grabs = 0;
@@ -187,12 +190,37 @@ void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboa
 // get keyboard state
 BackendKeyboardState backend_xcb_keyboard_get_state(BackendXCBKeyboard *keyboard)
 {
-    g_message("todo: backend_xcb_keyboard_get_state");
+    // send request
+    xcb_input_xi_query_pointer_cookie_t cookie;
+    cookie = xcb_input_xi_query_pointer(keyboard->connection, keyboard->root_window, keyboard->pointer_id);
 
+    // get response
+    xcb_generic_error_t *error = NULL;
+    xcb_input_xi_query_pointer_reply_t *reply;
+    reply = xcb_input_xi_query_pointer_reply(keyboard->connection, cookie, &error);
+
+    // handle response
+    if (error != NULL)
+    {
+        g_warning("backend-xcb: Failed to query pointer: error: %d", error->error_code);
+        free(error);
+    }
+    if (!reply)
+    {
+        BackendKeyboardState state = {
+            .modifiers = 0,
+            .group = 0,
+        };
+        return state;
+    }
+
+    // get state
+    // xcb has a bug where the effective modifiers are not computed here
     BackendKeyboardState state = {
-        .group = 0,
-        .modifiers = 0,
+        .modifiers = reply->mods.base | reply->mods.latched | reply->mods.locked | reply->mods.effective,
+        .group = reply->group.base | reply->group.latched | reply->group.locked | reply->group.effective,
     };
+    free(reply);
     return state;
 }
 
@@ -229,8 +257,8 @@ static void set_grab(BackendXCBKeyboard *keyboard)
                                       XCB_CURRENT_TIME,
                                       XCB_NONE,
                                       keyboard->keyboard_id,
-                                      XCB_INPUT_GRAB_MODE_22_ASYNC,
-                                      XCB_INPUT_GRAB_MODE_22_ASYNC,
+                                      XCB_INPUT_GRAB_MODE_22_SYNC,
+                                      XCB_INPUT_GRAB_MODE_22_SYNC,
                                       FALSE,
                                       1,
                                       mask);
