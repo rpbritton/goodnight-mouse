@@ -28,6 +28,13 @@
 #define USE_XCB_GLOBAL_PASSIVE_GRAB (1)
 #endif
 
+typedef struct LastEvent
+{
+    xcb_time_t time;
+    BackendKeyboardEvent event;
+    BackendKeyboardEventResponse response;
+} LastEvent;
+
 static void set_grab(BackendXCBKeyboard *keyboard);
 static void unset_grab(BackendXCBKeyboard *keyboard);
 
@@ -70,6 +77,9 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
     keyboard->focus = backend_xcb_focus_new(keyboard->backend, callback_focus, keyboard);
     keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
 
+    // initialize last events
+    keyboard->last_events = g_hash_table_new_full(NULL, NULL, NULL, g_free);
+
     // subscribe to key events
     backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
     backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_RELEASE, callback_key_event, keyboard);
@@ -83,6 +93,9 @@ void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard)
     // unsubscribe from key events
     backend_xcb_unsubscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
     backend_xcb_unsubscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_RELEASE, callback_key_event, keyboard);
+
+    // free last events
+    g_hash_table_unref(keyboard->last_events);
 
     // free
     g_free(keyboard);
@@ -333,8 +346,6 @@ static void unset_key_grab(BackendXCBKeyboard *keyboard, BackendKeyboardEvent *g
     }
 }
 
-// static gint counter = 0;
-
 // callback for handling key events
 static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyboard_ptr)
 {
@@ -342,8 +353,6 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
 
     // get key event
     xcb_input_key_press_event_t *key_event = (xcb_input_key_press_event_t *)generic_event;
-    g_message("got key: press: %d, detail: %d, mods: %d",
-              key_event->event_type == XCB_INPUT_KEY_PRESS, key_event->detail, key_event->mods.effective);
 
     // get event data
     BackendKeyboardEvent event;
@@ -352,31 +361,40 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
     event.state.modifiers = key_event->mods.effective;
     event.state.group = key_event->group.effective;
 
-    // // check for duplicate event
-    // if (key_event->time == keyboard->last_event_time &&
-    //     event.keycode == keyboard->last_event.keycode &&
-    //     event.pressed == keyboard->last_event.pressed &&
-    //     event.state.modifiers == keyboard->last_event.state.modifiers &&
-    //     event.state.group == keyboard->last_event.state.group)
-    //     return;
-    // keyboard->last_event_time = key_event->time;
-    // keyboard->last_event = event;
+    // get last event of this key type
+    LastEvent *last_event = g_hash_table_lookup(keyboard->last_events, GUINT_TO_POINTER(event.keycode));
+    if (last_event == NULL)
+    {
+        last_event = g_new0(LastEvent, 1);
+        g_hash_table_insert(keyboard->last_events, GUINT_TO_POINTER(event.keycode), last_event);
+    }
 
-    // callback the event
-    BackendKeyboardEventResponse response = keyboard->callback(event, keyboard->data);
+    // check if the event is a duplicate
+    gboolean duplicate = (key_event->time == last_event->time &&
+                          event.keycode == last_event->event.keycode &&
+                          event.pressed == last_event->event.pressed &&
+                          event.state.modifiers == last_event->event.state.modifiers &&
+                          event.state.group == last_event->event.state.group);
+
+    // only send the event if it is not a duplicate
+    BackendKeyboardEventResponse response;
+    if (!duplicate)
+        response = keyboard->callback(event, keyboard->data);
+    else
+        response = last_event->response;
+
+    // save this event
+    last_event->time = key_event->time;
+    last_event->event = event;
+    last_event->response = response;
+
+    g_message("got key: press: %d, detail: %d, mods: %d, duplicate %d, consuming: %d",
+              key_event->event_type == XCB_INPUT_KEY_PRESS, key_event->detail, key_event->mods.effective,
+              duplicate, response == BACKEND_KEYBOARD_EVENT_CONSUME);
 
     // consume or relay the event
-    guint8 event_mode;
-    if (response == BACKEND_KEYBOARD_EVENT_CONSUME)
-    {
-        g_message("consuming");
-        event_mode = XCB_INPUT_EVENT_MODE_ASYNC_DEVICE;
-    }
-    else
-    {
-        g_message("replaying");
-        event_mode = XCB_INPUT_EVENT_MODE_REPLAY_DEVICE;
-    }
+    guint8 event_mode = (response == BACKEND_KEYBOARD_EVENT_CONSUME) ? XCB_INPUT_EVENT_MODE_ASYNC_DEVICE
+                                                                     : XCB_INPUT_EVENT_MODE_REPLAY_DEVICE;
     xcb_void_cookie_t cookie = xcb_input_xi_allow_events_checked(keyboard->connection,
                                                                  key_event->time,
                                                                  key_event->deviceid,
@@ -389,17 +407,16 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
         g_warning("backend-xcb: Allow events failed: response: %d, error %d", error->response_type, error->error_code);
         free(error);
     }
+    xcb_flush(keyboard->connection);
 }
 
 static void callback_focus(gpointer keyboard_ptr)
 {
     BackendXCBKeyboard *keyboard = keyboard_ptr;
 
-    // set the new active window to grab
-    // this prevents the window from losing focus during key grabbing
+    // get the focused window for the grab window
+    // by setting the grab window to the focused window, focus out events are not sent
     keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
-
-    // ensure grab window exists
     if (keyboard->grab_window == XCB_NONE)
         keyboard->grab_window = keyboard->root_window;
 

@@ -43,6 +43,8 @@ typedef struct BackendXCBKeyboard
 
     BackendXCBFocus *focus;
     xcb_window_t grab_window;
+
+    GHashTable *last_events;
 } BackendXCBKeyboard;
 
 BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data);
