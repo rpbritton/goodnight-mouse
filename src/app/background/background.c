@@ -118,11 +118,10 @@ static gboolean start_foreground(gpointer background_ptr)
 {
     Background *background = background_ptr;
 
-    // run foreground
-    if (foreground_is_running(background->foreground))
-        g_debug("background: Foreground is already running");
-    else
-        foreground_run(background->foreground);
+    // run the foreground
+    g_debug("background: Running the foreground");
+    foreground_run(background->foreground);
+    g_debug("background: Foreground has returned");
 
     return G_SOURCE_REMOVE;
 }

@@ -77,7 +77,10 @@ void foreground_destroy(Foreground *foreground)
 void foreground_run(Foreground *foreground)
 {
     if (foreground_is_running(foreground))
+    {
+        g_debug("foreground: Foreground is already running");
         return;
+    }
 
     // init shift state
     foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & SHIFT_MASK);
@@ -87,7 +90,7 @@ void foreground_run(Foreground *foreground)
     AtspiAccessible *window = focus_get_window(foreground->focus);
     if (!window)
     {
-        g_warning("foreground: No active window, stopping.");
+        g_warning("foreground: No active window, stopping");
         return;
     }
 
@@ -206,7 +209,7 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
         return KEYBOARD_EVENT_CONSUME;
 
     // process key type
-    g_debug("foreground: Checking key press event for '%s'", gdk_keyval_name(event.keysym));
+    g_debug("foreground: Checking key %s event for '%s'", (event.pressed) ? "pressed" : "released", gdk_keyval_name(event.keysym));
     switch (event.keysym)
     {
     case GDK_KEY_Escape:
