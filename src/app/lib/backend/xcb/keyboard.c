@@ -411,8 +411,6 @@ static void set_grab(BackendXCBKeyboard *keyboard)
     reply = xcb_input_xi_grab_device_reply(keyboard->connection,
                                            cookie,
                                            &error);
-
-    // handle response
     if (error != NULL)
     {
         g_warning("backend-xcb: Failed to grab device: error: %d", error->error_code);
@@ -437,8 +435,6 @@ static void unset_grab(BackendXCBKeyboard *keyboard)
 
     // get response
     xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
-
-    // handle response
     if (error)
     {
         g_warning("backend-xcb: Failed to ungrab device: error: %d", error->error_code);
@@ -576,21 +572,37 @@ static void callback_key_event(xcb_generic_event_t *generic_event, gpointer keyb
     xcb_flush(keyboard->connection);
 }
 
+// listen for focus events
+// by setting the grab window to the focused window, focus stays with that window
 static void callback_focus(gpointer keyboard_ptr)
 {
     BackendXCBKeyboard *keyboard = keyboard_ptr;
 
     // get the focused window for the grab window
-    // by setting the grab window to the focused window, focus out events are not sent
-    keyboard->grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
-    if (keyboard->grab_window == XCB_NONE)
-        keyboard->grab_window = keyboard->root_window;
+    xcb_window_t grab_window = backend_xcb_focus_get_xcb_window(keyboard->focus);
+    if (grab_window == XCB_NONE)
+        grab_window = keyboard->root_window;
 
-    // set the global grab to the new window
+    // ensure grab window is different
+    if (grab_window == keyboard->grab_window)
+        return;
+
+    // unset the global grab
+    if (keyboard->grabs > 0)
+        unset_grab(keyboard);
+
+    // unset the key grabs
+    for (GList *link = keyboard->key_grabs; link; link = link->next)
+        unset_key_grab(keyboard, link->data);
+
+    // set the new grab window
+    keyboard->grab_window = grab_window;
+
+    // reset the global grab
     if (keyboard->grabs > 0)
         set_grab(keyboard);
 
-    // set the key grabs to the new window
+    // reset the key grabs
     for (GList *link = keyboard->key_grabs; link; link = link->next)
         set_key_grab(keyboard, link->data);
 }
