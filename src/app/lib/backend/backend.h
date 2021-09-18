@@ -20,30 +20,7 @@
 #ifndef C9468050_1653_4C80_B8A8_A79F04F64BF7
 #define C9468050_1653_4C80_B8A8_A79F04F64BF7
 
-#if USE_X11
-
-#include "x11/x11.h"
-#define backend_new backend_x11_new
-#define backend_destroy backend_x11_destroy
-
-#include "x11/focus.h"
-#define backend_focus_new backend_x11_focus_new
-#define backend_focus_destroy backend_x11_focus_destroy
-#define backend_focus_get_window backend_x11_focus_get_window
-
-#include "x11/keyboard.h"
-#define backend_keyboard_new backend_x11_keyboard_new
-#define backend_keyboard_destroy backend_x11_keyboard_destroy
-#define backend_keyboard_grab backend_x11_keyboard_grab
-#define backend_keyboard_ungrab backend_x11_keyboard_ungrab
-#define backend_keyboard_grab_key backend_x11_keyboard_grab_key
-#define backend_keyboard_ungrab_key backend_x11_keyboard_ungrab_key
-#define backend_keyboard_get_state backend_x11_keyboard_get_state
-#define backend_keyboard_emulate_reset backend_x11_keyboard_emulate_reset
-#define backend_keyboard_emulate_state backend_x11_keyboard_emulate_state
-#define backend_keyboard_emulate_key backend_x11_keyboard_emulate_key
-
-#elif USE_XCB
+#if USE_XCB
 
 #include "xcb/xcb.h"
 #define backend_new backend_xcb_new

@@ -21,8 +21,6 @@
 
 #include "keyboard.h"
 
-#include <xcb/xtest.h>
-
 #include "utils.h"
 
 // the global passive grab lets us replay keyboard events

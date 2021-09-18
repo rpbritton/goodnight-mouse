@@ -24,6 +24,7 @@
 
 #include "state.h"
 
+// whether the event should be passed through or not
 typedef enum BackendKeyboardEventResponse
 {
     BACKEND_KEYBOARD_EVENT_RELAY,
