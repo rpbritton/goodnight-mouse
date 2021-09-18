@@ -24,28 +24,21 @@
 
 #include "xcb.h"
 #include "../common/keyboard.h"
-#include "focus.h"
+#include "device.h"
+#include "state.h"
 
 // backend for keyboard events that uses pure atspi
 typedef struct BackendXCBKeyboard
 {
     BackendXCB *backend;
 
+    xcb_connection_t *connection;
+
     BackendKeyboardCallback callback;
     gpointer data;
 
-    xcb_connection_t *connection;
-    xcb_window_t root_window;
-
-    xcb_input_device_id_t keyboard_id;
-
-    gint grabs;
-    GList *key_grabs;
-
-    BackendXCBFocus *focus;
-    xcb_window_t grab_window;
-
-    GHashTable *last_keys;
+    BackendXCBDevice *device;
+    BackendXCBState *state;
 } BackendXCBKeyboard;
 
 BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data);

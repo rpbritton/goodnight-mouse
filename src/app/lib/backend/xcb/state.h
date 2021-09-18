@@ -33,6 +33,7 @@ typedef struct BackendXCBState
 
     xcb_connection_t *connection;
     xcb_window_t root_window;
+
     xcb_input_device_id_t pointer_id;
 } BackendXCBState;
 
