@@ -17,37 +17,37 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FE6265C6_BCF0_41C2_B201_D16783856EB7
-#define FE6265C6_BCF0_41C2_B201_D16783856EB7
+#ifndef CCB12CE1_7AD2_4E40_9D80_F7D93BD744F9
+#define CCB12CE1_7AD2_4E40_9D80_F7D93BD744F9
 
 #if USE_XCB
 
 #include "xcb.h"
-#include "../common/keyboard.h"
+#include "../common/pointer.h"
 #include "device.h"
 #include "state.h"
 
-// backend for keyboard events
-typedef struct BackendXCBKeyboard
+// backend for pointer events
+typedef struct BackendXCBPointer
 {
     BackendXCB *backend;
 
     xcb_connection_t *connection;
 
-    BackendKeyboardCallback callback;
+    BackendPointerCallback callback;
     gpointer data;
 
     BackendXCBDevice *device;
     BackendXCBState *state;
-} BackendXCBKeyboard;
+} BackendXCBPointer;
 
-BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data);
-void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_grab(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
-void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
+BackendXCBPointer *backend_xcb_pointer_new(BackendXCB *backend, BackendPointerCallback callback, gpointer data);
+void backend_xcb_pointer_destroy(BackendXCBPointer *pointer);
+void backend_xcb_pointer_grab(BackendXCBPointer *pointer);
+void backend_xcb_pointer_ungrab(BackendXCBPointer *pointer);
+void backend_xcb_pointer_grab_button(BackendXCBPointer *pointer, BackendPointerEvent event);
+void backend_xcb_pointer_ungrab_button(BackendXCBPointer *pointer, BackendPointerEvent event);
 
 #endif /* USE_XCB */
 
-#endif /* FE6265C6_BCF0_41C2_B201_D16783856EB7 */
+#endif /* CCB12CE1_7AD2_4E40_9D80_F7D93BD744F9 */

@@ -33,7 +33,7 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
     // add backend
     keyboard->backend = backend;
 
-    // add x connection
+    // add connection
     keyboard->connection = backend_xcb_get_connection(keyboard->backend);
 
     // add callback
