@@ -27,7 +27,7 @@
 typedef struct Subscriber
 {
     BackendXCBExtension extension;
-    guint8 type;
+    guint32 event_mask;
     BackendXCBCallback callback;
     gpointer data;
 } Subscriber;
@@ -102,12 +102,12 @@ void backend_xcb_destroy(BackendXCB *backend)
 }
 
 // subscribe to xcb events
-void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data)
+void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint32 event_mask, BackendXCBCallback callback, gpointer data)
 {
     // create new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
     subscriber->extension = extension;
-    subscriber->type = type;
+    subscriber->event_mask = event_mask;
     subscriber->callback = callback;
     subscriber->data = data;
 
@@ -116,7 +116,7 @@ void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, g
 }
 
 // unsubscribe from xcb events
-void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data)
+void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint32 event_mask, BackendXCBCallback callback, gpointer data)
 {
     // remove the first matching subscriber
     for (GList *link = backend->subscribers; link; link = link->next)
@@ -125,7 +125,7 @@ void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension,
 
         // check if subscriber matches
         if (!(subscriber->extension == extension &&
-              subscriber->type == type &&
+              subscriber->event_mask == event_mask &&
               subscriber->callback == callback &&
               subscriber->data == data))
             continue;
@@ -181,8 +181,8 @@ static gboolean process_event(xcb_generic_event_t *event, gpointer backend_ptr)
 
         // check if subscriber matches
         // todo: do you need to do (event->response_type & ~0x80)?
-        if (!(subscriber->extension == extension &&
-              subscriber->type == type))
+        if (!((subscriber->extension == extension) &&
+              (subscriber->event_mask & (1 << type))))
             continue;
 
         // notify subscriber

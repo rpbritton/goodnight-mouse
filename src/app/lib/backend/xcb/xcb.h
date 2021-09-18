@@ -55,8 +55,8 @@ typedef struct BackendXCB
 BackendXCB *backend_xcb_new();
 void backend_xcb_destroy(BackendXCB *backend);
 
-void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data);
-void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint8 type, BackendXCBCallback callback, gpointer data);
+void backend_xcb_subscribe(BackendXCB *backend, BackendXCBExtension extension, guint32 event_mask, BackendXCBCallback callback, gpointer data);
+void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension, guint32 event_mask, BackendXCBCallback callback, gpointer data);
 xcb_connection_t *backend_xcb_get_connection(BackendXCB *backend);
 xcb_window_t backend_xcb_get_root_window(BackendXCB *backend);
 BackendLegacy *backend_xcb_get_legacy(BackendXCB *backend);

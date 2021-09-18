@@ -83,8 +83,9 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
     keyboard->last_keys = g_hash_table_new_full(NULL, NULL, NULL, g_free);
 
     // subscribe to key events
-    backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
-    backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_RELEASE, callback_key_event, keyboard);
+    backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT,
+                          (XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE),
+                          callback_key_event, keyboard);
 
     return keyboard;
 }
@@ -93,8 +94,9 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
 void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard)
 {
     // unsubscribe from key events
-    backend_xcb_unsubscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
-    backend_xcb_unsubscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_RELEASE, callback_key_event, keyboard);
+    backend_xcb_unsubscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT,
+                            (XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE),
+                            callback_key_event, keyboard);
 
     // free last events
     g_hash_table_unref(keyboard->last_keys);

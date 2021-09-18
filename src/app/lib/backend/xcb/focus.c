@@ -55,7 +55,7 @@ BackendXCBFocus *backend_xcb_focus_new(BackendXCB *backend, BackendFocusCallback
     focus->legacy = backend_legacy_focus_new(backend_xcb_get_legacy(focus->backend), callback_backend_legacy, focus);
 
     // subscribe to property change events
-    backend_xcb_subscribe(focus->backend, BACKEND_XCB_EXTENSION_NONE, XCB_PROPERTY_NOTIFY, callback_property_notify, focus);
+    backend_xcb_subscribe(focus->backend, BACKEND_XCB_EXTENSION_NONE, XCB_EVENT_MASK_PROPERTY_CHANGE, callback_property_notify, focus);
 
     // return
     return focus;
@@ -65,7 +65,7 @@ BackendXCBFocus *backend_xcb_focus_new(BackendXCB *backend, BackendFocusCallback
 void backend_xcb_focus_destroy(BackendXCBFocus *focus)
 {
     // unsubscribe from property change events
-    backend_xcb_unsubscribe(focus->backend, BACKEND_XCB_EXTENSION_NONE, XCB_PROPERTY_NOTIFY, callback_property_notify, focus);
+    backend_xcb_unsubscribe(focus->backend, BACKEND_XCB_EXTENSION_NONE, XCB_EVENT_MASK_PROPERTY_CHANGE, callback_property_notify, focus);
 
     // free legacy backend
     backend_legacy_focus_destroy(focus->legacy);
