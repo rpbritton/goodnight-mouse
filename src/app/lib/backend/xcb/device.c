@@ -201,34 +201,32 @@ static void set_device_grab(BackendXCBDevice *device)
 #if USE_XCB_GLOBAL_PASSIVE_GRAB
     set_detail_grab(device, &GLOBAL_PASSIVE_GRAB);
 #else
-    // // send request
-    // const uint32_t mask[] = {XCB_INPUT_XI_EVENT_MASK_KEY_PRESS |
-    //                          XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE};
-    // xcb_input_xi_grab_device_cookie_t cookie;
-    // cookie = xcb_input_xi_grab_device(device->connection,
-    //                                   device->grab_window,
-    //                                   XCB_CURRENT_TIME,
-    //                                   XCB_NONE,
-    //                                   device->device_id,
-    //                                   XCB_INPUT_GRAB_MODE_22_SYNC,
-    //                                   XCB_INPUT_GRAB_MODE_22_SYNC,
-    //                                   FALSE,
-    //                                   1,
-    //                                   mask);
+    // send request
+    xcb_input_xi_grab_device_cookie_t cookie;
+    cookie = xcb_input_xi_grab_device(device->connection,
+                                      device->grab_window,
+                                      XCB_CURRENT_TIME,
+                                      XCB_NONE,
+                                      device->device_id,
+                                      XCB_INPUT_GRAB_MODE_22_ASYNC,
+                                      XCB_INPUT_GRAB_MODE_22_ASYNC,
+                                      FALSE,
+                                      1,
+                                      &device->event_mask);
 
-    // // get response
-    // xcb_generic_error_t *error = NULL;
-    // xcb_input_xi_grab_device_reply_t *reply;
-    // reply = xcb_input_xi_grab_device_reply(device->connection,
-    //                                        cookie,
-    //                                        &error);
-    // if (error != NULL)
-    // {
-    //     g_warning("backend-xcb: Failed to grab device: error: %d", error->error_code);
-    //     free(error);
-    // }
-    // if (reply)
-    //     free(reply);
+    // get response
+    xcb_generic_error_t *error = NULL;
+    xcb_input_xi_grab_device_reply_t *reply;
+    reply = xcb_input_xi_grab_device_reply(device->connection,
+                                           cookie,
+                                           &error);
+    if (error != NULL)
+    {
+        g_warning("backend-xcb: Failed to grab device: error: %d", error->error_code);
+        free(error);
+    }
+    if (reply)
+        free(reply);
 #endif
 }
 
@@ -238,19 +236,19 @@ static void unset_device_grab(BackendXCBDevice *device)
 #if USE_XCB_GLOBAL_PASSIVE_GRAB
     unset_detail_grab(device, &GLOBAL_PASSIVE_GRAB);
 #else
-    // // send request
-    // xcb_void_cookie_t cookie;
-    // cookie = xcb_input_xi_ungrab_device_checked(device->connection,
-    //                                             XCB_CURRENT_TIME,
-    //                                             device->device_id);
+    // send request
+    xcb_void_cookie_t cookie;
+    cookie = xcb_input_xi_ungrab_device_checked(device->connection,
+                                                XCB_CURRENT_TIME,
+                                                device->device_id);
 
-    // // get response
-    // xcb_generic_error_t *error = xcb_request_check(device->connection, cookie);
-    // if (error)
-    // {
-    //     g_warning("backend-xcb: Failed to ungrab device: error: %d", error->error_code);
-    //     free(error);
-    // }
+    // get response
+    xcb_generic_error_t *error = xcb_request_check(device->connection, cookie);
+    if (error)
+    {
+        g_warning("backend-xcb: Failed to ungrab device: error: %d", error->error_code);
+        free(error);
+    }
 #endif
 }
 
