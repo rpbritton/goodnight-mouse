@@ -17,28 +17,16 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef C34EFBD7_588C_4399_8DEF_C92876EB3C3D
-#define C34EFBD7_588C_4399_8DEF_C92876EB3C3D
+#ifndef E9963C50_E610_424C_B8CC_3D12B7365404
+#define E9963C50_E610_424C_B8CC_3D12B7365404
 
 #include <glib.h>
 
-#include "state.h"
-
-typedef enum BackendKeyboardEventResponse
+// state of the modifiers and group
+typedef struct BackendStateEvent
 {
-    BACKEND_KEYBOARD_EVENT_RELAY,
-    BACKEND_KEYBOARD_EVENT_CONSUME,
-} BackendKeyboardEventResponse;
+    guint8 modifiers;
+    guint8 group;
+} BackendStateEvent;
 
-// event representing a key action
-typedef struct BackendKeyboardEvent
-{
-    guint keycode;
-    gboolean pressed;
-    BackendStateEvent state;
-} BackendKeyboardEvent;
-
-// callback used for keyboard events
-typedef BackendKeyboardEventResponse (*BackendKeyboardCallback)(BackendKeyboardEvent event, gpointer data);
-
-#endif /* C34EFBD7_588C_4399_8DEF_C92876EB3C3D */
+#endif /* E9963C50_E610_424C_B8CC_3D12B7365404 */

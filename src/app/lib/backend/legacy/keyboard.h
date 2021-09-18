@@ -46,6 +46,6 @@ void backend_legacy_keyboard_grab(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event);
 void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event);
-BackendKeyboardState backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard);
+BackendStateEvent backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard);
 
 #endif /* F57F1019_9CFE_4F5D_A723_17B8C671BC05 */

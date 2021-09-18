@@ -50,7 +50,9 @@ Keyboard *keyboard_new(Backend *backend)
     keyboard->valid_modifiers = virtual_valid_modifiers & 0xFF;
 
     // add backend
-    keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
+    keyboard->keyboard = backend_keyboard_new(backend, callback_keyboard, keyboard);
+    keyboard->state = backend_state_new(backend);
+    keyboard->emulator = backend_emulator_new(backend);
 
     return keyboard;
 }
@@ -59,7 +61,9 @@ Keyboard *keyboard_new(Backend *backend)
 void keyboard_destroy(Keyboard *keyboard)
 {
     // free backend
-    backend_keyboard_destroy(keyboard->backend);
+    backend_keyboard_destroy(keyboard->keyboard);
+    backend_state_destroy(keyboard->state);
+    backend_emulator_destroy(keyboard->emulator);
 
     // free subscribers
     g_list_free_full(keyboard->subscribers, g_free);
@@ -81,7 +85,7 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the keyboard
-    backend_keyboard_grab(keyboard->backend);
+    backend_keyboard_grab(keyboard->keyboard);
 }
 
 // remove keyboard event subscription
@@ -99,7 +103,7 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
             continue;
 
         // ungrab the keyboard
-        backend_keyboard_ungrab(keyboard->backend);
+        backend_keyboard_ungrab(keyboard->keyboard);
 
         // remove subscriber
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
@@ -130,7 +134,7 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
     {
         BackendKeyboardEvent *grab = link->data;
         g_debug("keyboard: Grabbing key: keycode: %d, modifiers: 0x%X", grab->keycode, grab->state.modifiers);
-        backend_keyboard_grab_key(keyboard->backend, *grab);
+        backend_keyboard_grab_key(keyboard->keyboard, *grab);
     }
 
     // note if grabs were found
@@ -165,7 +169,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType 
         for (GList *link = subscriber->grabs; link; link = link->next)
         {
             BackendKeyboardEvent *grab = link->data;
-            backend_keyboard_ungrab_key(keyboard->backend, *grab);
+            backend_keyboard_ungrab_key(keyboard->keyboard, *grab);
         }
         g_list_free_full(subscriber->grabs, g_free);
 
@@ -181,7 +185,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType 
 GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
 {
     // get the current modifiers
-    BackendKeyboardState state = backend_keyboard_get_state(keyboard->backend);
+    BackendStateEvent state = backend_state_current(keyboard->state);
 
     // sanitize the modifiers
     GdkModifierType modifiers = state.modifiers;
@@ -193,7 +197,7 @@ GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
 
 gboolean keyboard_emulate_reset(Keyboard *keyboard)
 {
-    return backend_keyboard_emulate_reset(keyboard->backend);
+    return backend_emulator_reset(keyboard->emulator);
 }
 
 gboolean keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
@@ -203,11 +207,11 @@ gboolean keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifier
     modifiers &= 0xFF;
 
     // get the state
-    BackendKeyboardState state = backend_keyboard_get_state(keyboard->backend);
+    BackendStateEvent state = backend_state_current(keyboard->state);
     state.modifiers = modifiers;
 
     // set the state
-    return backend_keyboard_emulate_state(keyboard->backend, state);
+    return backend_emulator_state(keyboard->emulator, state);
 }
 
 gboolean keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
@@ -232,7 +236,7 @@ gboolean keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType 
 
     // send a key press
     event.pressed = TRUE;
-    if (!backend_keyboard_emulate_key(keyboard->backend, event))
+    if (!backend_emulator_key(keyboard->emulator, event))
     {
         keyboard_emulate_reset(keyboard);
         return FALSE;
@@ -240,7 +244,7 @@ gboolean keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType 
 
     // send key release
     event.pressed = FALSE;
-    if (!backend_keyboard_emulate_key(keyboard->backend, event))
+    if (!backend_emulator_key(keyboard->emulator, event))
     {
         keyboard_emulate_reset(keyboard);
         return FALSE;

@@ -61,10 +61,18 @@
 #define backend_keyboard_ungrab backend_xcb_keyboard_ungrab
 #define backend_keyboard_grab_key backend_xcb_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_xcb_keyboard_ungrab_key
-#define backend_keyboard_get_state backend_xcb_keyboard_get_state
-#define backend_keyboard_emulate_reset backend_xcb_keyboard_emulate_reset
-#define backend_keyboard_emulate_state backend_xcb_keyboard_emulate_state
-#define backend_keyboard_emulate_key backend_xcb_keyboard_emulate_key
+
+#include "xcb/state.h"
+#define backend_state_new backend_xcb_state_new
+#define backend_state_destroy backend_xcb_state_destroy
+#define backend_state_current backend_xcb_state_current
+
+#include "xcb/emulator.h"
+#define backend_emulator_new backend_xcb_emulator_new
+#define backend_emulator_destroy backend_xcb_emulator_destroy
+#define backend_emulator_reset backend_xcb_emulator_reset
+#define backend_emulator_state backend_xcb_emulator_state
+#define backend_emulator_key backend_xcb_emulator_key
 
 #else
 
@@ -94,6 +102,7 @@
 typedef void Backend;
 typedef void BackendFocus;
 typedef void BackendKeyboard;
-typedef void BackendModifiers;
+typedef void BackendState;
+typedef void BackendEmulator;
 
 #endif /* C9468050_1653_4C80_B8A8_A79F04F64BF7 */

@@ -117,10 +117,10 @@ void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, Backend
     }
 }
 
-BackendKeyboardState backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard)
+BackendStateEvent backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard)
 {
     // get state
-    BackendKeyboardState state;
+    BackendStateEvent state;
     state.modifiers = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(gdk_display_get_default())) & 0xFF;
     state.group = 0; // todo, maybe contained in the gdk return bits 13 and 14?
 

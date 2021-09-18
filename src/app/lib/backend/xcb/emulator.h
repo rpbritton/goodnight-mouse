@@ -17,46 +17,38 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FE6265C6_BCF0_41C2_B201_D16783856EB7
-#define FE6265C6_BCF0_41C2_B201_D16783856EB7
+#ifndef BC0B9014_1DE6_4245_A1EE_9FDB72126137
+#define BC0B9014_1DE6_4245_A1EE_9FDB72126137
 
 #if USE_XCB
 
 #include "xcb.h"
+#include "../common/state.h"
 #include "../common/keyboard.h"
-#include "focus.h"
+#include "state.h"
 
-// backend for keyboard events that uses pure atspi
-typedef struct BackendXCBKeyboard
+// backend for emulating events
+typedef struct BackendXCBEmulator
 {
     BackendXCB *backend;
-
-    BackendKeyboardCallback callback;
-    gpointer data;
 
     xcb_connection_t *connection;
     xcb_window_t root_window;
 
     xcb_input_device_id_t keyboard_id;
+    xcb_input_device_id_t pointer_id;
 
-    gint grabs;
-    GList *key_grabs;
-
-    BackendXCBFocus *focus;
-    xcb_window_t grab_window;
-
-    GHashTable *last_keys;
+    BackendXCBState *state;
 
     GHashTable *emulated_keys;
-} BackendXCBKeyboard;
+} BackendXCBEmulator;
 
-BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboardCallback callback, gpointer data);
-void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_grab(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
-void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
+BackendXCBEmulator *backend_xcb_emulator_new(BackendXCB *backend);
+void backend_xcb_emulator_destroy(BackendXCBEmulator *emulator);
+gboolean backend_xcb_emulator_reset(BackendXCBEmulator *emulator);
+gboolean backend_xcb_emulator_state(BackendXCBEmulator *emulator, BackendStateEvent state);
+gboolean backend_xcb_emulator_key(BackendXCBEmulator *emulator, BackendKeyboardEvent event);
 
 #endif /* USE_XCB */
 
-#endif /* FE6265C6_BCF0_41C2_B201_D16783856EB7 */
+#endif /* BC0B9014_1DE6_4245_A1EE_9FDB72126137 */

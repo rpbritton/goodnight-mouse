@@ -50,7 +50,7 @@ typedef struct BackendX11Keyboard
 
     gboolean is_emulating;
     GHashTable *emulated_keys;
-    BackendKeyboardState initial_state;
+    BackendStateEvent initial_state;
     GList *emulation_queue;
 } BackendX11Keyboard;
 
@@ -60,9 +60,9 @@ void backend_x11_keyboard_grab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_ungrab(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_grab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
-BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard);
+BackendStateEvent backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard);
 void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard);
-void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKeyboardState state);
+void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendStateEvent state);
 void backend_x11_keyboard_emulate_key(BackendX11Keyboard *keyboard, BackendKeyboardEvent event);
 
 #endif /* USE_X11 */

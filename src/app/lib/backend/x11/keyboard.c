@@ -169,14 +169,14 @@ void backend_x11_keyboard_ungrab_key(BackendX11Keyboard *keyboard, BackendKeyboa
     }
 }
 
-BackendKeyboardState backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard)
+BackendStateEvent backend_x11_keyboard_get_state(BackendX11Keyboard *keyboard)
 {
     // get state
     XkbStateRec xkb_state;
     XkbGetState(keyboard->display, XkbUseCoreKbd, &xkb_state);
 
     // parse state
-    BackendKeyboardState state;
+    BackendStateEvent state;
     state.modifiers = xkb_state.mods & 0xFF;
     state.group = xkb_state.group & 0xFF;
 
@@ -217,13 +217,13 @@ void backend_x11_keyboard_emulate_reset(BackendX11Keyboard *keyboard)
     keyboard->is_emulating = FALSE;
 }
 
-void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendKeyboardState state)
+void backend_x11_keyboard_emulate_state(BackendX11Keyboard *keyboard, BackendStateEvent state)
 {
     // start emulating
     emulate_start(keyboard);
 
     // get current state
-    BackendKeyboardState current_state = backend_x11_keyboard_get_state(keyboard);
+    BackendStateEvent current_state = backend_x11_keyboard_get_state(keyboard);
 
     // get keycodes to set modifiers
     XModifierKeymap *modifiers = XGetModifierMapping(keyboard->display);

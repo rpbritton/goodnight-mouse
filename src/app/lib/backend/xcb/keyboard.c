@@ -37,8 +37,6 @@ typedef struct LastEvent
     BackendKeyboardEventResponse response;
 } LastEvent;
 
-static gboolean emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean pressed);
-
 static void set_grab(BackendXCBKeyboard *keyboard);
 static void unset_grab(BackendXCBKeyboard *keyboard);
 
@@ -74,7 +72,6 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
 
     // get device ids
     keyboard->keyboard_id = backend_xcb_device_id_from_device_type(keyboard->connection, XCB_INPUT_DEVICE_TYPE_MASTER_KEYBOARD);
-    keyboard->pointer_id = backend_xcb_device_id_from_device_type(keyboard->connection, XCB_INPUT_DEVICE_TYPE_MASTER_POINTER);
 
     // initialize grabs
     keyboard->grabs = 0;
@@ -86,9 +83,6 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
 
     // init last events
     keyboard->last_keys = g_hash_table_new_full(NULL, NULL, NULL, g_free);
-
-    // init emulated events
-    keyboard->emulated_keys = g_hash_table_new(NULL, NULL);
 
     // subscribe to key events
     backend_xcb_subscribe(keyboard->backend, BACKEND_XCB_EXTENSION_XINPUT, XCB_INPUT_KEY_PRESS, callback_key_event, keyboard);
@@ -106,10 +100,6 @@ void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard)
 
     // free last events
     g_hash_table_unref(keyboard->last_keys);
-
-    // free any emulation
-    backend_xcb_keyboard_emulate_reset(keyboard);
-    g_hash_table_unref(keyboard->emulated_keys);
 
     // free
     g_free(keyboard);
@@ -196,192 +186,6 @@ void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboa
         g_free(grab);
         return;
     }
-}
-
-// get keyboard state
-BackendKeyboardState backend_xcb_keyboard_get_state(BackendXCBKeyboard *keyboard)
-{
-    // send request
-    xcb_input_xi_query_pointer_cookie_t cookie;
-    cookie = xcb_input_xi_query_pointer(keyboard->connection, keyboard->root_window, keyboard->pointer_id);
-
-    // get response
-    xcb_generic_error_t *error = NULL;
-    xcb_input_xi_query_pointer_reply_t *reply;
-    reply = xcb_input_xi_query_pointer_reply(keyboard->connection, cookie, &error);
-    if (error != NULL)
-    {
-        g_warning("backend-xcb: Failed to query pointer: error: %d", error->error_code);
-        free(error);
-    }
-    if (!reply)
-    {
-        BackendKeyboardState state = {
-            .modifiers = 0,
-            .group = 0,
-        };
-        return state;
-    }
-
-    // get state
-    // xcb has a bug where the effective modifiers are not computed here
-    BackendKeyboardState state = {
-        .modifiers = reply->mods.base | reply->mods.latched | reply->mods.locked | reply->mods.effective,
-        .group = reply->group.base | reply->group.latched | reply->group.locked | reply->group.effective,
-    };
-    free(reply);
-    return state;
-}
-
-// reset any emulated keys or state
-gboolean backend_xcb_keyboard_emulate_reset(BackendXCBKeyboard *keyboard)
-{
-    // get lists of keys to send
-    GList *keys_to_press = NULL;
-    GList *keys_to_release = NULL;
-    GHashTableIter iter;
-    gpointer keycode, pressed;
-    g_hash_table_iter_init(&iter, keyboard->emulated_keys);
-    while (g_hash_table_iter_next(&iter, &keycode, &pressed))
-        if (GPOINTER_TO_UINT(pressed))
-            keys_to_release = g_list_prepend(keys_to_release, keycode);
-        else
-            keys_to_press = g_list_prepend(keys_to_press, keycode);
-
-    // send keys
-    gboolean is_success = TRUE;
-    for (GList *link = keys_to_press; link; link = link->next)
-        is_success &= emulate_key(keyboard, GPOINTER_TO_UINT(link->data), TRUE);
-    g_list_free(keys_to_press);
-    for (GList *link = keys_to_release; link; link = link->next)
-        is_success &= emulate_key(keyboard, GPOINTER_TO_UINT(link->data), FALSE);
-    g_list_free(keys_to_release);
-
-    // return
-    return is_success;
-}
-
-// set an emulated state
-gboolean backend_xcb_keyboard_emulate_state(BackendXCBKeyboard *keyboard, BackendKeyboardState state)
-{
-    // todo: group
-
-    // get current state
-    BackendKeyboardState current_state = backend_xcb_keyboard_get_state(keyboard);
-
-    // send get modifiers mapping request
-    xcb_input_get_device_modifier_mapping_cookie_t cookie;
-    cookie = xcb_input_get_device_modifier_mapping(keyboard->connection, keyboard->keyboard_id);
-
-    // get the reply
-    xcb_generic_error_t *error = NULL;
-    xcb_input_get_device_modifier_mapping_reply_t *reply;
-    reply = xcb_input_get_device_modifier_mapping_reply(keyboard->connection, cookie, &error);
-    if (error)
-    {
-        g_warning("backend-xcb: Failed to get modifier mapping: error: %d", error->error_code);
-        free(error);
-        return FALSE;
-    }
-    if (!reply)
-        return FALSE;
-
-    // get the maps
-    guint8 *modifiers = xcb_input_get_device_modifier_mapping_keymaps(reply);
-
-    // check all the modifiers
-    gboolean is_success = TRUE;
-    for (gint mod_index = 0; mod_index <= 8; mod_index++)
-    {
-        // do nothing if already matches
-        if ((state.modifiers & (1 << mod_index)) == (current_state.modifiers & (1 << mod_index)))
-            continue;
-
-        // get modifier action
-        gboolean press = (state.modifiers & (1 << mod_index)) && !(current_state.modifiers & (1 << mod_index));
-
-        // try sending keycodes to set the modifier
-        for (gint keycode_index = 0; keycode_index < reply->keycodes_per_modifier; keycode_index++)
-        {
-            // get the keycode
-            guint keycode = modifiers[mod_index * reply->keycodes_per_modifier + keycode_index];
-            if (!keycode)
-                continue;
-
-            // send key
-            emulate_key(keyboard, keycode, press);
-
-            // check if was set
-            current_state = backend_xcb_keyboard_get_state(keyboard);
-            if ((state.modifiers & (1 << mod_index)) == (current_state.modifiers & (1 << mod_index)))
-                break;
-            else
-                emulate_key(keyboard, keycode, !press);
-        }
-
-        // check if modifier was set
-        if ((state.modifiers & (1 << mod_index)) != (current_state.modifiers & (1 << mod_index)))
-            is_success = FALSE;
-    }
-
-    // return
-    free(reply);
-    return is_success;
-}
-
-// set an emulated key
-gboolean backend_xcb_keyboard_emulate_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event)
-{
-    // set the state
-    if (!backend_xcb_keyboard_emulate_state(keyboard, event.state))
-        return FALSE;
-
-    // send the key event
-    if (!emulate_key(keyboard, event.keycode, event.pressed))
-        return FALSE;
-
-    // return success
-    return TRUE;
-}
-
-static gboolean emulate_key(BackendXCBKeyboard *keyboard, guint keycode, gboolean press)
-{
-    g_debug("backend-xcb: Emulating key: keycode: %d, press: %d", keycode, press);
-
-    // send key
-    xcb_void_cookie_t cookie;
-    // todo: deviceid can apparently be 0, will that still get picked up by grabs?
-    cookie = xcb_test_fake_input_checked(keyboard->connection,
-                                         (press) ? XCB_KEY_PRESS : XCB_KEY_RELEASE,
-                                         keycode,
-                                         XCB_CURRENT_TIME,
-                                         keyboard->root_window,
-                                         0, 0,
-                                         keyboard->keyboard_id);
-
-    // check response
-    xcb_generic_error_t *error = xcb_request_check(keyboard->connection, cookie);
-    if (error)
-    {
-        g_warning("backend-xcb: Key emulation failed: keycode: %d, press: %d, error %d",
-                  keycode, press, error->error_code);
-        free(error);
-        return FALSE;
-    }
-
-    // record in emulation table
-    if (g_hash_table_contains(keyboard->emulated_keys, GUINT_TO_POINTER(keycode)))
-    {
-        if (GPOINTER_TO_UINT(g_hash_table_lookup(keyboard->emulated_keys, GUINT_TO_POINTER(keycode))) != press)
-            g_hash_table_remove(keyboard->emulated_keys, GUINT_TO_POINTER(keycode));
-    }
-    else
-    {
-        g_hash_table_insert(keyboard->emulated_keys, GUINT_TO_POINTER(keycode), GUINT_TO_POINTER(press));
-    }
-
-    // return success
-    return TRUE;
 }
 
 // apply the full device grab

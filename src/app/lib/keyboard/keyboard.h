@@ -45,7 +45,9 @@ typedef KeyboardEventResponse (*KeyboardCallback)(KeyboardEvent event, gpointer 
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
 {
-    BackendKeyboard *backend;
+    BackendKeyboard *keyboard;
+    BackendState *state;
+    BackendEmulator *emulator;
 
     GdkKeymap *keymap;
     guint8 valid_modifiers;
