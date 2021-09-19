@@ -82,17 +82,17 @@ void backend_xcb_pointer_ungrab(BackendXCBPointer *pointer)
 }
 
 // grab input of a specific button
-void backend_xcb_pointer_grab_button(BackendXCBPointer *pointer, BackendPointerEvent event)
+void backend_xcb_pointer_grab_button(BackendXCBPointer *pointer, guint button, BackendStateEvent state)
 {
     // todo: include group
-    backend_xcb_device_grab_detail(pointer->device, event.button, event.state.modifiers);
+    backend_xcb_device_grab_detail(pointer->device, button, state.modifiers);
 }
 
 // ungrab input of a specific button
-void backend_xcb_pointer_ungrab_button(BackendXCBPointer *pointer, BackendPointerEvent event)
+void backend_xcb_pointer_ungrab_button(BackendXCBPointer *pointer, guint button, BackendStateEvent state)
 {
     // todo: include group
-    backend_xcb_device_ungrab_detail(pointer->device, event.button, event.state.modifiers);
+    backend_xcb_device_ungrab_detail(pointer->device, button, state.modifiers);
 }
 
 // callback for handling button events

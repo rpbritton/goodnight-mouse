@@ -82,17 +82,17 @@ void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard)
 }
 
 // grab input of a specific key
-void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event)
+void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, guint keycode, BackendStateEvent state)
 {
     // todo: include group
-    backend_xcb_device_grab_detail(keyboard->device, event.keycode, event.state.modifiers);
+    backend_xcb_device_grab_detail(keyboard->device, keycode, state.modifiers);
 }
 
 // ungrab input of a specific key
-void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event)
+void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, guint keycode, BackendStateEvent state)
 {
     // todo: include group
-    backend_xcb_device_ungrab_detail(keyboard->device, event.keycode, event.state.modifiers);
+    backend_xcb_device_ungrab_detail(keyboard->device, keycode, state.modifiers);
 }
 
 // callback for handling key events

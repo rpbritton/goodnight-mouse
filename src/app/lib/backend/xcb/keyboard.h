@@ -45,8 +45,8 @@ BackendXCBKeyboard *backend_xcb_keyboard_new(BackendXCB *backend, BackendKeyboar
 void backend_xcb_keyboard_destroy(BackendXCBKeyboard *keyboard);
 void backend_xcb_keyboard_grab(BackendXCBKeyboard *keyboard);
 void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard);
-void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
-void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, BackendKeyboardEvent event);
+void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, guint keycode, BackendStateEvent state);
+void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, guint keycode, BackendStateEvent state);
 
 #endif /* USE_XCB */
 

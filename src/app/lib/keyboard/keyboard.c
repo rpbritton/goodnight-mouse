@@ -122,7 +122,7 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
     {
         BackendKeyboardEvent *grab = link->data;
         g_debug("keyboard: Grabbing key: keycode: %d, modifiers: 0x%X", grab->keycode, grab->state.modifiers);
-        backend_keyboard_grab_key(keyboard->backend, *grab);
+        backend_keyboard_grab_key(keyboard->backend, grab->keycode, grab->state);
     }
 
     // note if grabs were found
@@ -156,7 +156,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType 
         for (GList *link = subscriber->grabs; link; link = link->next)
         {
             BackendKeyboardEvent *grab = link->data;
-            backend_keyboard_ungrab_key(keyboard->backend, *grab);
+            backend_keyboard_ungrab_key(keyboard->backend, grab->keycode, grab->state);
         }
         g_list_free_full(subscriber->grabs, g_free);
 
@@ -193,9 +193,8 @@ static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backe
             continue;
 
         // notify subscriber
-        KeyboardEventResponse subscriber_response = subscriber->callback(event, subscriber->data);
-        response = (subscriber_response == KEYBOARD_EVENT_CONSUME) ? BACKEND_KEYBOARD_EVENT_CONSUME
-                                                                   : BACKEND_KEYBOARD_EVENT_RELAY;
+        if (subscriber->callback(event, subscriber->data) == KEYBOARD_EVENT_CONSUME)
+            response = BACKEND_KEYBOARD_EVENT_CONSUME;
     }
 
     // return response

@@ -45,8 +45,8 @@ BackendXCBPointer *backend_xcb_pointer_new(BackendXCB *backend, BackendPointerCa
 void backend_xcb_pointer_destroy(BackendXCBPointer *pointer);
 void backend_xcb_pointer_grab(BackendXCBPointer *pointer);
 void backend_xcb_pointer_ungrab(BackendXCBPointer *pointer);
-void backend_xcb_pointer_grab_button(BackendXCBPointer *pointer, BackendPointerEvent event);
-void backend_xcb_pointer_ungrab_button(BackendXCBPointer *pointer, BackendPointerEvent event);
+void backend_xcb_pointer_grab_button(BackendXCBPointer *pointer, guint button, BackendStateEvent state);
+void backend_xcb_pointer_ungrab_button(BackendXCBPointer *pointer, guint button, BackendStateEvent state);
 
 #endif /* USE_XCB */
 
