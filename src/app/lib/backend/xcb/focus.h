@@ -25,7 +25,7 @@
 #include <atspi/atspi.h>
 
 #include "xcb.h"
-#include "../common/focus.h"
+#include "../focus.h"
 #include "../legacy/focus.h"
 
 // backend for focus that uses xcb

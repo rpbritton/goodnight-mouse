@@ -23,7 +23,7 @@
 #if USE_XCB
 
 #include "xcb.h"
-#include "../common/pointer.h"
+#include "../pointer.h"
 #include "device.h"
 #include "state.h"
 

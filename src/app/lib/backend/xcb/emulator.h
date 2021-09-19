@@ -23,8 +23,8 @@
 #if USE_XCB
 
 #include "xcb.h"
-#include "../common/state.h"
-#include "../common/keyboard.h"
+#include "../state.h"
+#include "../keyboard.h"
 #include "state.h"
 
 // backend for emulating events

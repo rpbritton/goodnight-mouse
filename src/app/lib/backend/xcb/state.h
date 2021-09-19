@@ -23,7 +23,7 @@
 #if USE_XCB
 
 #include "xcb.h"
-#include "../common/state.h"
+#include "../state.h"
 #include "focus.h"
 
 // backend for getting and parsing keyboard state

@@ -23,7 +23,7 @@
 #include <atspi/atspi.h>
 
 #include "legacy.h"
-#include "../common/keyboard.h"
+#include "../keyboard.h"
 
 // backend for keyboard events that uses pure atspi
 typedef struct BackendLegacyKeyboard

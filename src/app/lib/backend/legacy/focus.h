@@ -23,7 +23,7 @@
 #include <atspi/atspi.h>
 
 #include "legacy.h"
-#include "../common/focus.h"
+#include "../focus.h"
 
 // backend for focus that uses pure atspi
 typedef struct BackendLegacyFocus

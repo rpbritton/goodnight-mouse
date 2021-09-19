@@ -23,7 +23,7 @@
 #if USE_XCB
 
 #include "xcb.h"
-#include "../common/keyboard.h"
+#include "../keyboard.h"
 #include "device.h"
 #include "state.h"
 
