@@ -35,7 +35,8 @@ Keymap *keymap_new();
 void keymap_destroy(Keymap *keymap);
 guint8 keymap_physical_modifiers(Keymap *keymap, GdkModifierType modifiers);
 GdkModifierType keymap_all_modifiers(Keymap *keymap, guint8 modifiers);
+guint8 keymap_hotkey_modifiers(Keymap *keymap, guint8 modifiers);
 GList *keymap_get_keycodes(Keymap *keymap, guint keysym, guint8 additional_modifiers);
-guint keymap_get_keysym(Keymap *keymap, BackendKeyboardEvent event, guint8 *hotkey_modifiers);
+guint keymap_get_keysym(Keymap *keymap, BackendKeyboardEvent event, guint8 *consumed_modifiers);
 
 #endif /* FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4 */

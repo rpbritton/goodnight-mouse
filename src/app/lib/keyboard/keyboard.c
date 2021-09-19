@@ -26,7 +26,7 @@ typedef struct Subscriber
     gpointer data;
     gboolean all_keys;
     guint keysym;
-    GdkModifierType modifiers;
+    guint8 modifiers;
     GList *grabs;
 } Subscriber;
 
@@ -175,13 +175,17 @@ static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backe
 
     // parse event
     KeyboardEvent event;
-    guint8 hotkey_modifiers;
-    event.keysym = keymap_get_keysym(keyboard->keymap, backend_event, &hotkey_modifiers);
+    guint8 consumed_modifiers;
+    event.keysym = keymap_get_keysym(keyboard->keymap, backend_event, &consumed_modifiers);
     event.pressed = backend_event.pressed;
     event.modifiers = keymap_all_modifiers(keyboard->keymap, backend_event.state.modifiers);
 
+    // get relevant hotkey modifiers
+    guint8 relevant_modifiers = backend_event.state.modifiers & ~consumed_modifiers;
+    guint8 hotkey_modifiers = keymap_hotkey_modifiers(keyboard->keymap, relevant_modifiers);
+
     // notify subscribers
-    KeyboardEventResponse response = BACKEND_KEYBOARD_EVENT_RELAY;
+    BackendKeyboardEventResponse response = BACKEND_KEYBOARD_EVENT_RELAY;
     for (GList *link = keyboard->subscribers; link; link = link->next)
     {
         Subscriber *subscriber = link->data;

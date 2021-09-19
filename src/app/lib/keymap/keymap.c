@@ -58,6 +58,12 @@ GdkModifierType keymap_all_modifiers(Keymap *keymap, guint8 physical_modifiers)
     return modifiers;
 }
 
+// return only the modifiers used in hotkeys
+guint8 keymap_hotkey_modifiers(Keymap *keymap, guint8 modifiers)
+{
+    return modifiers & keymap->hotkey_modifiers;
+}
+
 // get the keycode and modifiers required to generate the keysym
 GList *keymap_get_keycodes(Keymap *keymap, guint keysym, guint8 additional_modifiers)
 {
@@ -105,20 +111,18 @@ GList *keymap_get_keycodes(Keymap *keymap, guint keysym, guint8 additional_modif
 }
 
 // lookup a keysym by key event. hotkey modifiers are modifiers relevant to hotkeys
-guint keymap_get_keysym(Keymap *keymap, BackendKeyboardEvent event, guint8 *hotkey_modifiers)
+guint keymap_get_keysym(Keymap *keymap, BackendKeyboardEvent event, guint8 *consumed_modifiers)
 {
     // lookup keysym and consumed modifiers
     guint keysym;
-    GdkModifierType consumed_modifiers;
+    GdkModifierType returned_consumed_modifiers;
     gdk_keymap_translate_keyboard_state(keymap->keymap, event.keycode,
                                         event.state.modifiers, event.state.group,
-                                        &keysym, NULL, NULL, &consumed_modifiers);
+                                        &keysym, NULL, NULL, &returned_consumed_modifiers);
 
-    // return hotkey modifiers
-    if (hotkey_modifiers)
-        *hotkey_modifiers = event.state.modifiers &
-                            ~keymap_physical_modifiers(keymap, consumed_modifiers) &
-                            keymap->hotkey_modifiers;
+    // return consumed modifiers
+    if (consumed_modifiers)
+        *consumed_modifiers = keymap_physical_modifiers(keymap, returned_consumed_modifiers);
 
     // return
     return keysym;
