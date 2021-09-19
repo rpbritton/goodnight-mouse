@@ -25,12 +25,12 @@ static void callback_accessible_add(AtspiAccessible *accessible, gpointer foregr
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
 static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer foreground_ptr);
-static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
+static PointerEventResponse callback_pointer(PointerEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
 Foreground *foreground_new(ForegroundConfig *config, State *state, Emulator *emulator,
-                           Keyboard *keyboard, Mouse *mouse, Focus *focus)
+                           Keyboard *keyboard, Pointer *pointer, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -45,7 +45,7 @@ Foreground *foreground_new(ForegroundConfig *config, State *state, Emulator *emu
     foreground->state = state;
     foreground->emulator = emulator;
     foreground->keyboard = keyboard;
-    foreground->mouse = mouse;
+    foreground->pointer = pointer;
     foreground->focus = focus;
 
     // create members
@@ -108,7 +108,7 @@ void foreground_run(Foreground *foreground)
 
     // subscribe to listeners
     keyboard_subscribe(foreground->keyboard, callback_keyboard, foreground);
-    mouse_subscribe(foreground->mouse, callback_mouse, foreground);
+    pointer_subscribe(foreground->pointer, callback_pointer, foreground);
     focus_subscribe(foreground->focus, callback_focus, foreground);
 
     // run loop
@@ -120,7 +120,7 @@ void foreground_run(Foreground *foreground)
 
     // unsubscribe from listeners
     keyboard_unsubscribe(foreground->keyboard, callback_keyboard, foreground);
-    mouse_unsubscribe(foreground->mouse, callback_mouse, foreground);
+    pointer_unsubscribe(foreground->pointer, callback_pointer, foreground);
     focus_unsubscribe(foreground->focus, callback_focus, foreground);
 
     // execute control
@@ -252,14 +252,14 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
     return KEYBOARD_EVENT_CONSUME;
 }
 
-// event callback for all mouse events
-static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr)
+// event callback for all pointer events
+static PointerEventResponse callback_pointer(PointerEvent event, gpointer foreground_ptr)
 {
-    g_debug("foreground: Mouse event received, stopping");
+    g_debug("foreground: Pointer event received, stopping");
 
-    // mouse button, quit
+    // pointer button, quit
     foreground_quit(foreground_ptr);
-    return MOUSE_EVENT_RELAY;
+    return POINTER_EVENT_RELAY;
 }
 
 // event callback for window focus changes

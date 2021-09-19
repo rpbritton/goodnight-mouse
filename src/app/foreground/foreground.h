@@ -32,7 +32,7 @@
 #include "../lib/state/state.h"
 #include "../lib/emulator/emulator.h"
 #include "../lib/keyboard/keyboard.h"
-#include "../lib/mouse/mouse.h"
+#include "../lib/pointer/pointer.h"
 #include "../lib/focus/focus.h"
 
 // a foreground which when run will show an overlay populated with tags with codes.
@@ -50,7 +50,7 @@ typedef struct Foreground
     State *state;
     Emulator *emulator;
     Keyboard *keyboard;
-    Mouse *mouse;
+    Pointer *pointer;
     Focus *focus;
 
     Registry *registry;
@@ -60,7 +60,7 @@ typedef struct Foreground
 } Foreground;
 
 Foreground *foreground_new(ForegroundConfig *config, State *state, Emulator *emulator,
-                           Keyboard *keyboard, Mouse *mouse, Focus *focus);
+                           Keyboard *keyboard, Pointer *pointer, Focus *focus);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);

@@ -29,7 +29,7 @@
 #include "lib/state/state.h"
 #include "lib/emulator/emulator.h"
 #include "lib/keyboard/keyboard.h"
-#include "lib/mouse/mouse.h"
+#include "lib/pointer/pointer.h"
 #include "lib/focus/focus.h"
 
 #include "background/background.h"
@@ -48,7 +48,7 @@ typedef struct App
     State *state;
     Emulator *emulator;
     Keyboard *keyboard;
-    Mouse *mouse;
+    Pointer *pointer;
     Focus *focus;
 
     Background *background;

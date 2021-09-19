@@ -63,7 +63,10 @@ BackendXCB *backend_xcb_new()
     } xinput_mask;
     xinput_mask.head.deviceid = XCB_INPUT_DEVICE_ALL;
     xinput_mask.head.mask_len = sizeof(xinput_mask.mask) / sizeof(uint32_t);
-    xinput_mask.mask = XCB_INPUT_XI_EVENT_MASK_KEY_PRESS | XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE;
+    xinput_mask.mask = XCB_INPUT_XI_EVENT_MASK_KEY_PRESS |
+                       XCB_INPUT_XI_EVENT_MASK_KEY_RELEASE |
+                       XCB_INPUT_XI_EVENT_MASK_BUTTON_PRESS |
+                       XCB_INPUT_XI_EVENT_MASK_BUTTON_RELEASE;
     xcb_input_xi_select_events(backend->connection, backend->root_window, 1, &xinput_mask.head);
 
     // add the event source

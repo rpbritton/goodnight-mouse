@@ -47,12 +47,12 @@ App *app_new(AppConfig *config)
     app->state = state_new(app->backend, app->keymap);
     app->emulator = emulator_new(app->backend, app->keymap, app->state);
     app->keyboard = keyboard_new(app->backend, app->keymap);
-    app->mouse = mouse_new();
+    app->pointer = pointer_new(app->backend, app->keymap);
     app->focus = focus_new(app->backend);
 
     // create managers
     app->foreground = foreground_new(config->foreground, app->state, app->emulator,
-                                     app->keyboard, app->mouse, app->focus);
+                                     app->keyboard, app->pointer, app->focus);
     app->background = background_new(config->background, app->foreground,
                                      app->keyboard, app->focus);
 
@@ -68,7 +68,7 @@ void app_destroy(App *app)
 
     // free libraries
     focus_destroy(app->focus);
-    mouse_destroy(app->mouse);
+    pointer_destroy(app->pointer);
     keyboard_destroy(app->keyboard);
     emulator_destroy(app->emulator);
     state_destroy(app->state);

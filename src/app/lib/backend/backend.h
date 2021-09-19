@@ -39,6 +39,14 @@
 #define backend_keyboard_grab_key backend_xcb_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_xcb_keyboard_ungrab_key
 
+#include "xcb/pointer.h"
+#define backend_pointer_new backend_xcb_pointer_new
+#define backend_pointer_destroy backend_xcb_pointer_destroy
+#define backend_pointer_grab backend_xcb_pointer_grab
+#define backend_pointer_ungrab backend_xcb_pointer_ungrab
+#define backend_pointer_grab_button backend_xcb_pointer_grab_button
+#define backend_pointer_ungrab_button backend_xcb_pointer_ungrab_button
+
 #include "xcb/state.h"
 #define backend_state_new backend_xcb_state_new
 #define backend_state_destroy backend_xcb_state_destroy
@@ -79,6 +87,7 @@
 typedef void Backend;
 typedef void BackendFocus;
 typedef void BackendKeyboard;
+typedef void BackendPointer;
 typedef void BackendState;
 typedef void BackendEmulator;
 
