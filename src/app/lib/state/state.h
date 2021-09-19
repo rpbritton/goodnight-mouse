@@ -17,20 +17,25 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DC8D1073_8C84_4BB1_9DF3_49B95D76178D
-#define DC8D1073_8C84_4BB1_9DF3_49B95D76178D
+#ifndef C5BB90B9_061D_47C6_BF57_F8CD6CB47E70
+#define C5BB90B9_061D_47C6_BF57_F8CD6CB47E70
 
-#include <atspi/atspi.h>
+#include <gdk/gdk.h>
 
-#include "../lib/emulator/emulator.h"
+#include "../backend/backend.h"
+#include "../keymap/keymap.h"
 
-typedef struct Executor
+// used to subscribe to events emitted from a state
+typedef struct State
 {
-    Emulator *emulator;
-} Executor;
+    BackendState *backend;
 
-Executor *executor_new(Emulator *emulator);
-void executor_destroy(Executor *executor);
-void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shifted);
+    Keymap *keymap;
+} State;
 
-#endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */
+State *state_new(Backend *backend, Keymap *keymap);
+void state_destroy(State *state);
+GdkModifierType state_get_modifiers(State *state);
+BackendStateEvent state_get_state(State *state);
+
+#endif /* C5BB90B9_061D_47C6_BF57_F8CD6CB47E70 */

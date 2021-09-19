@@ -42,14 +42,17 @@ App *app_new(AppConfig *config)
     // create the backend
     app->backend = backend_new();
 
-    // create listeners
-    app->keyboard = keyboard_new(app->backend);
+    // create libraries
+    app->keymap = keymap_new();
+    app->state = state_new(app->backend, app->keymap);
+    app->emulator = emulator_new(app->backend, app->keymap, app->state);
+    app->keyboard = keyboard_new(app->backend, app->keymap);
     app->mouse = mouse_new();
     app->focus = focus_new(app->backend);
 
     // create managers
-    app->foreground = foreground_new(config->foreground, app->keyboard,
-                                     app->mouse, app->focus);
+    app->foreground = foreground_new(config->foreground, app->state, app->emulator,
+                                     app->keyboard, app->mouse, app->focus);
     app->background = background_new(config->background, app->foreground,
                                      app->keyboard, app->focus);
 
@@ -63,10 +66,13 @@ void app_destroy(App *app)
     background_destroy(app->background);
     foreground_destroy(app->foreground);
 
-    // free listeners
-    keyboard_destroy(app->keyboard);
-    mouse_destroy(app->mouse);
+    // free libraries
     focus_destroy(app->focus);
+    mouse_destroy(app->mouse);
+    keyboard_destroy(app->keyboard);
+    emulator_destroy(app->emulator);
+    state_destroy(app->state);
+    keymap_destroy(app->keymap);
 
     // free backend
     backend_destroy(app->backend);

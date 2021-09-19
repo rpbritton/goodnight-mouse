@@ -20,9 +20,8 @@
 #ifndef D102CB85_DF5A_44CB_80DC_B281855A12AB
 #define D102CB85_DF5A_44CB_80DC_B281855A12AB
 
-#include <gdk/gdk.h>
-
 #include "../backend/backend.h"
+#include "../keymap/keymap.h"
 
 // how to respond to a key event
 typedef enum KeyboardEventResponse
@@ -45,25 +44,18 @@ typedef KeyboardEventResponse (*KeyboardCallback)(KeyboardEvent event, gpointer 
 // used to subscribe to events emitted from a keyboard
 typedef struct Keyboard
 {
-    BackendKeyboard *keyboard;
-    BackendState *state;
-    BackendEmulator *emulator;
+    BackendKeyboard *backend;
 
-    GdkKeymap *keymap;
-    guint8 valid_modifiers;
+    Keymap *keymap;
 
     GList *subscribers;
 } Keyboard;
 
-Keyboard *keyboard_new(Backend *backend);
+Keyboard *keyboard_new(Backend *backend, Keymap *keymap);
 void keyboard_destroy(Keyboard *keyboard);
 void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer data);
 void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data);
 void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data);
-GdkModifierType keyboard_get_modifiers(Keyboard *keyboard);
-gboolean keyboard_emulate_reset(Keyboard *keyboard);
-gboolean keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers);
-gboolean keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers);
 
 #endif /* D102CB85_DF5A_44CB_80DC_B281855A12AB */

@@ -19,7 +19,7 @@
 
 #include "foreground.h"
 
-#define SHIFT_MASK (GDK_SHIFT_MASK | GDK_LOCK_MASK)
+#define SHIFTED_MASK (GDK_SHIFT_MASK | GDK_LOCK_MASK)
 
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
@@ -29,8 +29,8 @@ static MouseResponse callback_mouse(MouseEvent event, gpointer foreground_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer foreground_ptr);
 
 // creates a new foreground that can be run
-Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
-                           Mouse *mouse, Focus *focus)
+Foreground *foreground_new(ForegroundConfig *config, State *state, Emulator *emulator,
+                           Keyboard *keyboard, Mouse *mouse, Focus *focus)
 {
     Foreground *foreground = g_new(Foreground, 1);
 
@@ -41,16 +41,18 @@ Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
     // create tag management
     foreground->accessible_to_tag = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
 
+    // add dependencies
+    foreground->state = state;
+    foreground->emulator = emulator;
+    foreground->keyboard = keyboard;
+    foreground->mouse = mouse;
+    foreground->focus = focus;
+
     // create members
     foreground->codes = codes_new(config->codes);
     foreground->overlay = overlay_new(config->overlay);
     foreground->registry = registry_new();
-    foreground->executor = executor_new(mouse, keyboard);
-
-    // add listeners
-    foreground->keyboard = keyboard;
-    foreground->mouse = mouse;
-    foreground->focus = focus;
+    foreground->executor = executor_new(emulator);
 
     return foreground;
 }
@@ -83,7 +85,7 @@ void foreground_run(Foreground *foreground)
     }
 
     // init shift state
-    foreground->shifted = !!(keyboard_get_modifiers(foreground->keyboard) & SHIFT_MASK);
+    foreground->shifted = !!(state_get_modifiers(foreground->state) & SHIFTED_MASK);
     overlay_shifted(foreground->overlay, foreground->shifted);
 
     // get active window
@@ -195,17 +197,17 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
     Foreground *foreground = foreground_ptr;
 
     // modifiers are not set in the modifier key event, so get fresh set
-    guint current_mods = keyboard_get_modifiers(foreground->keyboard);
+    guint current_mods = state_get_modifiers(foreground->state);
 
     // check if shift state changed
-    if (!!(current_mods & SHIFT_MASK) != foreground->shifted)
+    if (!!(current_mods & SHIFTED_MASK) != foreground->shifted)
     {
         foreground->shifted = !foreground->shifted;
         overlay_shifted(foreground->overlay, foreground->shifted);
     }
 
     // don't use key if modifiers other than the shift mods are held
-    if (current_mods & ~SHIFT_MASK)
+    if (current_mods & ~SHIFTED_MASK)
         return KEYBOARD_EVENT_CONSUME;
 
     // process key type

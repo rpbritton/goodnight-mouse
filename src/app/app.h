@@ -25,6 +25,9 @@
 #include "app_config.h"
 
 #include "lib/backend/backend.h"
+#include "lib/keymap/keymap.h"
+#include "lib/state/state.h"
+#include "lib/emulator/emulator.h"
 #include "lib/keyboard/keyboard.h"
 #include "lib/mouse/mouse.h"
 #include "lib/focus/focus.h"
@@ -41,6 +44,9 @@ typedef struct App
 
     Backend *backend;
 
+    Keymap *keymap;
+    State *state;
+    Emulator *emulator;
     Keyboard *keyboard;
     Mouse *mouse;
     Focus *focus;

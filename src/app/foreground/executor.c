@@ -30,13 +30,12 @@ static gboolean execute_focus(Executor *executor, AtspiAccessible *accessible);
 static gboolean execute_press(Executor *executor, AtspiAccessible *accessible);
 
 // creates a new executor
-Executor *executor_new(Mouse *mouse, Keyboard *keyboard)
+Executor *executor_new(Emulator *emulator)
 {
     Executor *executor = g_new(Executor, 1);
 
-    // add members
-    executor->mouse = mouse;
-    executor->keyboard = keyboard;
+    // add dependencies
+    executor->emulator = emulator;
 
     return executor;
 }
@@ -145,7 +144,7 @@ static gboolean execute_key(Executor *executor, guint key, GdkModifierType modif
     g_debug("executor: Pressing key '%d'", key);
 
     // attempt key press
-    return keyboard_emulate_key(executor->keyboard, key, modifiers);
+    return emulator_key(executor->emulator, key, modifiers);
 }
 
 // executes a mouse click of the button into the center of the given accessible

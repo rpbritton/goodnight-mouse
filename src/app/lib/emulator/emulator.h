@@ -17,20 +17,26 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DC8D1073_8C84_4BB1_9DF3_49B95D76178D
-#define DC8D1073_8C84_4BB1_9DF3_49B95D76178D
+#ifndef FC683DC4_C90D_49B9_B1AE_EDA3E41B2841
+#define FC683DC4_C90D_49B9_B1AE_EDA3E41B2841
 
-#include <atspi/atspi.h>
+#include "../backend/backend.h"
+#include "../keymap/keymap.h"
+#include "../state/state.h"
 
-#include "../lib/emulator/emulator.h"
-
-typedef struct Executor
+// used to subscribe to events emitted from a emulator
+typedef struct Emulator
 {
-    Emulator *emulator;
-} Executor;
+    BackendEmulator *backend;
 
-Executor *executor_new(Emulator *emulator);
-void executor_destroy(Executor *executor);
-void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shifted);
+    Keymap *keymap;
+    State *state;
+} Emulator;
 
-#endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */
+Emulator *emulator_new(Backend *backend, Keymap *keymap, State *state);
+void emulator_destroy(Emulator *emulator);
+gboolean emulator_reset(Emulator *emulator);
+gboolean emulator_modifiers(Emulator *emulator, GdkModifierType modifiers);
+gboolean emulator_key(Emulator *emulator, guint keysym, GdkModifierType modifiers);
+
+#endif /* FC683DC4_C90D_49B9_B1AE_EDA3E41B2841 */

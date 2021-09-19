@@ -19,8 +19,6 @@
 
 #include "keyboard.h"
 
-#define VALID_MODIFIERS (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_SUPER_MASK)
-
 // subscriber of keyboard events
 typedef struct Subscriber
 {
@@ -32,27 +30,21 @@ typedef struct Subscriber
     GList *grabs;
 } Subscriber;
 
-static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guint8 additional_modifiers);
 static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr);
 
 // creates a new keyboard event keyboard and starts listening
-Keyboard *keyboard_new(Backend *backend)
+Keyboard *keyboard_new(Backend *backend, Keymap *keymap)
 {
     Keyboard *keyboard = g_new(Keyboard, 1);
 
-    // init subscribers
-    keyboard->subscribers = NULL;
+    // add backend
+    keyboard->backend = backend_keyboard_new(backend, callback_keyboard, keyboard);
 
     // add keymap
-    keyboard->keymap = gdk_keymap_get_for_display(gdk_display_get_default());
-    GdkModifierType virtual_valid_modifiers = VALID_MODIFIERS;
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &virtual_valid_modifiers);
-    keyboard->valid_modifiers = virtual_valid_modifiers & 0xFF;
+    keyboard->keymap = keymap;
 
-    // add backend
-    keyboard->keyboard = backend_keyboard_new(backend, callback_keyboard, keyboard);
-    keyboard->state = backend_state_new(backend);
-    keyboard->emulator = backend_emulator_new(backend);
+    // init subscribers
+    keyboard->subscribers = NULL;
 
     return keyboard;
 }
@@ -61,9 +53,7 @@ Keyboard *keyboard_new(Backend *backend)
 void keyboard_destroy(Keyboard *keyboard)
 {
     // free backend
-    backend_keyboard_destroy(keyboard->keyboard);
-    backend_state_destroy(keyboard->state);
-    backend_emulator_destroy(keyboard->emulator);
+    backend_keyboard_destroy(keyboard->backend);
 
     // free subscribers
     g_list_free_full(keyboard->subscribers, g_free);
@@ -85,7 +75,7 @@ void keyboard_subscribe(Keyboard *keyboard, KeyboardCallback callback, gpointer 
     keyboard->subscribers = g_list_append(keyboard->subscribers, subscriber);
 
     // grab the keyboard
-    backend_keyboard_grab(keyboard->keyboard);
+    backend_keyboard_grab(keyboard->backend);
 }
 
 // remove keyboard event subscription
@@ -103,12 +93,11 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
             continue;
 
         // ungrab the keyboard
-        backend_keyboard_ungrab(keyboard->keyboard);
+        backend_keyboard_ungrab(keyboard->backend);
 
         // remove subscriber
         keyboard->subscribers = g_list_delete_link(keyboard->subscribers, link);
         g_free(subscriber);
-
         return;
     }
 }
@@ -117,8 +106,7 @@ void keyboard_unsubscribe(Keyboard *keyboard, KeyboardCallback callback, gpointe
 void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data)
 {
     // sanitize modifiers
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
-    modifiers = modifiers & 0xFF & keyboard->valid_modifiers;
+    modifiers = keymap_physical_modifiers(keyboard->keymap, modifiers);
 
     // create a new subscriber
     Subscriber *subscriber = g_new(Subscriber, 1);
@@ -127,14 +115,14 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
     subscriber->all_keys = FALSE;
     subscriber->keysym = keysym;
     subscriber->modifiers = modifiers;
-    subscriber->grabs = get_keysym_recipes(keyboard, keysym, modifiers);
+    subscriber->grabs = keymap_get_keycodes(keyboard->keymap, keysym, modifiers);
 
     // add the key grabs
     for (GList *link = subscriber->grabs; link; link = link->next)
     {
         BackendKeyboardEvent *grab = link->data;
         g_debug("keyboard: Grabbing key: keycode: %d, modifiers: 0x%X", grab->keycode, grab->state.modifiers);
-        backend_keyboard_grab_key(keyboard->keyboard, *grab);
+        backend_keyboard_grab_key(keyboard->backend, *grab);
     }
 
     // note if grabs were found
@@ -149,8 +137,7 @@ void keyboard_subscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType mo
 void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers, KeyboardCallback callback, gpointer data)
 {
     // sanitize modifiers
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
-    modifiers &= 0xFF;
+    modifiers = keymap_physical_modifiers(keyboard->keymap, modifiers);
 
     // remove the first matching subscriber
     for (GList *link = keyboard->subscribers; link; link = link->next)
@@ -169,7 +156,7 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType 
         for (GList *link = subscriber->grabs; link; link = link->next)
         {
             BackendKeyboardEvent *grab = link->data;
-            backend_keyboard_ungrab_key(keyboard->keyboard, *grab);
+            backend_keyboard_ungrab_key(keyboard->backend, *grab);
         }
         g_list_free_full(subscriber->grabs, g_free);
 
@@ -181,120 +168,6 @@ void keyboard_unsubscribe_key(Keyboard *keyboard, guint keysym, GdkModifierType 
     }
 }
 
-// get the current modifiers
-GdkModifierType keyboard_get_modifiers(Keyboard *keyboard)
-{
-    // get the current modifiers
-    BackendStateEvent state = backend_state_current(keyboard->state);
-
-    // sanitize the modifiers
-    GdkModifierType modifiers = state.modifiers;
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &modifiers);
-
-    // return
-    return modifiers;
-}
-
-gboolean keyboard_emulate_reset(Keyboard *keyboard)
-{
-    return backend_emulator_reset(keyboard->emulator);
-}
-
-gboolean keyboard_emulate_modifiers(Keyboard *keyboard, GdkModifierType modifiers)
-{
-    // sanitize modifiers
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
-    modifiers &= 0xFF;
-
-    // get the state
-    BackendStateEvent state = backend_state_current(keyboard->state);
-    state.modifiers = modifiers;
-
-    // set the state
-    return backend_emulator_state(keyboard->emulator, state);
-}
-
-gboolean keyboard_emulate_key(Keyboard *keyboard, guint keysym, GdkModifierType modifiers)
-{
-    // sanitize modifiers
-    gdk_keymap_map_virtual_modifiers(keyboard->keymap, &modifiers);
-    modifiers &= 0xFF;
-
-    // get valid a backend key event to generate the keysym
-    GList *recipes = get_keysym_recipes(keyboard, keysym, modifiers);
-
-    // ensure keycode was found
-    if (!recipes)
-    {
-        g_warning("keyboard: Failed to generate keysym (%d), no keycodes found", keysym);
-        return FALSE;
-    }
-
-    // use the first recipe
-    BackendKeyboardEvent event = *((BackendKeyboardEvent *)recipes->data);
-    g_list_free_full(recipes, g_free);
-
-    // send a key press
-    event.pressed = TRUE;
-    if (!backend_emulator_key(keyboard->emulator, event))
-    {
-        keyboard_emulate_reset(keyboard);
-        return FALSE;
-    }
-
-    // send key release
-    event.pressed = FALSE;
-    if (!backend_emulator_key(keyboard->emulator, event))
-    {
-        keyboard_emulate_reset(keyboard);
-        return FALSE;
-    }
-
-    // reset the state
-    return keyboard_emulate_reset(keyboard);
-}
-
-static GList *get_keysym_recipes(Keyboard *keyboard, guint keysym, guint8 additional_modifiers)
-{
-    GList *recipes = NULL;
-
-    // get all keycode entries
-    GdkKeymapKey *keys;
-    gint n_keys;
-    gdk_keymap_get_entries_for_keyval(keyboard->keymap, keysym, &keys, &n_keys);
-    for (gint index = 0; index < n_keys; index++)
-    {
-        for (guint8 modifiers = 0; modifiers < 0xFF; modifiers++)
-        {
-            // get keysym and consumed modifiers from state
-            guint generated_keysym;
-            GdkModifierType consumed_modifiers;
-            gdk_keymap_translate_keyboard_state(keyboard->keymap, keys[index].keycode,
-                                                modifiers, keys[index].group,
-                                                &generated_keysym, NULL, NULL, &consumed_modifiers);
-
-            // ensure keysym is the same
-            if (generated_keysym != keysym)
-                continue;
-
-            // ensure modifiers match
-            if (additional_modifiers != (modifiers & ~consumed_modifiers & keyboard->valid_modifiers))
-                continue;
-
-            // create the recipe
-            BackendKeyboardEvent *recipe = g_new(BackendKeyboardEvent, 1);
-            recipe->keycode = keys[index].keycode;
-            recipe->state.modifiers = modifiers;
-            recipe->state.group = keys[index].group;
-            recipes = g_list_append(recipes, recipe);
-        }
-    }
-    if (keys)
-        g_free(keys);
-
-    return recipes;
-}
-
 // callback to handle an atspi keyboard event
 static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backend_event, gpointer keyboard_ptr)
 {
@@ -302,26 +175,10 @@ static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backe
 
     // parse event
     KeyboardEvent event;
-
-    // get keysym
-    guint keysym;
-    GdkModifierType consumed_modifiers;
-    gdk_keymap_translate_keyboard_state(keyboard->keymap, backend_event.keycode,
-                                        backend_event.state.modifiers, backend_event.state.group,
-                                        &keysym, NULL, NULL, &consumed_modifiers);
-    event.keysym = keysym;
-
-    // get pressed
+    guint8 hotkey_modifiers;
+    event.keysym = keymap_get_keysym(keyboard->keymap, backend_event, &hotkey_modifiers);
     event.pressed = backend_event.pressed;
-
-    // get modifiers
-    event.modifiers = backend_event.state.modifiers;
-    gdk_keymap_add_virtual_modifiers(keyboard->keymap, &event.modifiers);
-
-    // get active modifiers that were not consumed to create the keyval
-    guint8 active_modifiers = backend_event.state.modifiers &
-                              ~consumed_modifiers &
-                              keyboard->valid_modifiers;
+    event.modifiers = keymap_all_modifiers(keyboard->keymap, backend_event.state.modifiers);
 
     // notify subscribers
     KeyboardEventResponse response = BACKEND_KEYBOARD_EVENT_RELAY;
@@ -332,7 +189,7 @@ static BackendKeyboardEventResponse callback_keyboard(BackendKeyboardEvent backe
         // check if event matches against subscription
         if (!((subscriber->all_keys) ||
               ((subscriber->keysym == event.keysym) &&
-               (subscriber->modifiers == active_modifiers))))
+               (subscriber->modifiers == hotkey_modifiers))))
             continue;
 
         // notify subscriber

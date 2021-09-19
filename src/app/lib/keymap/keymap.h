@@ -17,20 +17,25 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DC8D1073_8C84_4BB1_9DF3_49B95D76178D
-#define DC8D1073_8C84_4BB1_9DF3_49B95D76178D
+#ifndef FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4
+#define FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4
 
-#include <atspi/atspi.h>
+#include <gdk/gdk.h>
 
-#include "../lib/emulator/emulator.h"
+#include "../backend/backend.h"
 
-typedef struct Executor
+// used to subscribe to events emitted from a keymap
+typedef struct Keymap
 {
-    Emulator *emulator;
-} Executor;
+    GdkKeymap *keymap;
+    guint8 hotkey_modifiers;
+} Keymap;
 
-Executor *executor_new(Emulator *emulator);
-void executor_destroy(Executor *executor);
-void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shifted);
+Keymap *keymap_new();
+void keymap_destroy(Keymap *keymap);
+guint8 keymap_physical_modifiers(Keymap *keymap, GdkModifierType modifiers);
+GdkModifierType keymap_all_modifiers(Keymap *keymap, guint8 modifiers);
+GList *keymap_get_keycodes(Keymap *keymap, guint keysym, guint8 additional_modifiers);
+guint keymap_get_keysym(Keymap *keymap, BackendKeyboardEvent event, guint8 *hotkey_modifiers);
 
-#endif /* DC8D1073_8C84_4BB1_9DF3_49B95D76178D */
+#endif /* FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4 */

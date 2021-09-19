@@ -29,6 +29,8 @@
 #include "overlay.h"
 #include "executor.h"
 
+#include "../lib/state/state.h"
+#include "../lib/emulator/emulator.h"
 #include "../lib/keyboard/keyboard.h"
 #include "../lib/mouse/mouse.h"
 #include "../lib/focus/focus.h"
@@ -45,18 +47,20 @@ typedef struct Foreground
 
     gboolean shifted;
 
+    State *state;
+    Emulator *emulator;
+    Keyboard *keyboard;
+    Mouse *mouse;
+    Focus *focus;
+
     Registry *registry;
     Codes *codes;
     Overlay *overlay;
     Executor *executor;
-
-    Keyboard *keyboard;
-    Mouse *mouse;
-    Focus *focus;
 } Foreground;
 
-Foreground *foreground_new(ForegroundConfig *config, Keyboard *keyboard,
-                           Mouse *mouse, Focus *focus);
+Foreground *foreground_new(ForegroundConfig *config, State *state, Emulator *emulator,
+                           Keyboard *keyboard, Mouse *mouse, Focus *focus);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
