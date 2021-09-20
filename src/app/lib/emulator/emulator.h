@@ -38,5 +38,7 @@ void emulator_destroy(Emulator *emulator);
 gboolean emulator_reset(Emulator *emulator);
 gboolean emulator_modifiers(Emulator *emulator, GdkModifierType modifiers);
 gboolean emulator_key(Emulator *emulator, guint keysym, GdkModifierType modifiers);
+gboolean emulator_move(Emulator *emulator, gint x, gint y);
+gboolean emulator_button(Emulator *emulator, guint button, GdkModifierType modifiers, gint x, gint y);
 
 #endif /* FC683DC4_C90D_49B9_B1AE_EDA3E41B2841 */

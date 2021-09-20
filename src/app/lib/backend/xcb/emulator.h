@@ -25,6 +25,7 @@
 #include "xcb.h"
 #include "../state.h"
 #include "../keyboard.h"
+#include "../pointer.h"
 #include "state.h"
 
 // backend for emulating events
@@ -41,6 +42,7 @@ typedef struct BackendXCBEmulator
     BackendXCBState *state;
 
     GHashTable *emulated_keys;
+    GHashTable *emulated_buttons;
 } BackendXCBEmulator;
 
 BackendXCBEmulator *backend_xcb_emulator_new(BackendXCB *backend);
@@ -48,6 +50,7 @@ void backend_xcb_emulator_destroy(BackendXCBEmulator *emulator);
 gboolean backend_xcb_emulator_reset(BackendXCBEmulator *emulator);
 gboolean backend_xcb_emulator_state(BackendXCBEmulator *emulator, BackendStateEvent state);
 gboolean backend_xcb_emulator_key(BackendXCBEmulator *emulator, BackendKeyboardEvent event);
+gboolean backend_xcb_emulator_button(BackendXCBEmulator *emulator, BackendPointerEvent event);
 
 #endif /* USE_XCB */
 

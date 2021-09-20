@@ -58,6 +58,7 @@
 #define backend_emulator_reset backend_xcb_emulator_reset
 #define backend_emulator_state backend_xcb_emulator_state
 #define backend_emulator_key backend_xcb_emulator_key
+#define backend_emulator_button backend_xcb_emulator_button
 
 #else
 

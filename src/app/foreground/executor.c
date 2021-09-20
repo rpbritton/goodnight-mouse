@@ -152,21 +152,18 @@ static gboolean execute_mouse(Executor *executor, AtspiAccessible *accessible, g
 {
     g_debug("executor: Clicking mouse '%d'", button);
 
-    // // get position of the center of the accessible
-    // AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
-    // if (!component)
-    //     return FALSE;
-    // AtspiRect *bounds = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
-    // gint x = bounds->x + bounds->width / 2;
-    // gint y = bounds->y + bounds->height / 2;
-    // g_object_unref(component);
-    // g_free(bounds);
+    // get position of the center of the accessible
+    AtspiComponent *component = atspi_accessible_get_component_iface(accessible);
+    if (!component)
+        return FALSE;
+    AtspiRect *bounds = atspi_component_get_extents(component, ATSPI_COORD_TYPE_SCREEN, NULL);
+    gint x = bounds->x + bounds->width / 2;
+    gint y = bounds->y + bounds->height / 2;
+    g_object_unref(component);
+    g_free(bounds);
 
-    // // attempt mouse press
-    // return mouse_press(executor->mouse, x, y, button);
-
-    //keyboard_reset_modifiers
-    return FALSE;
+    // attempt mouse press
+    return emulator_button(executor->emulator, button, modifiers, x, y);
 }
 
 // grabs the input focus onto the given accessible

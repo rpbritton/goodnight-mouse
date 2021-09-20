@@ -104,3 +104,60 @@ gboolean emulator_key(Emulator *emulator, guint keysym, GdkModifierType modifier
     // reset the state
     return emulator_reset(emulator);
 }
+
+gboolean emulator_move(Emulator *emulator, gint x, gint y)
+{
+    // get the current state
+    BackendStateEvent state = state_get_state(emulator->state);
+
+    // set the parameters
+    state.pointer_x = x;
+    state.pointer_y = y;
+
+    // set the state
+    if (!backend_emulator_state(emulator->backend, state))
+        return FALSE;
+
+    // reset the state
+    return emulator_reset(emulator);
+}
+
+gboolean emulator_button(Emulator *emulator, guint button, GdkModifierType modifiers, gint x, gint y)
+{
+    // sanitize modifiers
+    modifiers = keymap_physical_modifiers(emulator->keymap, modifiers);
+
+    // get the current state
+    BackendStateEvent previous_state = state_get_state(emulator->state);
+
+    // create the pressed state
+    BackendStateEvent pressed_state = previous_state;
+    pressed_state.modifiers = modifiers;
+    pressed_state.pointer_x = x;
+    pressed_state.pointer_y = y;
+
+    // create the pointer event
+    BackendPointerEvent event = {
+        .button = button,
+        .state = pressed_state,
+    };
+
+    // send a button press
+    event.pressed = TRUE;
+    if (!backend_emulator_button(emulator->backend, event))
+    {
+        emulator_reset(emulator);
+        return FALSE;
+    }
+
+    // send a button release
+    event.pressed = FALSE;
+    if (!backend_emulator_button(emulator->backend, event))
+    {
+        emulator_reset(emulator);
+        return FALSE;
+    }
+
+    // move the pointer back
+    return emulator_move(emulator, previous_state.pointer_x, previous_state.pointer_y);
+}
