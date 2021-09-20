@@ -341,10 +341,6 @@ static void callback_xcb(xcb_generic_event_t *generic_event, gpointer device_ptr
     last_event->event_type = event->event_type;
     last_event->response = response;
 
-    g_message("got event: event_type: %d, detail: %d, mods: %d, is_duplicate %d, consuming: %d",
-              event->event_type, event->detail, event->mods.effective,
-              is_duplicate, response == BACKEND_XCB_DEVICE_EVENT_CONSUME);
-
     // consume or relay the event
     guint8 event_mode = (response == BACKEND_XCB_DEVICE_EVENT_CONSUME) ? XCB_INPUT_EVENT_MODE_ASYNC_DEVICE
                                                                        : XCB_INPUT_EVENT_MODE_REPLAY_DEVICE;
