@@ -27,6 +27,8 @@ typedef struct BackendStateEvent
 {
     guint8 modifiers;
     guint8 group;
+    guint16 pointer_x;
+    guint16 pointer_y;
 } BackendStateEvent;
 
 #endif /* E9963C50_E610_424C_B8CC_3D12B7365404 */

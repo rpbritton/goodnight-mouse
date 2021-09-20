@@ -107,7 +107,7 @@ static BackendXCBDeviceEventResponse callback_device(xcb_generic_event_t *generi
     BackendKeyboardEvent event;
     event.keycode = key_event->detail;
     event.pressed = (key_event->event_type == XCB_INPUT_KEY_PRESS);
-    event.state = backend_xcb_state_parse(keyboard->state, key_event->mods, key_event->group);
+    event.state = backend_xcb_state_parse(keyboard->state, key_event->mods, key_event->group, key_event->root_x, key_event->root_y);
 
     // send the event
     BackendKeyboardEventResponse response = keyboard->callback(event, keyboard->data);

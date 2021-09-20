@@ -41,7 +41,9 @@ BackendXCBState *backend_xcb_state_new(BackendXCB *backend);
 void backend_xcb_state_destroy(BackendXCBState *state);
 BackendStateEvent backend_xcb_state_current(BackendXCBState *state);
 
-BackendStateEvent backend_xcb_state_parse(BackendXCBState *state, xcb_input_modifier_info_t mods, xcb_input_group_info_t group);
+BackendStateEvent backend_xcb_state_parse(BackendXCBState *state,
+                                          xcb_input_modifier_info_t mods, xcb_input_group_info_t group,
+                                          xcb_input_fp1616_t pointer_x, xcb_input_fp1616_t pointer_y);
 
 #endif /* USE_XCB */
 

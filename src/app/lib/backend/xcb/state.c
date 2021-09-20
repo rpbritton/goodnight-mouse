@@ -70,23 +70,29 @@ BackendStateEvent backend_xcb_state_current(BackendXCBState *state)
         BackendStateEvent event = {
             .modifiers = 0,
             .group = 0,
+            .pointer_x = 0,
+            .pointer_y = 0,
         };
         return event;
     }
 
     // get state
-    BackendStateEvent event = backend_xcb_state_parse(state, reply->mods, reply->group);
+    BackendStateEvent event = backend_xcb_state_parse(state, reply->mods, reply->group, reply->root_x, reply->root_y);
     free(reply);
     return event;
 }
 
 // parse state from modifiers and group
-BackendStateEvent backend_xcb_state_parse(BackendXCBState *state, xcb_input_modifier_info_t mods, xcb_input_group_info_t group)
+BackendStateEvent backend_xcb_state_parse(BackendXCBState *state,
+                                          xcb_input_modifier_info_t mods, xcb_input_group_info_t group,
+                                          xcb_input_fp1616_t pointer_x, xcb_input_fp1616_t pointer_y)
 {
     // xcb has a bug where the effective modifiers are not computed sometimes (e.g. in the query pointer response)
     BackendStateEvent event = {
         .modifiers = mods.base | mods.latched | mods.locked | mods.effective,
         .group = group.base | group.latched | group.locked | group.effective,
+        .pointer_x = pointer_x >> 16,
+        .pointer_y = pointer_y >> 16,
     };
     return event;
 }

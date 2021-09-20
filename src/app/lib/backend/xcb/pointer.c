@@ -103,14 +103,11 @@ static BackendXCBDeviceEventResponse callback_device(xcb_generic_event_t *generi
     // get button event
     xcb_input_button_press_event_t *button_event = (xcb_input_button_press_event_t *)generic_event;
 
-    g_message("got button event: root_x: %d, root_y: %d, event_x: %d, event_y: %d",
-              button_event->root_x, button_event->root_y, button_event->event_x, button_event->event_y);
-
     // get event data
     BackendPointerEvent event;
     event.button = button_event->detail;
     event.pressed = (button_event->event_type == XCB_INPUT_BUTTON_PRESS);
-    event.state = backend_xcb_state_parse(pointer->state, button_event->mods, button_event->group);
+    event.state = backend_xcb_state_parse(pointer->state, button_event->mods, button_event->group, button_event->root_x, button_event->root_y);
 
     // send the event
     BackendPointerEventResponse response = pointer->callback(event, pointer->data);

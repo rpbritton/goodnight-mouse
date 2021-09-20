@@ -102,12 +102,10 @@ gboolean backend_xcb_emulator_state(BackendXCBEmulator *emulator, BackendStateEv
 
     // get current state
     BackendStateEvent current_state = backend_xcb_state_current(emulator->state);
-    g_message("current state 0x%X", current_state.modifiers);
 
     // send get modifiers mapping request
     xcb_input_get_device_modifier_mapping_cookie_t cookie;
     cookie = xcb_input_get_device_modifier_mapping(emulator->connection, emulator->keyboard_id);
-    g_message("pointer id %d", emulator->keyboard_id);
 
     // get the reply
     xcb_generic_error_t *error = NULL;
