@@ -38,6 +38,8 @@
 // an app that manages the lifetime of a foreground and or background
 typedef struct App
 {
+    guint signal_sigusr1;
+    guint signal_sigusr2;
     guint signal_sighup;
     guint signal_sigint;
     guint signal_sigterm;

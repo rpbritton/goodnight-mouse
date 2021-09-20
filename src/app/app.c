@@ -23,6 +23,8 @@
 #include <gtk/gtk.h>
 #include <atspi/atspi.h>
 
+static gboolean signal_start_foreground(gpointer app_ptr);
+static gboolean signal_stop_foreground(gpointer app_ptr);
 static gboolean signal_quit(gpointer app_ptr);
 
 // create a new app from the configuration
@@ -35,6 +37,8 @@ App *app_new(AppConfig *config)
     atspi_init();
 
     // add signal subscription
+    app->signal_sigusr1 = g_unix_signal_add(SIGUSR1, signal_start_foreground, app);
+    app->signal_sigusr2 = g_unix_signal_add(SIGUSR2, signal_stop_foreground, app);
     app->signal_sighup = g_unix_signal_add(SIGHUP, signal_quit, app);
     app->signal_sigint = g_unix_signal_add(SIGINT, signal_quit, app);
     app->signal_sigterm = g_unix_signal_add(SIGTERM, signal_quit, app);
@@ -77,7 +81,9 @@ void app_destroy(App *app)
     // free backend
     backend_destroy(app->backend);
 
-    // remove signal subscription
+    // remove signals
+    g_source_remove(app->signal_sigusr1);
+    g_source_remove(app->signal_sigusr2);
     g_source_remove(app->signal_sighup);
     g_source_remove(app->signal_sigint);
     g_source_remove(app->signal_sigterm);
@@ -85,6 +91,7 @@ void app_destroy(App *app)
     // exit common libraries
     atspi_exit();
 
+    // free
     g_free(app);
 }
 
@@ -116,12 +123,29 @@ void app_quit(App *app)
     foreground_quit(app->foreground);
 }
 
-// callback for a signal to quit has been received
+// callback to start the foreground on receiving a signal
+static gboolean signal_start_foreground(gpointer app_ptr)
+{
+    App *app = app_ptr;
+    g_debug("app: Received signal, starting foreground");
+    foreground_run_async(app->foreground);
+    return G_SOURCE_CONTINUE;
+}
+
+// callback to stop the foreground on receiving a signal
+static gboolean signal_stop_foreground(gpointer app_ptr)
+{
+    App *app = app_ptr;
+    g_debug("app: Received signal, stopping foreground");
+    foreground_quit(app->foreground);
+    return G_SOURCE_CONTINUE;
+}
+
+// callback for a signal to quit
 static gboolean signal_quit(gpointer app_ptr)
 {
-    App *app = (App *)app_ptr;
-
+    App *app = app_ptr;
+    g_debug("app: Received signal, quitting app");
     app_quit(app);
-
     return G_SOURCE_CONTINUE;
 }

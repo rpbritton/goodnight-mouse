@@ -156,7 +156,6 @@ void foreground_quit(Foreground *foreground)
 {
     if (!foreground_is_running(foreground))
         return;
-
     g_main_loop_quit(foreground->loop);
 }
 
