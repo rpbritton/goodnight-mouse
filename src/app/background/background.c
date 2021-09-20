@@ -20,7 +20,6 @@
 #include "background.h"
 
 static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr);
-static gboolean start_foreground(gpointer background_ptr);
 static void callback_focus(AtspiAccessible *window, gpointer background_ptr);
 
 // creates a background that can be run
@@ -102,28 +101,16 @@ void background_quit(Background *background)
 // to start
 static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer background_ptr)
 {
+    Background *background = background_ptr;
+
     // only check press events
     if (event.pressed)
     {
         g_debug("background: Input hotkey triggered");
-        g_idle_add_full(G_PRIORITY_HIGH, start_foreground, background_ptr, NULL);
+        foreground_run_async(background->foreground);
     }
 
     return KEYBOARD_EVENT_CONSUME;
-}
-
-// starts the foreground from inside a source, which will be removed on foreground
-// completion
-static gboolean start_foreground(gpointer background_ptr)
-{
-    Background *background = background_ptr;
-
-    // run the foreground
-    g_debug("background: Running the foreground");
-    foreground_run(background->foreground);
-    g_debug("background: Foreground has returned");
-
-    return G_SOURCE_REMOVE;
 }
 
 // listens for focus events, which can help cache windows and improve speeds

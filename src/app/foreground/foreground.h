@@ -63,6 +63,7 @@ Foreground *foreground_new(ForegroundConfig *config, State *state, Emulator *emu
                            Keyboard *keyboard, Pointer *pointer, Focus *focus);
 void foreground_destroy(Foreground *foreground);
 void foreground_run(Foreground *foreground);
+void foreground_run_async(Foreground *foreground);
 gboolean foreground_is_running(Foreground *foreground);
 void foreground_quit(Foreground *foreground);
 

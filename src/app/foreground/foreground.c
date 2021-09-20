@@ -21,6 +21,8 @@
 
 #define SHIFTED_MASK (GDK_SHIFT_MASK | GDK_LOCK_MASK)
 
+static gboolean foreground_run_idle(gpointer foreground_ptr);
+
 static void callback_accessible_add(AtspiAccessible *accessible, gpointer foreground_ptr);
 static void callback_accessible_remove(AtspiAccessible *accessible, gpointer foreground_ptr);
 
@@ -137,6 +139,12 @@ void foreground_run(Foreground *foreground)
     g_object_unref(window);
 }
 
+// runs the foreground from a newly created idle source
+void foreground_run_async(Foreground *foreground)
+{
+    g_idle_add_full(G_PRIORITY_HIGH, foreground_run_idle, foreground, NULL);
+}
+
 // returns whether the given foreground is running
 gboolean foreground_is_running(Foreground *foreground)
 {
@@ -150,6 +158,13 @@ void foreground_quit(Foreground *foreground)
         return;
 
     g_main_loop_quit(foreground->loop);
+}
+
+// idle source function for running the foreground
+static gboolean foreground_run_idle(gpointer foreground_ptr)
+{
+    foreground_run(foreground_ptr);
+    return G_SOURCE_REMOVE;
 }
 
 // event callback to a new accessible added
