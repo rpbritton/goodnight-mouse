@@ -100,6 +100,7 @@ static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboa
     event.pressed = (atspi_event->type == ATSPI_KEY_PRESSED_EVENT);
     event.state.modifiers = atspi_event->modifiers & 0xFF;
     event.state.group = 0; // todo, maybe contained in the gdk return bits 13 and 14?
+    // todo: add mouse coordinates
 
     // free the atspi event
     g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
