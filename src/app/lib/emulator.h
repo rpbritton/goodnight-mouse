@@ -20,9 +20,9 @@
 #ifndef FC683DC4_C90D_49B9_B1AE_EDA3E41B2841
 #define FC683DC4_C90D_49B9_B1AE_EDA3E41B2841
 
-#include "../backend/backend.h"
-#include "../keymap/keymap.h"
-#include "../state/state.h"
+#include "backend/backend.h"
+#include "keymap.h"
+#include "state.h"
 
 // used to subscribe to events emitted from a emulator
 typedef struct Emulator

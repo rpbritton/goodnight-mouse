@@ -17,26 +17,25 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4
-#define FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4
+#ifndef C5BB90B9_061D_47C6_BF57_F8CD6CB47E70
+#define C5BB90B9_061D_47C6_BF57_F8CD6CB47E70
 
 #include <gdk/gdk.h>
 
-#include "../backend/backend.h"
+#include "backend/backend.h"
+#include "keymap.h"
 
-// used to subscribe to events emitted from a keymap
-typedef struct Keymap
+// used to subscribe to events emitted from a state
+typedef struct State
 {
-    GdkKeymap *keymap;
-    guint8 hotkey_modifiers;
-} Keymap;
+    BackendState *backend;
 
-Keymap *keymap_new();
-void keymap_destroy(Keymap *keymap);
-guint8 keymap_physical_modifiers(Keymap *keymap, GdkModifierType modifiers);
-GdkModifierType keymap_all_modifiers(Keymap *keymap, guint8 modifiers);
-guint8 keymap_hotkey_modifiers(Keymap *keymap, guint8 modifiers);
-GList *keymap_get_keycodes(Keymap *keymap, guint keysym, guint8 additional_modifiers);
-guint keymap_get_keysym(Keymap *keymap, BackendKeyboardEvent event, guint8 *consumed_modifiers);
+    Keymap *keymap;
+} State;
 
-#endif /* FFA9B89E_680B_4943_A4D6_75EC9AA5ADB4 */
+State *state_new(Backend *backend, Keymap *keymap);
+void state_destroy(State *state);
+GdkModifierType state_get_modifiers(State *state);
+BackendStateEvent state_get_state(State *state);
+
+#endif /* C5BB90B9_061D_47C6_BF57_F8CD6CB47E70 */

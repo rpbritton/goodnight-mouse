@@ -20,8 +20,8 @@
 #ifndef D102CB85_DF5A_44CB_80DC_B281855A12AB
 #define D102CB85_DF5A_44CB_80DC_B281855A12AB
 
-#include "../backend/backend.h"
-#include "../keymap/keymap.h"
+#include "backend/backend.h"
+#include "keymap.h"
 
 // how to respond to a key event
 typedef enum KeyboardEventResponse

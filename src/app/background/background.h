@@ -26,8 +26,8 @@
 #include "background_config.h"
 
 #include "../foreground/foreground.h"
-#include "../lib/keyboard/keyboard.h"
-#include "../lib/focus/focus.h"
+#include "../lib/keyboard.h"
+#include "../lib/focus.h"
 
 // background state that can run a g main loop and trigger a foreground
 // when a hotkey is pressed

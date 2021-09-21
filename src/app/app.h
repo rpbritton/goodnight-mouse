@@ -25,12 +25,12 @@
 #include "app_config.h"
 
 #include "lib/backend/backend.h"
-#include "lib/keymap/keymap.h"
-#include "lib/state/state.h"
-#include "lib/emulator/emulator.h"
-#include "lib/keyboard/keyboard.h"
-#include "lib/pointer/pointer.h"
-#include "lib/focus/focus.h"
+#include "lib/keymap.h"
+#include "lib/state.h"
+#include "lib/emulator.h"
+#include "lib/keyboard.h"
+#include "lib/pointer.h"
+#include "lib/focus.h"
 
 #include "background/background.h"
 #include "foreground/foreground.h"

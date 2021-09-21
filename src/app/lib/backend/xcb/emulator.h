@@ -23,10 +23,10 @@
 #if USE_XCB
 
 #include "xcb.h"
-#include "../state.h"
+#include "state.h"
 #include "../keyboard.h"
 #include "../pointer.h"
-#include "state.h"
+#include "../state.h"
 
 // backend for emulating events
 typedef struct BackendXCBEmulator

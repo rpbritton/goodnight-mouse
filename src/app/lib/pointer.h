@@ -20,8 +20,8 @@
 #ifndef D27E51CD_B77E_415D_B0E2_8E3239D55A1E
 #define D27E51CD_B77E_415D_B0E2_8E3239D55A1E
 
-#include "../backend/backend.h"
-#include "../keymap/keymap.h"
+#include "backend/backend.h"
+#include "keymap.h"
 
 // how to respond to a pointer event
 typedef enum PointerEventResponse

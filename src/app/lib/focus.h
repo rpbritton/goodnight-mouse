@@ -23,7 +23,7 @@
 #include <glib.h>
 #include <atspi/atspi.h>
 
-#include "../backend/backend.h"
+#include "backend/backend.h"
 
 // a callback for when the currently focused window changes, possibly to NULL
 typedef void (*FocusCallback)(AtspiAccessible *window, gpointer data);

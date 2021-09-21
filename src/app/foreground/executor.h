@@ -22,7 +22,7 @@
 
 #include <atspi/atspi.h>
 
-#include "../lib/emulator/emulator.h"
+#include "../lib/emulator.h"
 
 typedef struct Executor
 {

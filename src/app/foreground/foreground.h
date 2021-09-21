@@ -29,11 +29,11 @@
 #include "overlay.h"
 #include "executor.h"
 
-#include "../lib/state/state.h"
-#include "../lib/emulator/emulator.h"
-#include "../lib/keyboard/keyboard.h"
-#include "../lib/pointer/pointer.h"
-#include "../lib/focus/focus.h"
+#include "../lib/state.h"
+#include "../lib/emulator.h"
+#include "../lib/keyboard.h"
+#include "../lib/pointer.h"
+#include "../lib/focus.h"
 
 // a foreground which when run will show an overlay populated with tags with codes.
 // key events will narrow down the codes, an when one code is focused on, that
