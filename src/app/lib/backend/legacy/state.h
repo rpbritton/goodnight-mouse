@@ -17,10 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef A9931399_E0BF_4011_A403_586AD57B1A31
-#define A9931399_E0BF_4011_A403_586AD57B1A31
-
-#include <atspi/atspi.h>
+#ifndef C8ADFD83_0AFF_46BD_99CC_DF87237AE4E0
+#define C8ADFD83_0AFF_46BD_99CC_DF87237AE4E0
 
 #include "legacy.h"
 #include "../state.h"
@@ -35,4 +33,4 @@ BackendLegacyState *backend_legacy_state_new(BackendLegacy *backend);
 void backend_legacy_state_destroy(BackendLegacyState *state);
 BackendStateEvent backend_legacy_state_current(BackendLegacyState *state);
 
-#endif /* A9931399_E0BF_4011_A403_586AD57B1A31 */
+#endif /* C8ADFD83_0AFF_46BD_99CC_DF87237AE4E0 */

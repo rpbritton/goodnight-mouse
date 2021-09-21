@@ -17,8 +17,8 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef F57F1019_9CFE_4F5D_A723_17B8C671BC05
-#define F57F1019_9CFE_4F5D_A723_17B8C671BC05
+#ifndef CFF92E9A_91E0_4BBE_AB7D_7E3CFE7366E2
+#define CFF92E9A_91E0_4BBE_AB7D_7E3CFE7366E2
 
 #include <atspi/atspi.h>
 
@@ -43,4 +43,4 @@ void backend_legacy_pointer_ungrab(BackendLegacyPointer *pointer);
 void backend_legacy_pointer_grab_button(BackendLegacyPointer *pointer, guint button, BackendStateEvent state);
 void backend_legacy_pointer_ungrab_button(BackendLegacyPointer *pointer, guint button, BackendStateEvent state);
 
-#endif /* F57F1019_9CFE_4F5D_A723_17B8C671BC05 */
+#endif /* CFF92E9A_91E0_4BBE_AB7D_7E3CFE7366E2 */
