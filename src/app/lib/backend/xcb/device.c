@@ -246,7 +246,9 @@ static void unset_device_grab(BackendXCBDevice *device)
     xcb_generic_error_t *error = xcb_request_check(device->connection, cookie);
     if (error)
     {
-        g_warning("backend-xcb: Failed to ungrab device: error: %d", error->error_code);
+        // ignore bad window, if the window does not exist the grab is gone
+        if (error->error_code != XCB_WINDOW)
+            g_warning("backend-xcb: Failed to ungrab device: error: %d", error->error_code);
         free(error);
     }
 #endif
@@ -303,8 +305,10 @@ static void unset_detail_grab(BackendXCBDevice *device, BackendXCBDetailGrab *gr
     xcb_generic_error_t *error = xcb_request_check(device->connection, cookie);
     if (error)
     {
-        g_warning("backend-xcb: Failed to ungrab detail: detail %d, modifiers: %d, error: %d",
-                  grab->detail, grab->modifiers, error->error_code);
+        // ignore bad window, if the window does not exist the grab is gone
+        if (error->error_code != XCB_WINDOW)
+            g_warning("backend-xcb: Failed to ungrab detail: detail %d, modifiers: %d, error: %d",
+                      grab->detail, grab->modifiers, error->error_code);
         free(error);
     }
 }
