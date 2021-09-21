@@ -78,9 +78,27 @@
 #define backend_keyboard_ungrab backend_legacy_keyboard_ungrab
 #define backend_keyboard_grab_key backend_legacy_keyboard_grab_key
 #define backend_keyboard_ungrab_key backend_legacy_keyboard_ungrab_key
-#define backend_keyboard_get_state backend_legacy_keyboard_get_state
-#define backend_keyboard_set_state backend_legacy_keyboard_set_state
-#define backend_keyboard_set_key backend_legacy_keyboard_set_key
+
+#include "legacy/pointer.h"
+#define backend_pointer_new backend_legacy_pointer_new
+#define backend_pointer_destroy backend_legacy_pointer_destroy
+#define backend_pointer_grab backend_legacy_pointer_grab
+#define backend_pointer_ungrab backend_legacy_pointer_ungrab
+#define backend_pointer_grab_button backend_legacy_pointer_grab_button
+#define backend_pointer_ungrab_button backend_legacy_pointer_ungrab_button
+
+#include "legacy/state.h"
+#define backend_state_new backend_legacy_state_new
+#define backend_state_destroy backend_legacy_state_destroy
+#define backend_state_current backend_legacy_state_current
+
+#include "legacy/emulator.h"
+#define backend_emulator_new backend_legacy_emulator_new
+#define backend_emulator_destroy backend_legacy_emulator_destroy
+#define backend_emulator_reset backend_legacy_emulator_reset
+#define backend_emulator_state backend_legacy_emulator_state
+#define backend_emulator_key backend_legacy_emulator_key
+#define backend_emulator_button backend_legacy_emulator_button
 
 #endif
 

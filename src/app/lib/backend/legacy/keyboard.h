@@ -33,19 +33,14 @@ typedef struct BackendLegacyKeyboard
     BackendKeyboardCallback callback;
     gpointer data;
 
-    gboolean registered;
     AtspiDeviceListener *listener;
-
-    gint grabs;
-    GList *key_grabs;
 } BackendLegacyKeyboard;
 
 BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, BackendKeyboardCallback callback, gpointer data);
 void backend_legacy_keyboard_destroy(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_grab(BackendLegacyKeyboard *keyboard);
 void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard);
-void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event);
-void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event);
-BackendStateEvent backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard);
+void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, guint keycode, BackendStateEvent state);
+void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, guint keycode, BackendStateEvent state);
 
 #endif /* F57F1019_9CFE_4F5D_A723_17B8C671BC05 */

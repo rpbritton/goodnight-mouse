@@ -21,6 +21,7 @@
 
 #include <glib.h>
 
+// create a new legacy backend
 BackendLegacy *backend_legacy_new()
 {
     BackendLegacy *backend = g_new(BackendLegacy, 1);
@@ -29,6 +30,7 @@ BackendLegacy *backend_legacy_new()
     return backend;
 }
 
+// destroy a legacy backend
 void backend_legacy_destroy(BackendLegacy *backend)
 {
     // free

@@ -19,19 +19,6 @@
 
 #include "keyboard.h"
 
-#include <gdk/gdk.h>
-
-#define KEY_EVENTS ((1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_PRESSED_EVENT))
-
-// whether event should be passed on
-typedef enum KeyboardEventResponse
-{
-    KEYBOARD_EVENT_RELAY = FALSE,
-    KEYBOARD_EVENT_CONSUME = TRUE,
-} KeyboardEventResponse;
-
-static void listener_register(BackendLegacyKeyboard *keyboard);
-static void listener_deregister(BackendLegacyKeyboard *keyboard);
 static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboard_ptr);
 
 // create a new keyboard listener
@@ -47,13 +34,16 @@ BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, Backe
     keyboard->data = data;
 
     // register listener
-    keyboard->registered = FALSE;
     keyboard->listener = atspi_device_listener_new(callback_keyboard, keyboard, NULL);
-    listener_register(keyboard);
-
-    // initialize grabs
-    keyboard->grabs = 0;
-    keyboard->key_grabs = NULL;
+    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
+    {
+        atspi_register_keystroke_listener(keyboard->listener,
+                                          NULL,
+                                          modifiers,
+                                          (1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_PRESSED_EVENT),
+                                          ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
+                                          NULL);
+    }
 
     return keyboard;
 }
@@ -62,11 +52,15 @@ BackendLegacyKeyboard *backend_legacy_keyboard_new(BackendLegacy *backend, Backe
 void backend_legacy_keyboard_destroy(BackendLegacyKeyboard *keyboard)
 {
     // deregister listener
-    listener_deregister(keyboard);
+    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
+    {
+        atspi_deregister_keystroke_listener(keyboard->listener,
+                                            NULL,
+                                            modifiers,
+                                            (1 << ATSPI_KEY_PRESSED_EVENT) | (1 << ATSPI_KEY_PRESSED_EVENT),
+                                            NULL);
+    }
     g_object_unref(keyboard->listener);
-
-    // free grabs
-    g_list_free_full(keyboard->key_grabs, g_free);
 
     // free
     g_free(keyboard);
@@ -75,94 +69,25 @@ void backend_legacy_keyboard_destroy(BackendLegacyKeyboard *keyboard)
 // grab all keyboard input
 void backend_legacy_keyboard_grab(BackendLegacyKeyboard *keyboard)
 {
-    // add a grab
-    keyboard->grabs++;
+    // do nothing, keyboard is already grabbed by listener
 }
 
 // ungrab all keyboard input
 void backend_legacy_keyboard_ungrab(BackendLegacyKeyboard *keyboard)
 {
-    // remove a grab
-    if (keyboard->grabs > 0)
-        keyboard->grabs--;
+    // do nothing, keyboard is already grabbed by listener
 }
 
 // grab input of a specific key
-void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event)
+void backend_legacy_keyboard_grab_key(BackendLegacyKeyboard *keyboard, guint keycode, BackendStateEvent state)
 {
-    // add the grab
-    BackendKeyboardEvent *grab = g_new(BackendKeyboardEvent, 1);
-    *grab = event;
-    keyboard->key_grabs = g_list_append(keyboard->key_grabs, grab);
+    // do nothing, keyboard is already grabbed by listener
 }
 
 // ungrab input of a specific key
-void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, BackendKeyboardEvent event)
+void backend_legacy_keyboard_ungrab_key(BackendLegacyKeyboard *keyboard, guint keycode, BackendStateEvent state)
 {
-    // remove the first instance of the grab
-    for (GList *link = keyboard->key_grabs; link; link = link->next)
-    {
-        BackendKeyboardEvent *grab = link->data;
-
-        // check if grab matches
-        if (!((grab->keycode == event.keycode) &&
-              (grab->state.modifiers == event.state.modifiers) &&
-              (grab->state.group == event.state.group)))
-            continue;
-
-        // remove the grab
-        g_free(grab);
-        keyboard->key_grabs = g_list_delete_link(keyboard->key_grabs, link);
-        return;
-    }
-}
-
-BackendStateEvent backend_legacy_keyboard_get_state(BackendLegacyKeyboard *keyboard)
-{
-    // get state
-    BackendStateEvent state;
-    state.modifiers = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(gdk_display_get_default())) & 0xFF;
-    state.group = 0; // todo, maybe contained in the gdk return bits 13 and 14?
-
-    // return
-    return state;
-}
-
-static void listener_register(BackendLegacyKeyboard *keyboard)
-{
-    // do nothing if registered
-    if (keyboard->registered)
-        return;
-    keyboard->registered = TRUE;
-
-    // register to all keyboard events
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-    {
-        atspi_register_keystroke_listener(keyboard->listener,
-                                          NULL,
-                                          modifiers,
-                                          KEY_EVENTS,
-                                          ATSPI_KEYLISTENER_SYNCHRONOUS | ATSPI_KEYLISTENER_CANCONSUME,
-                                          NULL);
-    }
-}
-
-static void listener_deregister(BackendLegacyKeyboard *keyboard)
-{
-    // do nothing if not registered
-    if (!keyboard->registered)
-        return;
-    keyboard->registered = FALSE;
-
-    // deregister from all keyboard events
-    for (gint modifiers = 0; modifiers < 0xFF; modifiers++)
-    {
-        atspi_deregister_keystroke_listener(keyboard->listener,
-                                            NULL,
-                                            modifiers,
-                                            KEY_EVENTS,
-                                            NULL);
-    }
+    // do nothing, keyboard is already grabbed by listener
 }
 
 static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboard_ptr)
@@ -180,23 +105,8 @@ static gboolean callback_keyboard(AtspiDeviceEvent *atspi_event, gpointer keyboa
     g_boxed_free(ATSPI_TYPE_DEVICE_EVENT, atspi_event);
 
     // send the event
-    keyboard->callback(event, keyboard->data);
+    BackendKeyboardEventResponse response = keyboard->callback(event, keyboard->data);
 
-    // check for global grab
-    if (keyboard->grabs > 0)
-        return KEYBOARD_EVENT_CONSUME;
-
-    // check for a key grab
-    for (GList *link = keyboard->key_grabs; link; link = link->next)
-    {
-        BackendKeyboardEvent *grab = link->data;
-
-        // check if a grab matches
-        if ((grab->keycode == event.keycode) &&
-            (grab->state.modifiers == event.state.modifiers) &&
-            (grab->state.group == event.state.group))
-            return KEYBOARD_EVENT_CONSUME;
-    }
-
-    return KEYBOARD_EVENT_RELAY;
+    // tell atspi whether to consume
+    return (response == BACKEND_KEYBOARD_EVENT_CONSUME) ? TRUE : FALSE;
 }

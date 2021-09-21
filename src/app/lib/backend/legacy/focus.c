@@ -22,7 +22,7 @@
 #define WINDOW_ACTIVATE_EVENT "window:activate"
 #define WINDOW_DEACTIVATE_EVENT "window:deactivate"
 
-static void callback_focus_changed(AtspiEvent *event, gpointer focus_ptr);
+static void callback_focus(AtspiEvent *event, gpointer focus_ptr);
 
 // create a new legacy focus listener
 BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendFocusCallback callback, gpointer data)
@@ -37,7 +37,7 @@ BackendLegacyFocus *backend_legacy_focus_new(BackendLegacy *backend, BackendFocu
     focus->data = data;
 
     // register listeners
-    focus->listener = atspi_event_listener_new(callback_focus_changed, focus, NULL);
+    focus->listener = atspi_event_listener_new(callback_focus, focus, NULL);
     atspi_event_listener_register(focus->listener, WINDOW_ACTIVATE_EVENT, NULL);
     atspi_event_listener_register(focus->listener, WINDOW_DEACTIVATE_EVENT, NULL);
 
@@ -56,7 +56,7 @@ void backend_legacy_focus_destroy(BackendLegacyFocus *focus)
     g_free(focus);
 }
 
-// get the currently cached focused window
+// get the currently focused window
 AtspiAccessible *backend_legacy_focus_get_window(BackendLegacyFocus *focus)
 {
     // get the (only) desktop
@@ -112,7 +112,7 @@ AtspiAccessible *backend_legacy_focus_get_window(BackendLegacyFocus *focus)
 }
 
 // handles a window activation and deactivation event
-static void callback_focus_changed(AtspiEvent *event, gpointer focus_ptr)
+static void callback_focus(AtspiEvent *event, gpointer focus_ptr)
 {
     BackendLegacyFocus *focus = focus_ptr;
 
