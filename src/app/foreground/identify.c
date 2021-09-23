@@ -54,6 +54,16 @@ ControlType identify_control(AtspiAccessible *accessible)
     case ATSPI_ROLE_ENTRY:
     case ATSPI_ROLE_PASSWORD_TEXT:
         control_type = CONTROL_TYPE_FOCUS;
+        break;
+
+    case ATSPI_ROLE_WINDOW:
+    case ATSPI_ROLE_INTERNAL_FRAME:
+    case ATSPI_ROLE_FRAME:
+    case ATSPI_ROLE_DOCUMENT_WEB:
+    case ATSPI_ROLE_DOCUMENT_FRAME:
+    case ATSPI_ROLE_PANEL:
+        control_type = CONTROL_TYPE_NONE;
+        break;
 
     default:
         // check if accessible of unknown role is focusable
