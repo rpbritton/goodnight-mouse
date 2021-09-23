@@ -56,22 +56,20 @@ ControlType identify_control(AtspiAccessible *accessible)
         control_type = CONTROL_TYPE_FOCUS;
         break;
 
-    case ATSPI_ROLE_WINDOW:
-    case ATSPI_ROLE_INTERNAL_FRAME:
-    case ATSPI_ROLE_FRAME:
-    case ATSPI_ROLE_DOCUMENT_WEB:
-    case ATSPI_ROLE_DOCUMENT_FRAME:
-    case ATSPI_ROLE_PANEL:
-    case ATSPI_ROLE_TREE:
-        control_type = CONTROL_TYPE_NONE;
+    case ATSPI_ROLE_SECTION:
+    case ATSPI_ROLE_TREE_ITEM:
+    case ATSPI_ROLE_LIST_ITEM:
+    case ATSPI_ROLE_TABLE_CELL:
+        // check if accessible of unknown role is focusable
+        AtspiStateSet *states = atspi_accessible_get_state_set(accessible);
+        if (atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE) ||
+            atspi_state_set_contains(states, ATSPI_STATE_SELECTABLE))
+            control_type = CONTROL_TYPE_FOCUSABLE;
+        g_object_unref(states);
         break;
 
     default:
-        // check if accessible of unknown role is focusable
-        AtspiStateSet *states = atspi_accessible_get_state_set(accessible);
-        if (atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE))
-            control_type = CONTROL_TYPE_FOCUSABLE;
-        g_object_unref(states);
+        control_type = CONTROL_TYPE_NONE;
         break;
     }
 
