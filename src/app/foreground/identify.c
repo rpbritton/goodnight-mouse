@@ -62,6 +62,7 @@ ControlType identify_control(AtspiAccessible *accessible)
     case ATSPI_ROLE_DOCUMENT_WEB:
     case ATSPI_ROLE_DOCUMENT_FRAME:
     case ATSPI_ROLE_PANEL:
+    case ATSPI_ROLE_TREE:
         control_type = CONTROL_TYPE_NONE;
         break;
 
