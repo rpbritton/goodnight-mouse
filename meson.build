@@ -2,7 +2,7 @@ project('goodnight_mouse', 'c')
 
 project_source_files = []
 project_dependencies = []
-project_build_args = []
+project_build_args = ['-Wall']
 
 subdir('src')
 
