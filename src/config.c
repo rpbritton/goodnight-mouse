@@ -64,12 +64,12 @@ Config *config_new(int argc, char **argv)
     GKeyFile *key_file = g_key_file_new();
     g_key_file_set_list_separator(key_file, ',');
     g_key_file_load_from_file(key_file, config_path, G_KEY_FILE_NONE, &error);
-    g_free(config_path);
     if (error && config_valid)
     {
-        g_warning("config: Failed to load config %s", error->message);
+        g_warning("config: Failed to load config '%s': %s", config_path, error->message);
         config_valid = FALSE;
     }
+    g_free(config_path);
     g_clear_error(&error);
 
     // get app
