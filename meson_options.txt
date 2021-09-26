@@ -1,0 +1,2 @@
+option('build_level', type : 'combo', choices : ['default', 'debug'], value : 'default')
+option('library_backend', type : 'combo', choices : ['xcb', 'legacy'], value : 'xcb')
