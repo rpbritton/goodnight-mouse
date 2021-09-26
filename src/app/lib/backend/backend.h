@@ -20,7 +20,7 @@
 #ifndef C9468050_1653_4C80_B8A8_A79F04F64BF7
 #define C9468050_1653_4C80_B8A8_A79F04F64BF7
 
-#if LIBRARY_BACKEND == xcb
+#if LIBRARY_BACKEND_XCB
 
 #include "xcb/backend.h"
 #define backend_new backend_xcb_new
