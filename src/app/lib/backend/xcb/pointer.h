@@ -20,9 +20,7 @@
 #ifndef CCB12CE1_7AD2_4E40_9D80_F7D93BD744F9
 #define CCB12CE1_7AD2_4E40_9D80_F7D93BD744F9
 
-#if USE_XCB
-
-#include "xcb.h"
+#include "backend.h"
 #include "../pointer.h"
 #include "device.h"
 #include "state.h"
@@ -47,7 +45,4 @@ void backend_xcb_pointer_grab(BackendXCBPointer *pointer);
 void backend_xcb_pointer_ungrab(BackendXCBPointer *pointer);
 void backend_xcb_pointer_grab_button(BackendXCBPointer *pointer, guint button, BackendStateEvent state);
 void backend_xcb_pointer_ungrab_button(BackendXCBPointer *pointer, guint button, BackendStateEvent state);
-
-#endif /* USE_XCB */
-
 #endif /* CCB12CE1_7AD2_4E40_9D80_F7D93BD744F9 */

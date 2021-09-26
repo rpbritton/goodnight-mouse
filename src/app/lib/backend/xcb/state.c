@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "state.h"
 
 #include "utils.h"
@@ -96,5 +94,3 @@ BackendStateEvent backend_xcb_state_parse(BackendXCBState *state,
     };
     return event;
 }
-
-#endif /* USE_XCB */

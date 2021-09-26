@@ -20,11 +20,9 @@
 #ifndef B53CADD9_4B91_408B_B0DE_DF18356B7745
 #define B53CADD9_4B91_408B_B0DE_DF18356B7745
 
-#if USE_XCB
-
 #include <atspi/atspi.h>
 
-#include "xcb.h"
+#include "backend.h"
 #include "../focus.h"
 #include "../legacy/focus.h"
 
@@ -50,7 +48,4 @@ void backend_xcb_focus_destroy(BackendXCBFocus *focus);
 AtspiAccessible *backend_xcb_focus_get_window(BackendXCBFocus *focus);
 
 xcb_window_t backend_xcb_focus_get_xcb_window(BackendXCBFocus *focus);
-
-#endif /* USE_XCB */
-
 #endif /* B53CADD9_4B91_408B_B0DE_DF18356B7745 */

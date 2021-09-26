@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "utils.h"
 
 // get the first device id that matches the device type
@@ -72,5 +70,3 @@ xcb_input_device_id_t backend_xcb_device_id_from_device_type(xcb_connection_t *c
     // return
     return device_id;
 }
-
-#endif /* USE_XCB */

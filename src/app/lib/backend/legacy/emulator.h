@@ -22,7 +22,7 @@
 
 #include <atspi/atspi.h>
 
-#include "legacy.h"
+#include "backend.h"
 #include "../keyboard.h"
 #include "../pointer.h"
 #include "../state.h"

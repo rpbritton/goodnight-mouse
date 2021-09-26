@@ -17,7 +17,7 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "legacy.h"
+#include "backend.h"
 
 #include <glib.h>
 

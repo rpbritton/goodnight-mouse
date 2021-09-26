@@ -20,15 +20,10 @@
 #ifndef E3785A2E_2BB8_4BFB_820D_F8EF8D3EA467
 #define E3785A2E_2BB8_4BFB_820D_F8EF8D3EA467
 
-#if USE_XCB
-
 #include <glib.h>
 #include <xcb/xcb.h>
 
 typedef gboolean (*XCBSourceCallback)(xcb_generic_event_t *event, gpointer data);
 
 GSource *xcb_source_new(xcb_connection_t *connection);
-
-#endif /* USE_XCB */
-
 #endif /* E3785A2E_2BB8_4BFB_820D_F8EF8D3EA467 */

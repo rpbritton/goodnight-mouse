@@ -20,14 +20,9 @@
 #ifndef CF028CC6_EE42_43EC_B0B2_09CCB44C709D
 #define CF028CC6_EE42_43EC_B0B2_09CCB44C709D
 
-#if USE_XCB
-
 #include <glib.h>
 #include <xcb/xcb.h>
 #include <xcb/xinput.h>
 
 xcb_input_device_id_t backend_xcb_device_id_from_device_type(xcb_connection_t *connection, xcb_input_device_type_t device_type);
-
-#endif /* USE_XCB */
-
 #endif /* CF028CC6_EE42_43EC_B0B2_09CCB44C709D */

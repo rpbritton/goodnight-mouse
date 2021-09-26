@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "source.h"
 
 static gboolean xcb_source_prepare(GSource *source, gint *timeout);
@@ -126,5 +124,3 @@ static void xcb_source_finalize(GSource *source)
     // free queue
     g_queue_free_full(xcb_source->events, free);
 }
-
-#endif /* USE_XCB */

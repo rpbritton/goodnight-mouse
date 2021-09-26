@@ -1,9 +1,8 @@
 if get_option('library_backend') == 'xcb'
+    project_build_args += '-DLIBRARY_BACKEND=xcb'
     subdir('xcb')
     subdir('legacy')
-    # todo: should now only be used in backend.h
-    # make it BACKEND=XCB or something more generic
-    project_build_args += '-DUSE_XCB=1'
 else
+    project_build_args += '-DLIBRARY_BACKEND=legacy'
     subdir('legacy')
 endif

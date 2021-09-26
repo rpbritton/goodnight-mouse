@@ -20,9 +20,7 @@
 #ifndef BC0B9014_1DE6_4245_A1EE_9FDB72126137
 #define BC0B9014_1DE6_4245_A1EE_9FDB72126137
 
-#if USE_XCB
-
-#include "xcb.h"
+#include "backend.h"
 #include "state.h"
 #include "../keyboard.h"
 #include "../pointer.h"
@@ -51,7 +49,4 @@ gboolean backend_xcb_emulator_reset(BackendXCBEmulator *emulator);
 gboolean backend_xcb_emulator_state(BackendXCBEmulator *emulator, BackendStateEvent state);
 gboolean backend_xcb_emulator_key(BackendXCBEmulator *emulator, BackendKeyboardEvent event);
 gboolean backend_xcb_emulator_button(BackendXCBEmulator *emulator, BackendPointerEvent event);
-
-#endif /* USE_XCB */
-
 #endif /* BC0B9014_1DE6_4245_A1EE_9FDB72126137 */

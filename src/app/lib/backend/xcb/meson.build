@@ -1,4 +1,5 @@
 project_source_files += files(
+    'backend.c',
     'device.c',
     'emulator.c',
     'focus.c',
@@ -7,7 +8,6 @@ project_source_files += files(
     'source.c',
     'state.c',
     'utils.c',
-    'xcb.c',
 )
 
 project_dependencies += [

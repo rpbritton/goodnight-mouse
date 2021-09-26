@@ -20,13 +20,11 @@
 #ifndef BDF15D43_14FE_4926_8658_DE1AECF65525
 #define BDF15D43_14FE_4926_8658_DE1AECF65525
 
-#if USE_XCB
-
 #include <glib.h>
 #include <xcb/xcb.h>
 #include <xcb/xinput.h>
 
-#include "../legacy/legacy.h"
+#include "../legacy/backend.h"
 
 // xcb event extensions
 typedef enum BackendXCBExtension
@@ -60,7 +58,4 @@ void backend_xcb_unsubscribe(BackendXCB *backend, BackendXCBExtension extension,
 xcb_connection_t *backend_xcb_get_connection(BackendXCB *backend);
 xcb_window_t backend_xcb_get_root_window(BackendXCB *backend);
 BackendLegacy *backend_xcb_get_legacy(BackendXCB *backend);
-
-#endif /* USE_XCB */
-
 #endif /* BDF15D43_14FE_4926_8658_DE1AECF65525 */

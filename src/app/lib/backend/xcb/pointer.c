@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "pointer.h"
 
 #include "utils.h"
@@ -116,5 +114,3 @@ static BackendXCBDeviceEventResponse callback_device(xcb_generic_event_t *generi
     return (response == BACKEND_POINTER_EVENT_CONSUME) ? BACKEND_XCB_DEVICE_EVENT_CONSUME
                                                        : BACKEND_XCB_DEVICE_EVENT_RELAY;
 }
-
-#endif /* USE_XCB */

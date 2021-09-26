@@ -17,9 +17,7 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
-#include "xcb.h"
+#include "backend.h"
 
 #include "source.h"
 
@@ -193,5 +191,3 @@ static gboolean process_event(xcb_generic_event_t *event, gpointer backend_ptr)
 
     return G_SOURCE_CONTINUE;
 }
-
-#endif /* USE_XCB */

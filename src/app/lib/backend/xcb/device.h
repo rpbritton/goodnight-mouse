@@ -20,9 +20,7 @@
 #ifndef E0EEF1E6_8EE7_4E0E_94B1_7F1F3E5DAE25
 #define E0EEF1E6_8EE7_4E0E_94B1_7F1F3E5DAE25
 
-#if USE_XCB
-
-#include "xcb.h"
+#include "backend.h"
 #include "focus.h"
 
 // whether the event should be passed through or not
@@ -65,7 +63,4 @@ void backend_xcb_device_grab(BackendXCBDevice *device);
 void backend_xcb_device_ungrab(BackendXCBDevice *device);
 void backend_xcb_device_grab_detail(BackendXCBDevice *device, guint32 detail, guint32 modifiers);
 void backend_xcb_device_ungrab_detail(BackendXCBDevice *device, guint32 detail, guint32 modifiers);
-
-#endif /* USE_XCB */
-
 #endif /* E0EEF1E6_8EE7_4E0E_94B1_7F1F3E5DAE25 */

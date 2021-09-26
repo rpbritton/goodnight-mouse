@@ -20,9 +20,7 @@
 #ifndef A20B9782_EE13_4B14_AE33_AE273BE70B7F
 #define A20B9782_EE13_4B14_AE33_AE273BE70B7F
 
-#if USE_XCB
-
-#include "xcb.h"
+#include "backend.h"
 #include "../state.h"
 #include "focus.h"
 
@@ -44,7 +42,4 @@ BackendStateEvent backend_xcb_state_current(BackendXCBState *state);
 BackendStateEvent backend_xcb_state_parse(BackendXCBState *state,
                                           xcb_input_modifier_info_t mods, xcb_input_group_info_t group,
                                           xcb_input_fp1616_t pointer_x, xcb_input_fp1616_t pointer_y);
-
-#endif /* USE_XCB */
-
 #endif /* A20B9782_EE13_4B14_AE33_AE273BE70B7F */

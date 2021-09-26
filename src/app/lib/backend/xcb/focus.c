@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "focus.h"
 
 #include <string.h>
@@ -242,5 +240,3 @@ static void callback_backend_legacy(gpointer focus_ptr)
     // send a notification
     focus->callback(focus->data);
 }
-
-#endif /* USE_XCB */

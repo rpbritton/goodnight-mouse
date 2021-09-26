@@ -20,9 +20,9 @@
 #ifndef C9468050_1653_4C80_B8A8_A79F04F64BF7
 #define C9468050_1653_4C80_B8A8_A79F04F64BF7
 
-#if USE_XCB
+#if LIBRARY_BACKEND == xcb
 
-#include "xcb/xcb.h"
+#include "xcb/backend.h"
 #define backend_new backend_xcb_new
 #define backend_destroy backend_xcb_destroy
 
@@ -62,7 +62,7 @@
 
 #else
 
-#include "legacy/legacy.h"
+#include "legacy/backend.h"
 #define backend_new backend_legacy_new
 #define backend_destroy backend_legacy_destroy
 

@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "device.h"
 
 // the global passive grab lets us replay device events
@@ -398,5 +396,3 @@ static void callback_focus(gpointer device_ptr)
     for (GList *link = device->detail_grabs; link; link = link->next)
         set_detail_grab(device, link->data);
 }
-
-#endif /* USE_XCB */

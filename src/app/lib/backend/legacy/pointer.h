@@ -22,7 +22,7 @@
 
 #include <atspi/atspi.h>
 
-#include "legacy.h"
+#include "backend.h"
 #include "../pointer.h"
 
 // backend for pointer events that uses pure atspi

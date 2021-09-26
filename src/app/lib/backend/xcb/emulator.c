@@ -17,8 +17,6 @@
  * along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_XCB
-
 #include "emulator.h"
 
 #include <xcb/xtest.h>
@@ -305,5 +303,3 @@ static gboolean reset_details(BackendXCBEmulator *emulator, GHashTable *record)
     // return
     return is_success;
 }
-
-#endif /* USE_XCB */

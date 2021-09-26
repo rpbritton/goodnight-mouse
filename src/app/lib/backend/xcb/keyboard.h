@@ -20,9 +20,7 @@
 #ifndef FE6265C6_BCF0_41C2_B201_D16783856EB7
 #define FE6265C6_BCF0_41C2_B201_D16783856EB7
 
-#if USE_XCB
-
-#include "xcb.h"
+#include "backend.h"
 #include "../keyboard.h"
 #include "device.h"
 #include "state.h"
@@ -47,7 +45,4 @@ void backend_xcb_keyboard_grab(BackendXCBKeyboard *keyboard);
 void backend_xcb_keyboard_ungrab(BackendXCBKeyboard *keyboard);
 void backend_xcb_keyboard_grab_key(BackendXCBKeyboard *keyboard, guint keycode, BackendStateEvent state);
 void backend_xcb_keyboard_ungrab_key(BackendXCBKeyboard *keyboard, guint keycode, BackendStateEvent state);
-
-#endif /* USE_XCB */
-
 #endif /* FE6265C6_BCF0_41C2_B201_D16783856EB7 */

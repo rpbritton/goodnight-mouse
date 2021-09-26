@@ -22,7 +22,7 @@
 
 #include <atspi/atspi.h>
 
-#include "legacy.h"
+#include "backend.h"
 #include "../focus.h"
 
 // backend for focus that uses pure atspi

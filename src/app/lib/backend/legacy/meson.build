@@ -1,8 +1,8 @@
 project_source_files += files(
+    'backend.c',
     'emulator.c',
     'focus.c',
     'keyboard.c',
-    'legacy.c',
     'pointer.c',
     'state.c',
 )
