@@ -1,4 +1,4 @@
-#! /bin/echo Please source this
+#!/bin/echo Please source this file
 
 # Copyright (C) 2021 Ryan Britton
 #
@@ -18,32 +18,29 @@
 # along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
 
 case "$1" in
-	-s|--set)
-		export GTK_MODULES=gail:atk-bridge
-		export OOO_FORCE_DESKTOP=gnome
-		export GNOME_ACCESSIBILITY=1
-		export QT_ACCESSIBILITY=1
-		export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
-		export ACCESSIBILITY_ENABLED=1
-		;;
-	-u|--unset)
-		unset GTK_MODULES
-		unset OOO_FORCE_DESKTOP
-		unset GNOME_ACCESSIBILITY
-		unset QT_ACCESSIBILITY
-		unset QT_LINUX_ACCESSIBILITY_ALWAYS_ON
-		unset ACCESSIBILITY_ENABLED
-		;;
-	-h|--help)
-		echo "\
+    -s|--set)
+        export GTK_MODULES=gail:atk-bridge
+        export OOO_FORCE_DESKTOP=gnome
+        export GNOME_ACCESSIBILITY=1
+        export QT_ACCESSIBILITY=1
+        export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+        export ACCESSIBILITY_ENABLED=1
+    ;;
+    -u|--unset)
+        unset GTK_MODULES
+        unset OOO_FORCE_DESKTOP
+        unset GNOME_ACCESSIBILITY
+        unset QT_ACCESSIBILITY
+        unset QT_LINUX_ACCESSIBILITY_ALWAYS_ON
+        unset ACCESSIBILITY_ENABLED
+    ;;
+    *)
+        echo "\
 Usage:
   . accessibleenvironment [--set|--unset]
 
 Options:
   -s, --set
   -u, --unset
-" ;;
-	*)
-		echo "Unknown options: \"$1\""
-		;;
+    " ;;
 esac
