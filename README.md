@@ -17,12 +17,37 @@
  along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-# goodnight-mouse
+# Goodnight Mouse
 
-Upon hotkey press, labels all available actions in a program with a short sequence of keys to perform it.
+Quickly label all button and links with a short key sequence as an alternative to using the mouse.
+
+## Example Usage
+![example-workflow](./examples/readme/example-workflow.gif)
+
+## Features
+* Click buttons, follow links, and focus text with the keyboard.
+* Hold shift to use the "shifted state" that produces alternative actions, such as closing a tab.
+* Update and add new labels when the application changes while GM is open.
+* The arrow keys and others are passed through to the application for movement while open.
+* Configurable theme via the config file.
 
 ## Requirements
-* AT-SPI2
+* At-Spi2
+
+## Build
+This project uses the meson build system.
+```
+meson setup builddir
+cd builddir
+meson compile
+```
+
+## Run
+See the options with `./builddir/goodnight_mouse -h`.
+<br>
+Check out the sample config in `./examples/config/goodnight_mouse.cfg`
+<br>
+Try it with `./builddir/goodnight_mouse -c examples/config/goodnight_mouse.cfg`
 
 ## Tips for getting accessibility working
 * Check out this repository: https://salsa.debian.org/a11y-team/check-a11y
@@ -37,22 +62,23 @@ export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
 export ACCESSIBILITY_ENABLED=1
 ```
 * Set DBus properties to true:
-    * `org.a11y.Status.IsEnabled`
-    * `org.a11y.Status.ScreenReaderEnabled`
-        * This should really be done by the script.
+  * `org.a11y.Status.IsEnabled`
+  * `org.a11y.Status.ScreenReaderEnabled`
 * Run electron and chrome apps with `--force-renderer-accessibility`
-    * If the popups are off it may be caused by scaling, such as `Xft.dpi` in Xresources
+  * If the popups are off it may be caused by scaling, such as `Xft.dpi` in Xresources
 * `dbus-monitor` the at-spi to see if things are working, like mouse input.
-    * May need `dbus-update-activation-environment --systemd DBUS_SESSION_BUS_ADDRESS DISPLAY XAUTHORITY` in xinit.
+  * May need to run `dbus-update-activation-environment --systemd DBUS_SESSION_BUS_ADDRESS DISPLAY XAUTHORITY` at startup, such as in xinit.
 
-## Run
-
-## FAQ
-
-### Why does this use its own hotkey listener?
-
-It is generally not possible in X11 for a hotkey manager to listen
-to for keys in popup menus, since the popup menu has a global grab.
-Furthermore temporary menus (like the autocompletion suggestions
-in a web browser), I have found to go away. GM works by using the
-applications accessibility toolkit to intercept the keys.
+### Known Working Applications
+* Firefox
+* Google Chrome
+  * Requires `--force-renderer-accessibility`
+* Slack
+  * Requires `--force-renderer-accessibility`
+* MS Teams
+  * Requires `--force-renderer-accessibility`
+* Discord
+  * Requires `--force-renderer-accessibility`
+* VLC
+* VS Code
+  * Requires `--force-renderer-accessibility`
