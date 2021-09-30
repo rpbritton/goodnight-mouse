@@ -17,7 +17,7 @@
  along with Goodnight Mouse.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-# Goodnight Mouse
+# ![Goodnight Mouse](examples/readme/logo.png)
 
 Quickly label all button and links with a short key sequence as an alternative to using the mouse.
 
