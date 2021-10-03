@@ -60,6 +60,7 @@ ControlType identify_control(AtspiAccessible *accessible)
     case ATSPI_ROLE_TREE_ITEM:
     case ATSPI_ROLE_LIST_ITEM:
     case ATSPI_ROLE_TABLE_CELL:
+    case ATSPI_ROLE_HEADING:
         // check if accessible of unknown role is focusable
         AtspiStateSet *states = atspi_accessible_get_state_set(accessible);
         if (atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE) ||
