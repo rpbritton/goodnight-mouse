@@ -95,7 +95,7 @@ void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shift
         break;
 
     case CONTROL_TYPE_FOCUSABLE:
-        // check if focusable accessible has an action
+        // get the number of actions
         AtspiAction *action = atspi_accessible_get_action_iface(accessible);
         gint n_actions = 0;
         if (action)
@@ -104,11 +104,17 @@ void executor_do(Executor *executor, AtspiAccessible *accessible, gboolean shift
             g_object_unref(action);
         }
 
+        // execute the action or focus
         if (n_actions > 0)
-            execute_press(executor, accessible);
+            execute_action(executor, accessible, 0);
         else
             execute_focus(executor, accessible);
 
+        break;
+
+    case CONTROL_TYPE_SELECTABLE:
+        // attempt to press
+        execute_press(executor, accessible);
         break;
     }
 }

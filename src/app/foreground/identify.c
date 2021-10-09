@@ -63,8 +63,9 @@ ControlType identify_control(AtspiAccessible *accessible)
     case ATSPI_ROLE_HEADING:
         // check if accessible of unknown role is focusable
         AtspiStateSet *states = atspi_accessible_get_state_set(accessible);
-        if (atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE) ||
-            atspi_state_set_contains(states, ATSPI_STATE_SELECTABLE))
+        if (atspi_state_set_contains(states, ATSPI_STATE_SELECTABLE))
+            control_type = CONTROL_TYPE_SELECTABLE;
+        else if (atspi_state_set_contains(states, ATSPI_STATE_FOCUSABLE))
             control_type = CONTROL_TYPE_FOCUSABLE;
         g_object_unref(states);
         break;
