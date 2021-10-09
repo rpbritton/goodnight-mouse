@@ -45,7 +45,11 @@ typedef struct Registry
 
     AtspiAccessible *window;
     RegistrySubscriber subscriber;
+
     guint refresh_source_id;
+    GList *accessibles_to_process;
+    GHashTable *accessibles_to_keep;
+    GPtrArray *accessibles_to_add;
 } Registry;
 
 Registry *registry_new();

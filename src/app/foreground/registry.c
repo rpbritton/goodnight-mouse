@@ -23,18 +23,16 @@
 
 #include "identify.h"
 
-#define REGISTRY_REFRESH_INTERVAL (250)
-#define REGISTRY_REFRESH_PAUSE_COUNT (16)
+#define REGISTRY_REFRESH_INTERVAL (100)
 
-static void registry_refresh(Registry *registry, gboolean quickly);
-static gboolean registry_refresh_loop(gpointer registry_ptr);
+static gboolean registry_refresh_source_start(gpointer registry_ptr);
+static gboolean registry_refresh_source_run(gpointer registry_ptr);
+static gboolean registry_refresh_iterate(Registry *registry);
+static void registry_refresh_finish(Registry *registry);
 
 static gboolean registry_check_children(Registry *registry, ControlType control_type);
 static GList *registry_get_children(Registry *registry, AtspiAccessible *accessible);
 static GList *registry_get_children_fallback(Registry *registry, AtspiAccessible *accessible);
-
-static void registry_remove_missing_accessibles(Registry *registry, GHashTable *accessibles_to_keep);
-static void registry_add_accessibles(Registry *registry, GArray *accessibles_to_add);
 
 static const AtspiStateType INTERACTIVE_STATES[] = {
     ATSPI_STATE_SHOWING,
@@ -45,6 +43,7 @@ static const AtspiStateType INTERACTIVE_STATES[] = {
 
 #define NUM_INTERACTIVE_STATES (sizeof(INTERACTIVE_STATES) / sizeof(INTERACTIVE_STATES[0]))
 
+// create a new registry
 Registry *registry_new()
 {
     Registry *registry = g_new(Registry, 1);
@@ -66,9 +65,15 @@ Registry *registry_new()
     // set not watching
     registry->window = NULL;
 
+    // init refresh iterator
+    registry->accessibles_to_process = NULL;
+    registry->accessibles_to_keep = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
+    registry->accessibles_to_add = g_ptr_array_new_with_free_func(g_object_unref);
+
     return registry;
 }
 
+// destroy the registry
 void registry_destroy(Registry *registry)
 {
     // unwatch
@@ -78,10 +83,17 @@ void registry_destroy(Registry *registry)
     g_hash_table_unref(registry->accessibles);
     g_object_unref(registry->match_interactive);
 
+    // free refresh iterator
+    g_list_free_full(registry->accessibles_to_process, g_object_unref);
+    registry->accessibles_to_process = NULL;
+    g_hash_table_unref(registry->accessibles_to_keep);
+    g_ptr_array_unref(registry->accessibles_to_add);
+
     // free registry
     g_free(registry);
 }
 
+// watch a specific window
 void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscriber subscriber)
 {
     // unwatch first
@@ -95,15 +107,11 @@ void registry_watch(Registry *registry, AtspiAccessible *window, RegistrySubscri
     registry->window = g_object_ref(window);
     registry->subscriber = subscriber;
 
-    // refresh the registry
-    registry_refresh(registry, TRUE);
-
     // start the refresh loop
-    registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
-                                                registry_refresh_loop,
-                                                registry);
+    registry_refresh_source_start(registry);
 }
 
+// stop the registry from watching anything
 void registry_unwatch(Registry *registry)
 {
     // skip if not watching
@@ -125,75 +133,83 @@ void registry_unwatch(Registry *registry)
         g_hash_table_iter_remove(&iter);
     }
 
-    // stop the refresh loop
+    // stop the refresh iterator
     g_source_remove(registry->refresh_source_id);
+    g_list_free_full(registry->accessibles_to_process, g_object_unref);
+    registry->accessibles_to_process = NULL;
+    g_hash_table_remove_all(registry->accessibles_to_keep);
+    g_ptr_array_remove_range(registry->accessibles_to_add, 0, registry->accessibles_to_add->len);
 }
 
-static void registry_refresh(Registry *registry, gboolean quickly)
-{
-    GHashTable *accessibles_to_keep = g_hash_table_new_full(NULL, NULL, g_object_unref, NULL);
-    GArray *accessibles_to_add = g_array_new(FALSE, FALSE, sizeof(AtspiAccessible *));
-
-    // loop through queued accessibles
-    GList *accessible_queue = g_list_append(NULL, g_object_ref(registry->window));
-    guint counter = 0;
-    while (accessible_queue)
-    {
-        // check to pause to process other glib events
-        if (++counter % REGISTRY_REFRESH_PAUSE_COUNT == 0 || !quickly)
-            while (g_main_context_iteration(NULL, FALSE))
-                continue;
-
-        // pop first accessible to check
-        AtspiAccessible *accessible = accessible_queue->data;
-        accessible_queue = g_list_delete_link(accessible_queue, accessible_queue);
-
-        // mark to keep, stealing the reference
-        g_hash_table_add(accessibles_to_keep, accessible);
-
-        // identify the accessible
-        ControlType control_type = identify_control(accessible);
-
-        // add the children to the front
-        if (registry_check_children(registry, control_type))
-            accessible_queue = g_list_concat(registry_get_children(registry, accessible), accessible_queue);
-
-        // don't do anything if the control type is none
-        if (control_type == CONTROL_TYPE_NONE)
-            continue;
-
-        // mark to add if does yet not exist
-        if (!g_hash_table_contains(registry->accessibles, accessible))
-            accessibles_to_add = g_array_append_val(accessibles_to_add, accessible);
-    }
-
-    // remove accessibles that were not found in the refresh
-    registry_remove_missing_accessibles(registry, accessibles_to_keep);
-
-    // add accessibles that do not exist yet
-    registry_add_accessibles(registry, accessibles_to_add);
-
-    // free
-    g_array_unref(accessibles_to_add);
-    g_hash_table_unref(accessibles_to_keep);
-}
-
-static gboolean registry_refresh_loop(gpointer registry_ptr)
+// start a refresh loop
+static gboolean registry_refresh_source_start(gpointer registry_ptr)
 {
     Registry *registry = registry_ptr;
 
-    // refresh the registry
-    registry_refresh(registry, FALSE);
-
-    // add a source to call after interval
-    registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL,
-                                                registry_refresh_loop,
-                                                registry);
+    // add the refresh source
+    registry->refresh_source_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
+                                                  registry_refresh_source_run,
+                                                  registry,
+                                                  NULL);
 
     // remove this source
     return G_SOURCE_REMOVE;
 }
 
+// run a refresh loop
+static gboolean registry_refresh_source_run(gpointer registry_ptr)
+{
+    Registry *registry = registry_ptr;
+
+    // start with the window if there are no accessibles to process
+    if (registry->accessibles_to_process == NULL)
+        registry->accessibles_to_process = g_list_append(registry->accessibles_to_process, g_object_ref(registry->window));
+
+    // run an iteration, continue if there is more processing required
+    if (registry_refresh_iterate(registry))
+        return G_SOURCE_CONTINUE;
+
+    // finalize this refresh
+    registry_refresh_finish(registry);
+
+    // add the timeout source
+    registry->refresh_source_id = g_timeout_add(REGISTRY_REFRESH_INTERVAL, registry_refresh_source_start, registry);
+
+    // remove this source
+    return G_SOURCE_REMOVE;
+}
+
+// run a single iteration of the refresh loop
+static gboolean registry_refresh_iterate(Registry *registry)
+{
+    // ensure there are accessibles to process
+    if (registry->accessibles_to_process == NULL)
+        return FALSE;
+
+    // pop first accessible to check
+    AtspiAccessible *accessible = registry->accessibles_to_process->data;
+    registry->accessibles_to_process = g_list_delete_link(registry->accessibles_to_process, registry->accessibles_to_process);
+
+    // mark as processed (steals the reference) and don't process again
+    if (!g_hash_table_add(registry->accessibles_to_keep, accessible))
+        return (registry->accessibles_to_process != NULL);
+
+    // identify the accessible
+    ControlType control_type = identify_control(accessible);
+
+    // add the children to the front
+    if (registry_check_children(registry, control_type))
+        registry->accessibles_to_process = g_list_concat(registry_get_children(registry, accessible), registry->accessibles_to_process);
+
+    // mark to add if it is a valid control and does not already exist
+    if (control_type != CONTROL_TYPE_NONE && !g_hash_table_contains(registry->accessibles, accessible))
+        g_ptr_array_add(registry->accessibles_to_add, g_object_ref(accessible));
+
+    // return whether there are more iterations to be done
+    return (registry->accessibles_to_process != NULL);
+}
+
+// get whether to check the child accessibles of this control type
 // todo: is this too specific (would be cleaner without?)
 static gboolean registry_check_children(Registry *registry, ControlType control_type)
 {
@@ -206,6 +222,7 @@ static gboolean registry_check_children(Registry *registry, ControlType control_
     }
 }
 
+// get all the children of an accessible
 static GList *registry_get_children(Registry *registry, AtspiAccessible *accessible)
 {
     GList *children = NULL;
@@ -235,6 +252,7 @@ static GList *registry_get_children(Registry *registry, AtspiAccessible *accessi
     return children;
 }
 
+// get all the children of an accessible by iteration, not collections
 static GList *registry_get_children_fallback(Registry *registry, AtspiAccessible *accessible)
 {
     GList *children = NULL;
@@ -263,17 +281,17 @@ static GList *registry_get_children_fallback(Registry *registry, AtspiAccessible
     return children;
 }
 
-// remove all accessibles not found in the given hash table
-static void registry_remove_missing_accessibles(Registry *registry, GHashTable *accessibles_to_keep)
+// finalize the results of a refresh
+static void registry_refresh_finish(Registry *registry)
 {
-    // check all existing accessibles
+    // remove any accessibles not found
     GHashTableIter iter;
     gpointer accessible_ptr, null_ptr;
     g_hash_table_iter_init(&iter, registry->accessibles);
     while (g_hash_table_iter_next(&iter, &accessible_ptr, &null_ptr))
     {
         // do nothing if found
-        if (g_hash_table_contains(accessibles_to_keep, accessible_ptr))
+        if (g_hash_table_contains(registry->accessibles_to_keep, accessible_ptr))
             continue;
 
         // remove if not found
@@ -281,18 +299,16 @@ static void registry_remove_missing_accessibles(Registry *registry, GHashTable *
             registry->subscriber.remove(accessible_ptr, registry->subscriber.data);
         g_hash_table_iter_remove(&iter);
     }
-}
+    g_hash_table_remove_all(registry->accessibles_to_keep);
 
-// add accessibles to the registry and callback in a quasi-random manner
-static void registry_add_accessibles(Registry *registry, GArray *accessibles_to_add)
-{
+    // add all the new accessibles
     // create a quasi-random number generator
     gsl_qrng *generator = gsl_qrng_alloc(gsl_qrng_halton, 1);
     // the lowest power of 2 greater than the number of accessibles multiplied
     // by the generated value will be a unique, whole integer that can be used
     // as an index, with the exception of 0 being 0.5
     gint multiplier = 1;
-    while (multiplier < accessibles_to_add->len)
+    while (multiplier < registry->accessibles_to_add->len)
         multiplier *= 2;
 
     // iterate through all the indexes
@@ -303,19 +319,18 @@ static void registry_add_accessibles(Registry *registry, GArray *accessibles_to_
 
         // get index from generator
         gint index = (gint)(value * multiplier);
-        if (index >= accessibles_to_add->len)
+        if (index >= registry->accessibles_to_add->len)
             continue;
 
         // get accessible
-        AtspiAccessible *accessible = g_array_index(accessibles_to_add, AtspiAccessible *, index);
-        if (g_hash_table_contains(registry->accessibles, accessible))
-            continue;
+        AtspiAccessible *accessible = g_ptr_array_index(registry->accessibles_to_add, index);
 
         // add accessible
         g_hash_table_add(registry->accessibles, g_object_ref(accessible));
         if (registry->subscriber.add)
             registry->subscriber.add(accessible, registry->subscriber.data);
     }
+    g_ptr_array_remove_range(registry->accessibles_to_add, 0, registry->accessibles_to_add->len);
 
     // free generator
     gsl_qrng_free(generator);
