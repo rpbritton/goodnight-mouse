@@ -24,10 +24,11 @@
 #include "identify.h"
 
 #define REGISTRY_REFRESH_INTERVAL (200)
+#define REGISTRY_REFRESH_BATCHES (10)
 
 static gboolean registry_refresh_source_start(gpointer registry_ptr);
 static gboolean registry_refresh_source_run(gpointer registry_ptr);
-static gboolean registry_refresh_iterate(Registry *registry);
+static void registry_refresh_iterate(Registry *registry);
 static void registry_refresh_finish(Registry *registry);
 
 static gboolean registry_check_children(Registry *registry, ControlType control_type);
@@ -165,8 +166,12 @@ static gboolean registry_refresh_source_run(gpointer registry_ptr)
     if (registry->accessibles_to_process == NULL)
         registry->accessibles_to_process = g_list_append(registry->accessibles_to_process, g_object_ref(registry->window));
 
-    // run an iteration, continue if there is more processing required
-    if (registry_refresh_iterate(registry))
+    // run a batch of iterations
+    for (gint count = 0; count < REGISTRY_REFRESH_BATCHES; count++)
+        registry_refresh_iterate(registry);
+
+    // continue if there are more items to process
+    if (registry->accessibles_to_process != NULL)
         return G_SOURCE_CONTINUE;
 
     // finalize this refresh
@@ -180,11 +185,11 @@ static gboolean registry_refresh_source_run(gpointer registry_ptr)
 }
 
 // run a single iteration of the refresh loop
-static gboolean registry_refresh_iterate(Registry *registry)
+static void registry_refresh_iterate(Registry *registry)
 {
     // ensure there are accessibles to process
     if (registry->accessibles_to_process == NULL)
-        return FALSE;
+        return;
 
     // pop first accessible to check
     AtspiAccessible *accessible = registry->accessibles_to_process->data;
@@ -192,7 +197,7 @@ static gboolean registry_refresh_iterate(Registry *registry)
 
     // mark as processed (steals the reference) and don't process again
     if (!g_hash_table_add(registry->accessibles_to_keep, accessible))
-        return (registry->accessibles_to_process != NULL);
+        return;
 
     // identify the accessible
     ControlType control_type = identify_control(accessible);
@@ -204,9 +209,6 @@ static gboolean registry_refresh_iterate(Registry *registry)
     // mark to add if it is a valid control and does not already exist
     if (control_type != CONTROL_TYPE_NONE && !g_hash_table_contains(registry->accessibles, accessible))
         g_ptr_array_add(registry->accessibles_to_add, g_object_ref(accessible));
-
-    // return whether there are more iterations to be done
-    return (registry->accessibles_to_process != NULL);
 }
 
 // get whether to check the child accessibles of this control type
