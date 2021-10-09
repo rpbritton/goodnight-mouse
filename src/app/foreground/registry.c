@@ -23,7 +23,7 @@
 
 #include "identify.h"
 
-#define REGISTRY_REFRESH_INTERVAL (100)
+#define REGISTRY_REFRESH_INTERVAL (200)
 
 static gboolean registry_refresh_source_start(gpointer registry_ptr);
 static gboolean registry_refresh_source_run(gpointer registry_ptr);
@@ -147,7 +147,7 @@ static gboolean registry_refresh_source_start(gpointer registry_ptr)
     Registry *registry = registry_ptr;
 
     // add the refresh source
-    registry->refresh_source_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
+    registry->refresh_source_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   registry_refresh_source_run,
                                                   registry,
                                                   NULL);

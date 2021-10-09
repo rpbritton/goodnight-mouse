@@ -19,7 +19,7 @@
 
 #include "overlay.h"
 
-#define OVERLAY_REFRESH_INTERVAL 250
+#define OVERLAY_REFRESH_INTERVAL (200)
 
 static void remove_input(GtkWidget *overlay, gpointer data);
 
