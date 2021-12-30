@@ -241,9 +241,8 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
     case GDK_KEY_Home:
     case GDK_KEY_End:
         // pass these keys through to the window below
-        //g_debug("foreground: Passing keysym (%d) to application", event.keysym);
-        //keyboard_emulate_key(foreground->keyboard, event.keysym, 0);
-        return KEYBOARD_EVENT_RELAY; // todo: send emulation
+        g_debug("foreground: Passing keysym (%d) to application", event.keysym);
+        return KEYBOARD_EVENT_RELAY;
     case GDK_KEY_BackSpace:
         // only check pressed
         if (!event.pressed)
