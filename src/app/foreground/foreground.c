@@ -269,10 +269,13 @@ static KeyboardEventResponse callback_keyboard(KeyboardEvent event, gpointer for
 // event callback for all pointer events
 static PointerEventResponse callback_pointer(PointerEvent event, gpointer foreground_ptr)
 {
-    g_debug("foreground: Pointer event received, stopping");
+    g_debug("foreground: Pointer event received, button '%d'", event.button);
 
-    // pointer button, quit
-    foreground_quit(foreground_ptr);
+    // quit for non scrolling buttons
+    if (event.button != 4 && event.button != 5)
+        foreground_quit(foreground_ptr);
+
+    // relay the event
     return POINTER_EVENT_RELAY;
 }
 
